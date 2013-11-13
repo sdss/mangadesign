@@ -1,1 +1,3 @@
 * text=auto !eol
+bin/mangadesign_version -text
+pro/mangadesign_version.pro -text
