@@ -6,10 +6,10 @@
 use strict;
 use PDL;
 use efftickle;
-require "/Users/daw/perl/sub/yanny_sub.pl";
+require "yanny_sub.pl";
 
 #define inputs directory
-my $dir = "inputs/manga/2013.02.x.manga/";
+my $dir = $ENV{MANGA_PLATES}."/inputs/manga/2013.02.x.manga/";
 
 #loop over each plateInput file
 my $pattern = $dir."plateInput-*.par";
@@ -92,6 +92,4 @@ foreach my $name (glob $pattern)
     my $outname = "plateInputFiber-".$par{designid}.".par";
 
     write_yanny($dir.$outname,\%data);
-
-
   }

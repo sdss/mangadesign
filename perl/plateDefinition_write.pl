@@ -9,17 +9,17 @@ use PDL::Graphics::PGPLOT::Window;
 use PDL::NiceSlice;
 
 #inputs
-my $inputdir = "inputs/manga/2013.02.x.manga/";
+my $inputdir = $ENV{MANGA_PLATES}."/inputs/manga/2013.02.x.manga/";
 
 #read in plate centers for current run
-my ($rap,$decp,$designID,$plateID,$locationID,$fld) = rcols 'MANGA-plates.dat',1,2,3,4,5,{perlcol=>[0]};
+my ($rap,$decp,$designID,$plateID,$locationID,$fld) = rcols $ENV{MANGA_PLATES}."/MANGA-plates.dat",1,2,3,4,5,{perlcol=>[0]};
 
 foreach my $i (0 .. $rap->nelem-1)
   {
     #definitions dir
     my $plo = $designID->at($i);
     my $desidst = substr $plo, 0,-2;
-    my $defdir = "definitions/".$desidst."XX/";
+    my $defdir = $ENV{MANGA_PLATES}."/definitions/".$desidst."XX/";
 
     #check to see if directory exists
     #if not creat it

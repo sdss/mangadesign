@@ -8,14 +8,14 @@
 use strict;
 use PDL;
 use efftickle;
-require "/Users/daw/perl/sub/yanny_sub.pl";
+require "yanny_sub.pl";
 
 
 my @ifus = (19,37,61,91,127);#ifu sizes
 
 
 #define directorys
-my $inputdir = "inputs/manga/2013.02.x.manga/";#inputs
+my $inputdir = $ENV{MANGA_PLATES}."/inputs/manga/2013.02.x.manga/";#inputs
  
 #read in plate centers for current run
 my ($rap,$decp,$designID,$plateID,$locationID,$fld) = rcols 'MANGA-plates.dat',1,2,3,4,5,{perlcol=>[0]};
@@ -23,7 +23,7 @@ my ($rap,$decp,$designID,$plateID,$locationID,$fld) = rcols 'MANGA-plates.dat',1
 #read in tiled galaxy catalog
 #will replace this with tiled galaxy and std catalog
 #this will include psf_mag for stds
-my $catname = "/Users/daw/sdss_dr7/manga/sample_opt/MaNGA_targets_nsa_ran_tiles3_1.2_bun_2_4_4_2_5_Remaj_Ng_30000_np_1126.fits";
+my $catname = $ENV{MANGA_TARGETS}."/MaNGA_targets_nsa_ran_tiles3_1.2_bun_2_4_4_2_5_Remaj_Ng_30000_np_1126.fits";
 my $d = rfits($catname);
 my %d = %$d;
 my %hdr = %{$d{hdr}};
