@@ -1,3 +1,7 @@
 * text=auto !eol
 bin/mangadesign_version -text
+perl/plateDefinition_write.pl -text
+perl/plateInputFiber_write.pl -text
+perl/plateInput_write.pl -text
+perl/yanny_sub.pl -text
 pro/mangadesign_version.pro -text
