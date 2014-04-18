@@ -5,3 +5,8 @@ perl/plateInputFiber_write.pl -text
 perl/plateInput_write.pl -text
 perl/yanny_sub.pl -text
 pro/mangadesign_version.pro -text
+python/__init__.py -text
+python/utils/__init__.py -text
+python/utils/bundle.py -text
+python/utils/yanny.py -text
+python/utils/zscale.py -text
