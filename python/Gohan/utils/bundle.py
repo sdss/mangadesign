@@ -136,7 +136,8 @@ class Bundle(object):
 
         return image, fileName
 
-    def plot(self, fitsFile, ext=0, outputFile=None, useAPLpy=False, **kwargs):
+    def plot(self, fitsFile, ext=0, outputFile=None, useAPLpy=False,
+             save=True, **kwargs):
 
         if useAPLpy and not __aplpy__:
             warnings.warn('no APLpy module found. Reverting to matplotlib.')
@@ -160,7 +161,8 @@ class Bundle(object):
             ax.set_ylabel(r'y [pixels]')
             ax.imshow(image.data, origin='lower', **imShowArgs)
             self._plotBundle(ax, fibrePix, scale, **kwargs)
-            plt.savefig(outputFile)
+            if save:
+                plt.savefig(outputFile)
             return ax
 
         else:
@@ -168,7 +170,8 @@ class Bundle(object):
             aplFig = aplpy.FITSFigure(image)
             aplFig.show_grayscale(**imShowArgs)
             self._plotBundleAPLPy(aplFig, scale, **kwargs)
-            aplFig.save(outputFile)
+            if save:
+                aplFig.save(outputFile)
             return aplFig
 
     def _plotBundle(self, ax, fibrePix, scale, **kwargs):
@@ -197,7 +200,7 @@ class Bundle(object):
                          **showCirclesArgs)
 
     def plotHexagon(self, fitsFile, outputFile=None, ext=0,
-                    useAPLpy=False, **kwargs):
+                    useAPLpy=False, save=True, **kwargs):
 
         if useAPLpy and not __aplpy__:
             warnings.warn('no APLpy module found. Reverting to matplotlib.')
@@ -228,7 +231,8 @@ class Bundle(object):
             ax.set_ylim(0.0, ax.get_ylim()[1])
             ax.set_xlabel(r'x [pixels]')
             ax.set_ylabel(r'y [pixels]')
-            plt.savefig(outputFile)
+            if save:
+                plt.savefig(outputFile)
             return ax
 
         else:
@@ -236,7 +240,8 @@ class Bundle(object):
             aplFig = aplpy.FITSFigure(image)
             aplFig.show_grayscale(**imShowArgs)
             aplFig.show_lines([hexagon.T], **plotArgs)
-            aplFig.save(outputFile)
+            if save:
+                aplFig.save(outputFile)
             return aplFig
 
     def createDS9Regions(self, outputFile=None):
