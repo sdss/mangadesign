@@ -307,6 +307,8 @@ if __name__ == '__main__':
     parser.add_argument('--aplpy', '-a', dest='aplpy',
                         help='uses APLpy if available.',
                         default=False, action='store_true')
+    parser.add_argument('--ds9', '-d', action='store_true',
+                        help='creates a file with DS9 regions for each fibre.')
 
     args = parser.parse_args()
 
@@ -321,7 +323,8 @@ if __name__ == '__main__':
         else:
             bundle.plotHexagon(args.file, ext=args.ext, useAPLpy=args.aplpy)
 
-    bundle.createDS9Regions()
+    if args.ds9:
+        bundle.createDS9Regions()
 
     if args.printFibres:
         if not args.hexagon:
