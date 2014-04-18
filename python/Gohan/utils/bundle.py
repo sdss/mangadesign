@@ -28,7 +28,11 @@ from zscale import zscale
 from matplotlib import pylab as plt
 import warnings
 
-__use_aplpy__ = False
+try:
+    import aplpy
+    __aplpy__ = True
+except:
+    __aplpy__ = False
 
 
 class Bundle(object):
@@ -132,7 +136,11 @@ class Bundle(object):
 
         return image, fileName
 
-    def plot(self, fitsFile, ext=0, outputFile=None, **kwargs):
+    def plot(self, fitsFile, ext=0, outputFile=None, useAPLpy=False, **kwargs):
+
+        if useAPLpy and not __aplpy__:
+            warnings.warn('no APLpy module found. Reverting to matplotlib.')
+            useAPLpy = False
 
         image, fileName = self._getImage(fitsFile, ext)
         if outputFile is None:
@@ -146,7 +154,7 @@ class Bundle(object):
         imShowArgs = dict(cmap=cm.Greys_r, vmax=zValues[1], vmin=zValues[0])
         imShowArgs.update(kwargs)
 
-        if not __use_aplpy__:
+        if not useAPLpy:
             fig, ax = plt.subplots()
             ax.set_xlabel(r'x [pixels]')
             ax.set_ylabel(r'y [pixels]')
@@ -188,7 +196,12 @@ class Bundle(object):
         fig.show_circles(self.fibres[:, 1], self.fibres[:, 2], radius,
                          **showCirclesArgs)
 
-    def plotHexagon(self, fitsFile, outputFile=None, ext=0, **kwargs):
+    def plotHexagon(self, fitsFile, outputFile=None, ext=0,
+                    useAPLpy=False, **kwargs):
+
+        if useAPLpy and not __aplpy__:
+            warnings.warn('no APLpy module found. Reverting to matplotlib.')
+            useAPLpy = False
 
         image, fileName = self._getImage(fitsFile, ext)
         if outputFile is None:
@@ -207,7 +220,7 @@ class Bundle(object):
         plotArgs = dict(linewidth=0.7, color='r', linestyle='solid')
         plotArgs.update(kwargs)
 
-        if not __use_aplpy__:
+        if not useAPLpy:
             fig, ax = plt.subplots()
             ax.imshow(image.data, origin='lower', **imShowArgs)
             ax.plot(hexagonPix[:, 0], hexagonPix[:, 1], **plotArgs)
@@ -292,21 +305,16 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    if args.aplpy:
-        try:
-            import aplpy
-            __use_aplpy__ = True
-        except:
-            warnings.warn('no APLpy module found. Reverting to matplotlib.')
-            __use_aplpy__ = False
+    if args.aplpy and not __aplpy__:
+        warnings.warn('no APLpy module found. Reverting to matplotlib.')
 
     bundle = Bundle(args.RA, args.DEC, simbmap=args.simbmap, size=args.size)
 
     if args.file is not None:
         if not args.hexagon:
-            bundle.plot(args.file, ext=args.ext)
+            bundle.plot(args.file, ext=args.ext, useAPLpy=args.aplpy)
         else:
-            bundle.plotHexagon(args.file, ext=args.ext)
+            bundle.plotHexagon(args.file, ext=args.ext, useAPLpy=args.aplpy)
 
     bundle.createDS9Regions()
 
