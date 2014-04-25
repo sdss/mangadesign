@@ -7,7 +7,4 @@ perl/yanny_sub.pl -text
 pro/mangadesign_version.pro -text
 python/Gohan/__init__.py -text
 python/Gohan/utils/__init__.py -text
-python/Gohan/utils/bundle.py -text
-python/Gohan/utils/plot_bundles.py -text
 python/Gohan/utils/yanny.py -text
-python/Gohan/utils/zscale.py -text
