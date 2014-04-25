@@ -1,3 +1,6 @@
+"""
+Implementation of the IRAF zscale algorithm for scaling 16bit FITS->8bit image.
+"""
 import math
 import numpy
 
