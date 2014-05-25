@@ -1,0 +1,32 @@
+---
+logging:
+    logLevel: INFO
+    logFileLevel: DEBUG
+    logFilePath: '~/.gohan/gohan.log'
+    logFileMode: 'w'
+
+files:
+    sciSample: $MANGASAMPLE_DIR/MaNGA_targets_extNSA_all_final_ran_tiled_v0.3.fits
+    stdSample: None
+    skySample: None
+
+decollision:
+    FOV: 1.49
+    centreAvoid: .041666667
+    targetAvoid: .033333333
+
+platelist: $PLATELIST_DIR
+
+anchorBlocks:
+    anchors: ['NE', 'SE', 'NW', 'SW']
+    NE: [30, 31, 57, 58, 59, 32, 33, 34]
+    SE: [35, 60, 61, 62, 36, 37]
+    NW: [26, 54, 55, 56, 27, 28, 29]
+    SW: [21, 22, 51, 52, 53, 23, 24, 25]
+
+IFUs: {19: 2, 37: 4, 61: 4, 91: 2, 127: 5}
+miniBundles: {7: 12}
+skies: {1: 96}
+
+plateDefinitionVersion: v2
+cartmap: $MANGACORE_DIR/cartmaps/cartmap-02-56687.par
