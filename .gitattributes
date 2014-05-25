@@ -5,6 +5,3 @@ perl/plateInputFiber_write.pl -text
 perl/plateInput_write.pl -text
 perl/yanny_sub.pl -text
 pro/mangadesign_version.pro -text
-python/Gohan/__init__.py -text
-python/Gohan/utils/__init__.py -text
-python/Gohan/utils/yanny.py -text
