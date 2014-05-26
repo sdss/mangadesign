@@ -1,0 +1,23 @@
+# MaNGA plate definition template
+#
+# Uses SDSS-style Yanny .par formatting
+#
+# This file includes a basic template for the MaNGA-leading plate definition files
+# Note that the plateInput fields must also be included, e.g.
+# plateInput1 inputs/manga/2014.02.x.manga/plateInput-1234.par
+# plateInput2 inputs/manga/2014.02.x.manga/plateStandard-1234.par
+
+# Basic design info
+designID None
+platedesignversion None
+plateType None
+plateLead None
+defaultSurveyMode None
+
+# What are the pointings and offsets?
+raCen None
+decCen None
+
+# Inputs and priority order of each.
+nInputs None
+priority None

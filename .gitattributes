@@ -21,6 +21,7 @@ python/Gohan/etc/mangaDefinition_Default.par -text
 python/Gohan/etc/mangaInput_Default.par -text
 python/Gohan/etc/manga_simbmap_127.par -text
 python/Gohan/exceptions.py -text
+python/Gohan/mangaDefinition_Default.par -text
 python/Gohan/utils/Staralt.py -text
 python/Gohan/utils/__init__.py -text
 python/Gohan/utils/colorama/__init__.py -text

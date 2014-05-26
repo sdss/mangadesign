@@ -35,10 +35,10 @@ from .utils import readPath
 __ALL__ = ['PLATEPLANS_TEMPLATE', 'PlateInput', 'PlateInputBase']
 
 platePlansTemplate = """
-PLATEPLANS {plateID} {designID} {locationID} -1 {version}
+PLATEPLANS {plateID} {designID} {locationID} -1 {platedesignversion}
 {{ 0.0 0.00000 0.00000 0.00000 0.00000 0.00000 }}
-{temp} {epoch} {raCen} {decCen} manga manga_com_plates manga \" \"
-{plateRun} \" \" \"{name}\" \"{comment}\"
+{temp} {epoch} {raCen} {decCen} {survey} {programname} {drillstyle} \" \"
+{plateRun} {chunk} \"{name}\" \"{comment}\"
 """
 
 plateDefinitionTemplate = readPath('+etc/mangaDefinition_Default.par')
@@ -83,6 +83,9 @@ class PlateInput(list):
         The input catalogue data, either as a single InputCatalogue
         or as a list of InputCatalogue instances. If strings (or list of
         strings) are provided, InputCatalogues will be read from them.
+    plateType : str, optional
+        The type of plate to be designed. By default it assumes MaNGA leading
+        ('mangaLeading').
     pairs : dict, optional
         Additional keyword/value pairs to be added to the plateInput files.
         Note that if a key is defined in pairs, it supersedes the metadata
@@ -97,12 +100,13 @@ class PlateInput(list):
     """
 
     def __init__(self, designid, plateRun, catalogues,
-                 pairs={}, reassignFerrules=False, verbose=True,
-                 **kwargs):
+                 plateType='mangaLeading', pairs={}, reassignFerrules=False,
+                 verbose=True, **kwargs):
 
         log.setVerbose(verbose)
 
         self.designid = designid
+        self.plateType = plateType
         self.plateRun = plateRun
         self.kwargs = kwargs
 
@@ -204,12 +208,12 @@ class PlateInput(list):
         decCen = self[0].pairs['deccen']
         nInputs = len(self)
         priority = ' '.join([str(ii+1) for ii in range(nInputs)])
-        version = config['plateDefinitionVersion']
 
         defDict = OrderedDict(
             [['raCen', raCen], ['decCen', decCen], ['nInputs', nInputs],
-             ['priority', priority], ['platedesignversion', version],
-             ['designID', self.designid]])
+             ['priority', priority], ['designID', self.designid]])
+
+        defDict.update(config['plateTypes'][self.plateType])
 
         inputs = []
         for nn, plateInput in enumerate(self):
@@ -287,6 +291,7 @@ class PlateInput(list):
         plansDic['locationID'] = self[0].pairs['locationid']
         plansDic['designID'] = self.designid
         plansDic['plateRun'] = self.plateRun
+        plansDic['chunk'] = self.plateRun
 
         if 'epoch' in self.kwargs:
             plansDic['epoch'] = self.kwargs['epoch']
@@ -298,7 +303,7 @@ class PlateInput(list):
         else:
             plansDic['temp'] = '5.0'
 
-        plansDic['version'] = config['plateDefinitionVersion']
+        plansDic.update(config['plateTypes'][self.plateType])
 
         platePlans = platePlansTemplate.format(**plansDic)
         platePlans = platePlans.replace('\n', ' ')

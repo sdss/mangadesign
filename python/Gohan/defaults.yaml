@@ -15,6 +15,25 @@ decollision:
     centreAvoid: .041666667
     targetAvoid: .033333333
 
+plateTypes:
+    mangaLeading:
+        platedesignversion: v1
+        plateLead: MANGA
+        plateType: MANGA-APOGEE2
+        defaultSurveyMode: mangaDither
+        survey: manga-apogee2
+        programname: manga
+        drillstyle: manga
+
+    mangaOnly:
+        platedesignversion: v2
+        plateLead: MANGA
+        plateType: MANGA
+        defaultSurveyMode: mangaDither
+        survey: manga
+        programname: manga
+        drillstyle: manga
+
 platelist: $PLATELIST_DIR
 
 anchorBlocks:
@@ -28,5 +47,4 @@ IFUs: {19: 2, 37: 4, 61: 4, 91: 2, 127: 5}
 miniBundles: {7: 12}
 skies: {1: 96}
 
-plateDefinitionVersion: v2
 cartmap: $MANGACORE_DIR/cartmaps/cartmap-02-56687.par
