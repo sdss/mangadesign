@@ -164,6 +164,7 @@ class InputCatalogue(object):
             self.decollision(decollision, failOnCollision=failOnCollision)
 
         self.cropCatalogue()
+        self.checkData()
 
     def removeSuperfluous(self):
         removedCols = []
@@ -315,7 +316,6 @@ class InputCatalogue(object):
 
         self.data = table.Table(data)
 
-        self.checkData()
 
     def checkData(self):
 
@@ -347,10 +347,16 @@ class InputCatalogue(object):
             else:
                 raise GohanError('mandatory column {0} not found.'.format(col))
 
-        if 'ifudesignsize' in self.colnames:
-            assignedSizes = self[self['ifudesignsize'] > 0]
-            if len(assignedSizes) > 0:
-                self.data = self.data[self.data['ifudesignsize'] > 0]
+        assignedSizes = self[self['ifudesignsize'] > 0]
+        if len(assignedSizes) > 0:
+            lenOrigData = len(self)
+            self.data = self.data[self.data['ifudesignsize'] > 0]
+            if len(assignedSizes) < lenOrigData:
+                warnings.warn('rejected {0} targets '.format(
+                    lenOrigData-len(self.data)) + 'because ifudesignsize '
+                    'was not set.', GohanUserWarning)
+        else:
+            raise GohanError('no ifudesignsize for any target.')
 
         self._fixDtypes()
         self.reorder()
