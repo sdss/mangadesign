@@ -99,7 +99,8 @@ class PlateInput(list):
     """
 
     def __init__(self, designid, plateRun, catalogues,
-                 plateType='mangaLeading', pairs={}, reassignFerrules=False,
+                 plateType='mangaLeading', pairs={},
+                 reassignFerrules=False,
                  verbose=True, **kwargs):
 
         log.setVerbose(verbose)
@@ -151,11 +152,12 @@ class PlateInput(list):
 
         """
 
-        tileid = self[0].meta['tileid'] if 'tileid' in self[0].meta else 0
+        designName = '{0:04d}'.format(int(self[0].meta['tileid'])) \
+            if int(self[0].meta['tileid']) != -1 else self[0].meta['fieldname']
 
         if filename is None:
-            filename = 'plateIFUs_{0:04d}_{1:04d}.pdf'.format(
-                int(tileid), self.designid)
+            filename = 'plateIFUs_{0}_{1:04d}.pdf'.format(
+                designName, self.designid)
 
         self[0].plotIFUs(filename, struct1=self.struct1, **kwargs)
 
@@ -166,7 +168,7 @@ class PlateInput(list):
         the same for all plateInput files, checking ifuDesign and ifuSize, etc.
         """
 
-    def write(self, toRepo=False, appendDefinition=False, platePlans=True):
+    def write(self, toRepo=False, platePlans=False):
         """Writes the plateInput, platePlan and plateDefinition files.
 
         This methods creates the plateInput, plateDefinition and platePlans
@@ -190,6 +192,11 @@ class PlateInput(list):
         for plateInput in self:
             filename = plateInput.write(toRepo=toRepo)
             plateInputFilenames.append(filename)
+
+        if self.plateType == 'apogeeLeading':
+            appendDefinition = True
+        else:
+            appendDefinition = False
 
         plateDefinitionFilename = self.writePlateDefinition(
             toRepo=toRepo, append=appendDefinition)
@@ -246,31 +253,140 @@ class PlateInput(list):
 
     def writePlateDefinition(self, toRepo=False, append=False):
 
-        definitionYanny = self.getPlateDefinitionYanny()
-
         filename = 'plateDefinition-{0:06d}.par'.format(self.designid)
-        definitionYanny.set_filename(filename)
 
-        if os.path.exists(filename):
-            os.remove(filename)
+        pathRoot = '{0:04d}XX/'.format(int(self.designid / 100))
+        plateDefinitionPath = os.path.join(
+            os.path.expandvars(config['platelist']),
+            'definitions', pathRoot)
+        plateDefinitionRepoFile = os.path.join(plateDefinitionPath, filename)
 
-        definitionYanny.write()
+        if append:
+            plateDefinition = self._getPlateDefinitionAppend(
+                plateDefinitionRepoFile)
+
+            blob = open(filename, 'w')
+            for line in plateDefinition:
+                blob.write(line + '\n')
+            blob.close()
+
+        else:
+            definitionYanny = self.getPlateDefinitionYanny()
+            definitionYanny.set_filename(filename)
+
+            if os.path.exists(filename):
+                os.remove(filename)
+
+            definitionYanny.write()
+
         log.info('plateDefinition file {0} saved.'.format(filename))
 
         if toRepo:
-            pathRoot = '{0:04d}XX/'.format(int(self.designid / 100))
-            plateDefinitionPath = os.path.join(
-                os.path.expandvars(config['platelist']),
-                'definitions', pathRoot)
 
             if not os.path.exists(plateDefinitionPath):
                 os.makedirs(plateDefinitionPath)
 
-            sh.copy(filename, os.path.join(plateDefinitionPath, filename))
+            sh.copy(filename, plateDefinitionRepoFile)
             log.info('plateDefinition file {0} '.format(filename) +
                      'saved to platelist repo.')
 
         return filename
+
+    def _getPlateDefinitionAppend(self, plateDefinitionRepoFile):
+
+        if not os.path.exists(plateDefinitionRepoFile):
+            raise GohanError('no file {0}. Make sure that the plateDefinition '
+                             'file is commited'.format(
+                                 os.path.basename(plateDefinitionRepoFile)))
+
+        data = open(plateDefinitionRepoFile, 'r').read().splitlines()
+        data.append('\n')
+
+        if self._checkAPOGEEInputs(data):
+
+            initialLine = self._findKey(data, 'plateInput3') + 1
+
+            for nn, pInput in enumerate(self):
+                if pInput.meta['targettype'] == 'science':
+                    sciIdx = nn
+                elif pInput.meta['targettype'] == 'standard':
+                    stdIdx = nn
+
+            inputSciFilename = 'manga/{0}/{1}'.format(self.plateRun,
+                                                      self[sciIdx].filename)
+            inputStdFilename = 'manga/{0}/{1}'.format(self.plateRun,
+                                                      self[stdIdx].filename)
+
+            data = self._setValue(
+                data, 'plateInput4', inputSciFilename, initialLine)
+            data = self._setValue(
+                data, 'plateInput5', inputStdFilename, initialLine+1)
+            data = self._setValue(data, 'priority', '1 2 5 3 4', noWarn=True)
+            data = self._setValue(data, 'nInputs', '5', noWarn=True)
+
+            defDict = {}
+            defDict['plateType'] = \
+                config['plateTypes'][self.plateType]['plateType']
+            defDict['plateLead'] = \
+                config['plateTypes'][self.plateType]['plateLead']
+            defDict['platedesignversion'] = \
+                config['plateTypes'][self.plateType]['platedesignversion']
+            defDict['defaultSurveyMode'] = \
+                config['plateTypes'][self.plateType]['defaultSurveyMode']
+
+            for key in defDict:
+                data = self._setValue(data, key, defDict[key])
+
+            data.append('\n')
+            data.append('# Skies for MaNGA')
+            data.append('plateDesignSkies MANGA_SINGLE')
+            data.append('skyType SDSS')
+            data.append('\n')
+
+            return data
+
+    def _checkAPOGEEInputs(self, data):
+
+        if 'STA' in self._setValue(data, 'plateInput1') and \
+                'SCI' in self._setValue(data, 'plateInput2') and \
+                'SKY' in self._setValue(data, 'plateInput3'):
+            return True
+        else:
+            raise GohanError('plateDefinition has not the expected '
+                             'format.')
+
+    def _setValue(self, data, key, value=None, idx=-1, noWarn=False):
+
+        for nn, line in enumerate(data):
+            if line[0] == '#':
+                continue
+            if (key.lower() + ' ') in line.lower():
+                if value is None:
+                    return line[line.find(' ') + 1:]
+                else:
+                    if not noWarn:
+                        warnings.warn('replacing plateDefinition keyword '
+                                      '{0} to {1}.'
+                                      .format(key, str(value)),
+                                      GohanUserWarning)
+                    data[nn] = line[0:line.find(' ')] + ' ' + str(value)
+                    return data
+
+        if idx == -1:
+            data.append(key + ' ' + str(value))
+        else:
+            data.insert(idx, key + ' ' + str(value))
+
+        return data
+
+    def _findKey(self, data, key):
+
+        for nn, line in enumerate(data):
+            if line[0] == '#':
+                continue
+            if (key.lower() + ' ') in line.lower():
+                return nn
+        return -1
 
     def getPlatePlans(self):
         """Returns the platePlans text."""
@@ -388,6 +504,7 @@ class PlateInputBase(object):
                                 target['mangaid']) +
                             'assigned an ifudesignsize={0}'.format(
                                 target['ifudesignsize']))
+                        break
 
         if ifuDesignSizeAssigned:
             log.info('some ifudesignsizes have been assigned automatically.')
@@ -700,14 +817,12 @@ class PlateInputBase(object):
 
     def getDefaultFilename(self):
 
-        try:
-            field = '{0:04d}'.format(self.inputCatalogue.meta['tileid'])
-        except:
-            field = self.inputCatalogue.meta['tileid']
+        designName = '{0:04d}'.format(int(self.meta['tileid'])) \
+            if int(self.meta['tileid']) != -1 else self.meta['fieldname']
 
-        template = 'manga{type}_{field:s}_{designid:04d}.par'.format(
+        template = 'manga{type}_{designName:s}_{designid:04d}.par'.format(
             type=self.inputCatalogue.meta['targettype'].title(),
-            field=field, designid=self.designid)
+            designName=designName, designid=self.designid)
 
         return template
 
