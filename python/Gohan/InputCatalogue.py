@@ -315,11 +315,11 @@ class InputCatalogue(object):
             data = data[np.where(data[tileIDCol] == self.tileid)]
 
         self.data = table.Table(data)
+        self.checkColumns()
 
+    def checkColumns(self):
 
-    def checkData(self):
-
-        self.standariseColumns()
+        self.convertColumns()
         self.loweriseColumns()
 
         for col in defaultColumns:
@@ -347,16 +347,7 @@ class InputCatalogue(object):
             else:
                 raise GohanError('mandatory column {0} not found.'.format(col))
 
-        assignedSizes = self[self['ifudesignsize'] > 0]
-        if len(assignedSizes) > 0:
-            lenOrigData = len(self)
-            self.data = self.data[self.data['ifudesignsize'] > 0]
-            if len(assignedSizes) < lenOrigData:
-                warnings.warn('rejected {0} targets '.format(
-                    lenOrigData-len(self.data)) + 'because ifudesignsize '
-                    'was not set.', GohanUserWarning)
-        else:
-            raise GohanError('no ifudesignsize for any target.')
+    def checkData(self):
 
         self._fixDtypes()
         self.reorder()
@@ -365,7 +356,7 @@ class InputCatalogue(object):
             warnings.warn('number of targets < number of IFUs '
                           '({0}<{1})'.format(len(self), self.nBundles))
 
-    def standariseColumns(self):
+    def convertColumns(self):
         for key, value in self.conversions.items():
             if value in self.colnames and key != value:
                 self.data.rename_column(value, key)
