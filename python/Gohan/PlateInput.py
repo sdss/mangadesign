@@ -355,6 +355,7 @@ class PlateInputBase(object):
         self.filename = None
 
         self.inputCatalogue.meta.update(pairs)
+        self.inputCatalogue.meta.update({'designid': self.designid})
 
         log.info('Creating PlateInputBase instance for InputCatalogue for ' +
                  'designid={0} and targettype={1}'.format(
@@ -372,8 +373,8 @@ class PlateInputBase(object):
             bundleSizes = config['skies'].copy()
 
         for size in self.inputCatalogue['ifudesignsize']:
-                if size > 0:
-                    bundleSizes[size] -= 1
+            if size > 0:
+                bundleSizes[size] -= 1
 
         ifuDesignSizeAssigned = False
         for target in self.inputCatalogue:
