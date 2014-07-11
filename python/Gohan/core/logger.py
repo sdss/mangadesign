@@ -14,6 +14,7 @@ import warnings
 from . import colourPrint
 import shutil
 from textwrap import TextWrapper
+import shutil as sh
 
 # Initialize by calling initLog()
 log = None
@@ -189,3 +190,18 @@ class GohanLogger(Logger):
             self.handlers[0].setLevel('ERROR')
         else:
             self.handlers[0].setLevel(config['logging']['logLevel'])
+
+    def logToRepo(self, plateRun):
+
+        from .. import config
+
+        inputPath = os.path.join(
+            os.path.expandvars(config['platelist']), 'inputs/manga',
+            plateRun)
+
+        if not os.path.exists(inputPath):
+            os.makedirs(inputPath)
+
+        sh.copy(self.logFilename, os.path.join(inputPath, plateRun + '.log'))
+
+        self.info(self.logFilename + ' copied $PLATELIST/inputs.')
