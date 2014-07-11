@@ -23,6 +23,7 @@ from astropy import table
 import os
 from astropysics.coords import ICRSCoordinates, separation_matrix
 from astropysics.coords import AngularCoordinate
+from astropysics.coords.funcs import match_coords
 from .utils import Staralt
 import warnings
 from .exceptions import GohanUserWarning, GohanError, GohanNotImplemented
@@ -43,6 +44,18 @@ defaultColumns = defaultMaNGAInput['MANGAINPUT'].dtype.names
 
 targettypeDic = {'SCI': 'science', 'STD': 'standard',
                  'STA': 'standard', 'SKY': 'sky'}
+
+FOV = AngularCoordinate(config['decollision']['FOV'])
+centreAvoid = AngularCoordinate(config['decollision']['centreAvoid'])
+targetAvoid = AngularCoordinate(config['decollision']['targetAvoid'])
+
+defaultValues = {
+    'ifudesign': -999,
+    'ifudesignsize': -999,
+    'manga_target1': 0,
+    'psfmag': [0.0, 0.0, 0.0, 0.0, 0.0],
+    'sourcetype': None
+}
 
 
 class InputCatalogue(object):
@@ -98,13 +111,18 @@ class InputCatalogue(object):
         If False (the default), a collision will raise a warning and the target
         will be rejected but no error will be raised. If True, the process will
         stop after the warning.
+    autocomplete : bool, optional
+        For science catalogues, if the number of assigned bundles is lower
+        than the number of available bundles, the remaining bundles will be
+        assigned to unused targets from the general exNSA catalogue.
 
     """
 
     def __init__(self, tileid=None, format='file', type='SCI', file=None,
                  conversions=None, fill=False, meta=None,
                  removeSuperfluous=False, verbose=True,
-                 decollision=False, failOnCollision=False, **kwargs):
+                 decollision=False, failOnCollision=False,
+                 autocomplete=True, **kwargs):
 
         log.setVerbose(verbose)
 
@@ -140,6 +158,9 @@ class InputCatalogue(object):
             if self.file is None:
                 self.file = readPath(config['files']['skySample'])
             self.nBundles = np.sum(config['skies'].values())
+
+        defaultValues['sourcetype'] = self.type
+
         if not os.path.exists(self.file):
             raise GohanError('catalogue file {0} does not exist.'.format(
                              self.file))
@@ -163,6 +184,9 @@ class InputCatalogue(object):
         if decollision is not None:
             self.decollision(decollision, failOnCollision=failOnCollision)
 
+        if autocomplete and self.type == 'SCI' and len(self) < self.nBundles:
+            self.autocomplete()
+
         self.cropCatalogue()
         self.checkData()
 
@@ -174,16 +198,189 @@ class InputCatalogue(object):
                 removedCols.append(colname)
         log.debug('Removed superfluous columns {0}'.format(removedCols))
 
+    def autocomplete(self):
+
+        if self.type != 'SCI':
+            raise GohanError('autocomplete can only be used for SCI '
+                             'inputCatalogues')
+
+        if len(self) >= self.nBundles:
+            log.info('the are at least as many targets as bundles. No need '
+                     'to run autocomplete.')
+        else:
+            nBundlesToAssign = self.nBundles - len(self)
+            log.info('autocompleting {0} bundles.'.format(nBundlesToAssign))
+
+        exNSATargets = self.getExNSATargets()
+        unassignedBundleSizes = self.getUnassignedBundleSizes()
+
+        for bundleSize in unassignedBundleSizes:
+
+            target = self._getOptimalTarget(exNSATargets, bundleSize)
+
+            if target is not None:
+                self.addTarget(target, bundleSize)
+            else:
+                warnings.warn('no valid replacement found for '
+                              'ifudesignsize={0}'.format(int(bundleSize)),
+                              GohanUserWarning)
+
+            if len(self) >= self.nBundles:
+                break
+
+        if len(self) < self.nBundles:
+            warnings.warn('even after autocomplete, {0} '.format(
+                self.nBundles-len(self)) + 'bundles are still unassigned.',
+                GohanUserWarning)
+
+    def _getOptimalTarget(self, candidateTargets, bundleSize):
+
+        reffField = config['reffField'].upper()
+        if reffField in candidateTargets.colnames:
+            return self._getOptimalTargetSize(candidateTargets, bundleSize)
+        else:
+            for target in candidateTargets:
+                if self._checkExNSATarget(target):
+                    return target
+            return None
+
+    def _getOptimalTargetSize(self, candidateTargets, bundleSize):
+
+        reffField = config['reffField'].upper()
+        candidateTargets.sort(reffField)
+
+        if bundleSize == 19:
+            minSize = 5 * 2.5
+        elif bundleSize == 37:
+            minSize = 6 * 2.5
+        elif bundleSize == 61:
+            minSize = 6 * 2.5
+        elif bundleSize == 91:
+            minSize = 7 * 2.5
+        elif bundleSize == 127:
+            minSize = 8 * 2.5
+        else:
+            minSize = 0.
+
+        for target in candidateTargets:
+
+            if target[reffField] >= minSize:
+                if self._checkExNSATarget(target):
+                    if 'IFUDESIGNSIZE' in target.colnames():
+                        target.add_column(
+                            table.Column(
+                                -999, name='IFUDESIGNSIZE', dtype=int))
+
+                    target['IFUDESIGNSIZE'] = bundleSize
+
+                    return target
+
+        # If it comes to this, it means that there are no target with valid
+        # size. We fall back to use whatever target that does not collide.
+        log.info('no target of right size ({0})'.format(bundleSize) +
+                 ' can be used to autocomplete. '
+                 'Trying to find a suitable target.')
+
+        for target in candidateTargets:
+                if self._checkExNSATarget(target):
+                    return target
+
+        return None
+
+    def getUnassignedBundleSizes(self):
+
+        if self.type == 'SCI':
+            bundles = config['IFUs'].copy()
+        elif self.type == 'STD':
+            bundles = config['miniBundles'].copy()
+        elif self.type == 'SKY':
+            bundles = config['skies'].copy()
+
+        for target in self:
+            if target['ifudesignsize'] > 0:
+                bundles[target['ifudesignsize']] -= 1
+
+        unassignedBundleSizes = []
+        for size in bundles:
+            for nn in range(bundles[size]):
+                unassignedBundleSizes.append(size)
+
+        return unassignedBundleSizes
+
+    def getExNSATargets(self):
+
+        exNSACat = fitsio.read(config['files']['sciSample'])
+
+        raCen = self.meta['racen']
+        decCen = self.meta['deccen']
+
+        matchA, matchB = match_coords(
+            raCen, decCen, exNSACat['RA'], exNSACat['DEC'],
+            eps=FOV.degrees, mode='mask')
+
+        validExNSATargets = table.Table(exNSACat[matchB])
+        validExNSATargets = validExNSATargets[validExNSATargets[
+            'IFUDESIGNSIZE'] <= 0]
+
+        return validExNSATargets
+
+    def _checkExNSATarget(self, target):
+
+        if target['MANGAID'] in self.data['mangaid']:
+            return False
+
+        centralPost = ICRSCoordinates(self.data.meta['racen'],
+                                      self.data.meta['deccen'])
+
+        targetCoords = ICRSCoordinates(target['RA'], target['DEC'])
+
+        if (targetCoords - centralPost).degrees < centreAvoid.degrees:
+            return False
+        if (targetCoords - centralPost).degrees > FOV.degrees:
+            return False
+
+        for inputTarget in self.data:
+
+            inputCoords = ICRSCoordinates(
+                inputTarget['ra'], inputTarget['dec'])
+
+            if (inputCoords - targetCoords).degrees < targetAvoid.degrees:
+                return False
+
+        return True
+
+    def addTarget(self, target, bundleSize):
+
+        newRow = []
+
+        for column in self.data.colnames:
+            if column.upper() == 'IFUDESIGNSIZE':
+                newRow.append(bundleSize)
+            elif column.upper() == 'PLATERA':
+                newRow.append(self.data.meta['racen'])
+            elif column.upper() == 'PLATEDEC':
+                newRow.append(self.data.meta['deccen'])
+            elif column.upper() in target.dtype.names:
+                newRow.append(target[column.upper()])
+            elif column.upper() == 'PRIORITY':
+                newRow.append(np.max(self.data['priority'])+1)
+            elif column.lower() in defaultValues:
+                newRow.append(defaultValues[column.lower()])
+            else:
+                newRow.append(-999)
+
+        self.data.add_row(newRow)
+
+        log.info('autocomplete: added target with mangaid=' +
+                 target['MANGAID'] +
+                 ' (ifudesignsize=' + str(int(bundleSize)) + ')')
+
     def decollision(self, decollCatalogue, failOnCollision=False):
 
         self.data.sort('priority')
 
         centralPost = ICRSCoordinates(self.data.meta['racen'],
                                       self.data.meta['deccen'])
-
-        FOV = AngularCoordinate(config['decollision']['FOV'])
-        centreAvoid = AngularCoordinate(config['decollision']['centreAvoid'])
-        targetAvoid = AngularCoordinate(config['decollision']['targetAvoid'])
 
         targetsToRemove = []
         for ii in range(len(self.data)):
@@ -193,17 +390,15 @@ class InputCatalogue(object):
                                          inputTarget['dec'])
 
             if (centralPost - inputCoord).degrees < centreAvoid.degrees:
-                warnings.warn(
+                self.logCollision(
                     'mangaid={0} '.format(inputTarget['mangaid']) +
-                    'rejected because collides with the central post',
-                    GohanCollisionWarning)
+                    'rejected because collides with the central post')
                 targetsToRemove.append(ii)
 
             if (centralPost - inputCoord).degrees > FOV.degrees:
-                warnings.warn(
+                self.logCollision(
                     'mangaid={0} '.format(inputTarget['mangaid']) +
-                    'rejected because it\'s outside the FOV',
-                    GohanCollisionWarning)
+                    'rejected because it\'s outside the FOV')
                 targetsToRemove.append(ii)
 
             for jj in range(ii+1, len(self.data)):
@@ -211,11 +406,10 @@ class InputCatalogue(object):
                 otherCoord = ICRSCoordinates(
                     otherTarget['ra'], otherTarget['dec'])
                 if (otherCoord - inputCoord).degrees < targetAvoid.degrees:
-                    warnings.warn(
+                    self.logCollision(
                         'mangaid={0} '.format(inputTarget['mangaid']) +
                         'rejected because collides with target ' +
-                        'mangaid={0}'.format(otherTarget['mangaid']),
-                        GohanCollisionWarning)
+                        'mangaid={0}'.format(otherTarget['mangaid']))
 
         if len(targetsToRemove) > 0 and failOnCollision:
             raise GohanError('exiting because there was a target rejection '
@@ -257,13 +451,12 @@ class InputCatalogue(object):
             for jj in range(len(sepRow)):
                 if sepRow[jj].degrees < targetAvoid.degrees:
                     targetsToRemove.append(ii)
-                    warnings.warn(
+                    self.logCollision(
                         'mangaid={0} '.format(self.data['mangaid'][ii]) +
-                        'rejected because collisions with target with ' +
+                        'rejected because collides with target with ' +
                         'RA={0:.5f}, Dec={0:.5f}'.format(
                             decollCatCoords[jj].ra.degrees,
-                            decollCatCoords[jj].dec.degrees),
-                        GohanCollisionWarning)
+                            decollCatCoords[jj].dec.degrees))
                     break
 
         self.data.remove_rows(targetsToRemove)
@@ -329,19 +522,21 @@ class InputCatalogue(object):
                 self.add_col(np.arange(1, len(self)+1), 'priority', int)
                 log.debug('Automatically added column for priority.')
             elif col == 'sourcetype':
-                self.add_col(self.type, 'sourcetype', 'S10')
+                self.add_col(defaultValues['sourcetype'], 'sourcetype', 'S10')
                 log.debug('Automatically added column for sourcetype.')
             elif col == 'ifudesign':
-                self.add_col(-666, 'ifudesign', int)
+                self.add_col(defaultValues['ifudesign'], 'ifudesign', int)
                 log.debug('Automatically added column for ifudesign.')
             elif col == 'ifudesignsize':
-                self.add_col(-666, 'ifudesignsize', int)
+                self.add_col(
+                    defaultValues['ifudesignsize'], 'ifudesignsize', int)
                 log.debug('Automatically added column for ifudesignsize.')
             elif col == 'manga_target1':
-                self.add_col(0.0, 'manga_target1', int)
+                self.add_col(
+                    defaultValues['manga_target1'], 'manga_target1', int)
                 log.debug('Automatically added column for manga_target1.')
             elif col == 'psfmag':
-                self.add_col([[0.0, 0.0, 0.0, 0.0, 0.0]
+                self.add_col([defaultValues['psfmag']
                               for ii in range(len(self))], 'psfmag')
                 log.debug('Automatically added psfmag for priority.')
             else:
@@ -351,10 +546,37 @@ class InputCatalogue(object):
 
         self._fixDtypes()
         self.reorder()
+        self.checkIFUCoords()
 
         if len(self) < self.nBundles:
             warnings.warn('number of targets < number of IFUs '
                           '({0}<{1})'.format(len(self), self.nBundles))
+
+    def checkIFUCoords(self):
+
+        for coordType in ['ifu', 'target']:
+            for col in ['ra', 'dec']:
+
+                if not '{0}_{1}'.format(coordType, col) in self.data.colnames:
+                    self.add_col([-999. for nn in range(len(self))],
+                                 '{0}_{1}'.format(coordType, col), dtype=float)
+                    log.debug('Adding {0}_{1} column'.format(coordType, col))
+
+        for col in ['ra', 'dec']:
+            for target in self:
+
+                targetCol = 'target_{0}'.format(col)
+                ifuCol = 'ifu_{0}'.format(col)
+
+                if target[targetCol] < -100:
+                    target[targetCol] = target[col]
+
+                if target[ifuCol] < -100:
+                    target[ifuCol] = target[col]
+                elif target[ifuCol] > -100 and target[ifuCol] != target[col]:
+                    target[col] = target[ifuCol]
+                    log.info('setting {0} from ifu_{0} for target'.format(
+                        col) + ' with mangaid={0}'.format(target['mangaid']))
 
     def convertColumns(self):
         for key, value in self.conversions.items():
@@ -474,6 +696,13 @@ class InputCatalogue(object):
 
         return cls(tileid=tileid, format='file', type=type,
                    decollision=decollision, **kwargs)
+
+    def logCollision(self, text):
+
+        if self.type == 'SCI':
+            warnings.warn(text, GohanUserWarning)
+        else:
+            log.info(text)
 
     def plotStaralt(self, date, filename=None):
         """Plots a staralt graph for the catalogue centre position.
