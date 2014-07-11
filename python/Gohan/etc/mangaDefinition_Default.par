@@ -10,8 +10,9 @@
 # Basic design info
 designID None
 platedesignversion None
-plateType MANGA
-plateLead MANGA
+plateType None
+plateLead None
+defaultSurveyMode None
 
 # What are the pointings and offsets?
 raCen None
