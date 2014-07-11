@@ -437,16 +437,20 @@ class InputCatalogue(object):
                 if self.tileid is not None:
                     self.data.meta['tileid'] = self.tileid
 
-            elif pair.lower() == 'fieldname':
-                if self.data.meta['fieldname'] == 'NA' and \
-                        self.tileid is not None:
-                    self.data.meta['fieldname'] = self.tileid
+            if pair.lower() == 'designid':
+                continue
 
             if self.meta[pair] != 'None':
                 continue
 
             raise GohanError('mandatory pair {0} not set.'.format(
                 pair.lower()))
+
+        if self.data.meta['fieldname'] == 'NA':
+            if self.tileid is not None:
+                self.data.meta['fieldname'] = self.tileid
+            elif self.data.meta['tileid'] != 'None':
+                self.data.meta['fieldname'] = self.data.meta['tileid']
 
     def conv(self, key):
         return self.conversions[key] if key in self.conversions else key
