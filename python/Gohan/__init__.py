@@ -52,7 +52,6 @@ if os.path.exists(__GOHAN_CONFIG_PATH__):
 # Creates the custom logging system
 from .core.logger import initLog
 log = initLog()
-log.info('test1')
 
 from .PlateInput import PlateInput
 # from .PlateMags import PlateMags
