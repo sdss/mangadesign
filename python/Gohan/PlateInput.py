@@ -213,7 +213,14 @@ class PlateInput(list):
             [['raCen', raCen], ['decCen', decCen], ['nInputs', nInputs],
              ['priority', priority], ['designID', self.designid]])
 
-        defDict.update(config['plateTypes'][self.plateType])
+        defDict['plateType'] = \
+            config['plateTypes'][self.plateType]['plateType']
+        defDict['plateLead'] = \
+            config['plateTypes'][self.plateType]['plateLead']
+        defDict['platedesignversion'] = \
+            config['plateTypes'][self.plateType]['platedesignversion']
+        defDict['defaultSurveyMode'] = \
+            config['plateTypes'][self.plateType]['defaultSurveyMode']
 
         inputs = []
         for nn, plateInput in enumerate(self):
@@ -225,7 +232,7 @@ class PlateInput(list):
                                  'before writing the plateDefinition file.')
 
             inputFilename = 'manga/{0}/{1}'.format(self.plateRun,
-                                                   self[ii].filename)
+                                                   self[nn].filename)
             inputs += [['plateInput{0:d}'.format(nn+1), inputFilename]]
 
         inputs = OrderedDict(inputs)
