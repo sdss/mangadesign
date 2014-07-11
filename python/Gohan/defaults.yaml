@@ -34,6 +34,15 @@ plateTypes:
         programname: manga
         drillstyle: manga
 
+    apogeeLeading:
+        platedesignversion: v1
+        plateLead: APOGEE
+        plateType: APOGEE2-MANGA
+        defaultSurveyMode: apogeeLead
+        survey: apogee2-manga
+        programname: disk2
+        drillstyle: manga
+
 platelist: $PLATELIST_DIR
 
 anchorBlocks:
