@@ -89,18 +89,22 @@ class InputCatalogue(object):
         If None, decollision is completely disabled.
         If False, no decollision is done for the targets in the input
         catalogue except checking that all the targets are within the FOV and
-        that there are no collisions with the central post. If set to a numpy
-        recarray-like object, the targets of the input catalogue that collide
-        will be excluded. The input array must have, at least, two columns
-        called 'ra' and 'dec'. Collision distances can be adjusted via the
-        configuration file.
+        that there are no collisions with the central post.
+        If set to a numpy recarray-like object, the targets of the input
+        catalogue that collide will be excluded. The input array must have,
+        at least, two columns called 'ra' and 'dec'. Collision distances can be
+        adjusted via the configuration file.
+    failOnCollision : bool, optional
+        If False (the default), a collision will raise a warning and the target
+        will be rejected but no error will be raised. If True, the process will
+        stop after the warning.
 
     """
 
     def __init__(self, tileid=None, format='file', type='SCI', file=None,
                  conversions=None, fill=False, meta=None,
                  removeSuperfluous=False, verbose=True,
-                 decollision=False, **kwargs):
+                 decollision=False, failOnCollision=False, **kwargs):
 
         log.setVerbose(verbose)
 
@@ -157,7 +161,7 @@ class InputCatalogue(object):
             self.removeSuperfluous()
 
         if decollision is not None:
-            self.decollision(decollision)
+            self.decollision(decollision, failOnCollision=failOnCollision)
 
         self.cropCatalogue()
 
@@ -169,7 +173,7 @@ class InputCatalogue(object):
                 removedCols.append(colname)
         log.debug('Removed superfluous columns {0}'.format(removedCols))
 
-    def decollision(self, decollCatalogue):
+    def decollision(self, decollCatalogue, failOnCollision=False):
 
         self.data.sort('priority')
 
@@ -181,8 +185,9 @@ class InputCatalogue(object):
         targetAvoid = AngularCoordinate(config['decollision']['targetAvoid'])
 
         targetsToRemove = []
-        for ii, inputTarget in enumerate(self.data):
+        for ii in range(len(self.data)):
 
+            inputTarget = self.data[ii]
             inputCoord = ICRSCoordinates(inputTarget['ra'],
                                          inputTarget['dec'])
 
@@ -199,6 +204,20 @@ class InputCatalogue(object):
                     'rejected because it\'s outside the FOV',
                     GohanCollisionWarning)
                 targetsToRemove.append(ii)
+
+            for jj in range(ii+1, len(self.data)):
+                otherTarget = self.data[jj]
+                otherCoord = ICRSCoordinates(
+                    otherTarget['ra'], otherTarget['dec'])
+                if (otherCoord - inputCoord).degrees < targetAvoid.degrees:
+                    warnings.warn(
+                        'mangaid={0} '.format(inputTarget['mangaid']) +
+                        'rejected because collides with target ' +
+                        'mangaid={0}'.format(otherTarget['mangaid']))
+
+        if len(targetsToRemove) > 0 and failOnCollision:
+            raise GohanError('exiting because there was a target rejection '
+                             'and failOnCollision=True')
 
         self.data.remove_rows(targetsToRemove)
 
@@ -246,6 +265,10 @@ class InputCatalogue(object):
                     break
 
         self.data.remove_rows(targetsToRemove)
+
+        if len(targetsToRemove) > 0 and failOnCollision:
+            raise GohanError('exiting because there was a target rejection '
+                             'and failOnCollision=True')
 
     def cropCatalogue(self):
         self.data.sort('priority')
