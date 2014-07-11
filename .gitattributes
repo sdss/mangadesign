@@ -15,7 +15,6 @@ python/Gohan/core/configuration.py -text
 python/Gohan/core/logger.py -text
 python/Gohan/core/setupTools.py -text
 python/Gohan/defaults.yaml -text
-python/Gohan/defaults/__init__.py -text
 python/Gohan/etc/BOSS_SNvsFibMag2.dat -text
 python/Gohan/etc/mangaDefinition_Default.par -text
 python/Gohan/etc/mangaInput_Default.par -text

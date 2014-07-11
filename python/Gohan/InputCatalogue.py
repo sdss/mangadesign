@@ -425,12 +425,6 @@ class InputCatalogue(object):
                     self.data.meta['deccen'] = self.data[0][platedec]
                     log.debug('Pair deccen set from {0}'.format(platedec))
 
-            elif pair.lower() == 'designid':
-                warnings.warn('designid has not been set. You need to set it '
-                              'up when initialising PlateInput',
-                              GohanUserWarning)
-                self.data.meta['designid'] = -1
-
             elif pair.lower() == 'targettype':
                 self.data.meta['targettype'] = targettypeDic[self.type]
                 log.debug('Pair targettype set by using type keyword.')
