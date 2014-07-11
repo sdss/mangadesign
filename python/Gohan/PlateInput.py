@@ -701,9 +701,9 @@ class PlateInputBase(object):
     def getDefaultFilename(self):
 
         try:
-            field = '{0:04d}'.format(self.inputCatalogue.meta['fieldname'])
+            field = '{0:04d}'.format(self.inputCatalogue.meta['tileid'])
         except:
-            field = self.inputCatalogue.meta['fieldname']
+            field = self.inputCatalogue.meta['tileid']
 
         template = 'manga{type}_{field:s}_{designid:04d}.par'.format(
             type=self.inputCatalogue.meta['targettype'].title(),
