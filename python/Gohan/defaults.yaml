@@ -6,7 +6,7 @@ logging:
     logFileMode: 'w'
 
 files:
-    sciSample: $MANGASAMPLE_DIR/MaNGA_targets_extNSA_all_final_ran_tiled_v0.3.fits
+    sciSample: $MANGASAMPLE_DIR/MaNGA_targets_extNSA_all_final_tiled_v0.5.fits
     stdSample: None
     skySample: None
 
@@ -46,5 +46,7 @@ anchorBlocks:
 IFUs: {19: 2, 37: 4, 61: 4, 91: 2, 127: 5}
 miniBundles: {7: 12}
 skies: {1: 96}
+
+reffField: 'PETROTH50'
 
 cartmap: $MANGACORE_DIR/cartmaps/cartmap-02-56687.par
