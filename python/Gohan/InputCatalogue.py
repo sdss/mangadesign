@@ -72,15 +72,17 @@ class InputCatalogue(object):
         will be used.
     format : string, optional
         The formt of the sample catalogue. It can be `'file'` (default) to
-        indicate that the catalogue is a file, or `'database'` if the data is
-        to be read from mangaSampleDB.
+        indicate that the catalogue is a file, `'database'` if the data is
+        to be read from mangaSampleDB or 'table' if the input is an
+        astropy.table.
+    input : string or None, optional
+        If `format='file'`, `input` can be set with the path of the catalogue
+        to be used. If None, the default catalogue for the specific type, as
+        defined in the configuration file, will be used. If `format='table'`,
+        input must be used to pass the astropy.table.
     type : string, optional
         The type of the targets in the catalogue. It can be 'SCI' (the
         default), 'STD' or 'SKY'.
-    file : string or None, optinal
-        If `format='file'`, `file` can be set with the path of the catalogue to
-        be used. If None, the default catalogue for the specific type, as
-        defined in the configuration file, will be used.
     conversions : dict, optional
         A dictionary with conversions for the column names in the catalogue
         file. For example, if the columns for right ascension and declination
@@ -111,6 +113,8 @@ class InputCatalogue(object):
         If False (the default), a collision will raise a warning and the target
         will be rejected but no error will be raised. If True, the process will
         stop after the warning.
+    warnOnCollision : bool, optional
+        If True, raises a warning on collision.
     autocomplete : bool, optional
         For science catalogues, if the number of assigned bundles is lower
         than the number of available bundles, the remaining bundles will be
@@ -118,10 +122,11 @@ class InputCatalogue(object):
 
     """
 
-    def __init__(self, tileid=None, format='file', type='SCI', file=None,
+    def __init__(self, tileid=None, input=None, format='file', type='SCI',
                  conversions=None, fill=False, meta=None,
                  removeSuperfluous=False, verbose=True,
                  decollision=False, failOnCollision=False,
+                 warnOnCollision=True,
                  autocomplete=True, **kwargs):
 
         log.setVerbose(verbose)
@@ -129,41 +134,41 @@ class InputCatalogue(object):
         self.tileid = tileid
         self.format = format
         self.type = type.upper()
-        self.file = file.lower() if file is not None else None
+        self.input = input
         self.conversions = {} if conversions is None else conversions
         self.fill = fill
         self._meta = {} if meta is None else meta
         self.removeSuperfluous = removeSuperfluous
         self.kwargs = kwargs
 
-        if self.tileid is None and self.format == 'file' and self.file is None:
-            raise GohanError('tileid has to be specified if format=\'file\' '
-                             'and file=None.')
+        if isinstance(input, table.Table) and self.format != 'table':
+            log.info('Auto-setting format=\'table\'')
+            self.format = 'table'
 
-        if self.format not in ['file', 'database']:
+        if self.format not in ['file', 'database', 'table']:
             raise GohanError('format={0} is not valid.'.format(self.format))
 
         if self.type not in ['STD', 'SCI', 'SKY']:
             raise GohanError('type={0} is not valid.'.format(self.type))
 
         if self.type == 'SCI':
-            if self.file is None:
-                self.file = readPath(config['files']['sciSample'])
+            if self.input is None and self.format == 'file':
+                self.input = readPath(config['files']['sciSample'])
             self.nBundles = np.sum(config['IFUs'].values())
         elif self.type == 'STD':
-            if self.file is None:
-                self.file = readPath(config['files']['stdSample'])
+            if self.input is None and self.format == 'file':
+                self.input = readPath(config['files']['stdSample'])
             self.nBundles = np.sum(config['miniBundles'].values())
         elif self.type == 'SKY':
-            if self.file is None:
-                self.file = readPath(config['files']['skySample'])
+            if self.input is None and self.format == 'file':
+                self.input = readPath(config['files']['skySample'])
             self.nBundles = np.sum(config['skies'].values())
 
         defaultValues['sourcetype'] = self.type
 
-        if not os.path.exists(self.file):
+        if self.format == 'file' and not os.path.exists(self.input):
             raise GohanError('catalogue file {0} does not exist.'.format(
-                             self.file))
+                             self.input))
 
         if self.fill is True:
             warnings.warn('fill=True not yet implemented. Setting fill=False',
@@ -173,16 +178,21 @@ class InputCatalogue(object):
             raise GohanNotImplemented('The DB access is not yet implemented.')
         elif self.format == 'file':
             log.info('Creating input catalogue from file {0}'.format(
-                os.path.basename(self.file)))
+                os.path.basename(self.input)))
             self._createTableFromFile()
+        elif self.format == 'table':
+            log.info('Creating input catalogue from table.')
+            self._createData(self.input)
 
         self._createMeta(self._meta)
 
         if self.removeSuperfluous:
             self.removeSuperfluous()
 
+        self._warnOnCollision = warnOnCollision
+        self._failOnCollision = failOnCollision
         if decollision is not None:
-            self.decollision(decollision, failOnCollision=failOnCollision)
+            self._decollision(decollision)
 
         if autocomplete and self.type == 'SCI' and len(self) < self.nBundles:
             self.autocomplete()
@@ -371,10 +381,10 @@ class InputCatalogue(object):
         self.data.add_row(newRow)
 
         log.important('autocomplete: added target with mangaid=' +
-                      target['MANGAID']  + ' (ifudesignsize=' +
+                      target['MANGAID'] + ' (ifudesignsize=' +
                       str(int(bundleSize)) + ')')
 
-    def decollision(self, decollCatalogue, failOnCollision=False):
+    def _decollision(self, decollCatalogue):
 
         self.data.sort('priority')
 
@@ -382,7 +392,7 @@ class InputCatalogue(object):
                                       self.data.meta['deccen'])
 
         targetsToRemove = []
-        for ii in range(len(self.data)):
+        for ii in range(len(self.data)-1, 0, -1):
 
             inputTarget = self.data[ii]
             inputCoord = ICRSCoordinates(inputTarget['ra'],
@@ -391,28 +401,26 @@ class InputCatalogue(object):
             if (centralPost - inputCoord).degrees < centreAvoid.degrees:
                 self.logCollision(
                     'mangaid={0} '.format(inputTarget['mangaid']) +
-                    'rejected because collides with the central post')
+                    'rejected: collides with central post')
                 targetsToRemove.append(ii)
 
             if (centralPost - inputCoord).degrees > FOV.degrees:
                 self.logCollision(
                     'mangaid={0} '.format(inputTarget['mangaid']) +
-                    'rejected because it\'s outside the FOV')
+                    'rejected: outside FOV')
                 targetsToRemove.append(ii)
 
-            for jj in range(ii+1, len(self.data)):
+            for jj in range(ii-1, 0, -1):
                 otherTarget = self.data[jj]
                 otherCoord = ICRSCoordinates(
                     otherTarget['ra'], otherTarget['dec'])
                 if (otherCoord - inputCoord).degrees < targetAvoid.degrees:
                     self.logCollision(
-                        'mangaid={0} '.format(inputTarget['mangaid']) +
-                        'rejected because collides with target ' +
-                        'mangaid={0}'.format(otherTarget['mangaid']))
-
-        if len(targetsToRemove) > 0 and failOnCollision:
-            raise GohanError('exiting because there was a target rejection '
-                             'and failOnCollision=True')
+                        'mangaid={0} rejected: collides with mangaid={1}'
+                        .format(inputTarget['mangaid'],
+                                otherTarget['mangaid']))
+                    targetsToRemove.append(ii)
+                break
 
         self.data.remove_rows(targetsToRemove)
 
@@ -433,14 +441,12 @@ class InputCatalogue(object):
 
         inputCatCoords = np.array(
             [ICRSCoordinates(self['ra'][ii], self['dec'][ii])
-             for ii in range(len(self))]
-        )
+             for ii in range(len(self))])
 
         decollCatCoords = np.array(
             [ICRSCoordinates(decollCatalogue['ra'][ii],
                              decollCatalogue['dec'][ii])
-             for ii in range(len(decollCatalogue))]
-        )
+             for ii in range(len(decollCatalogue))])
 
         sepMatrix = separation_matrix(inputCatCoords, decollCatCoords)
 
@@ -452,17 +458,13 @@ class InputCatalogue(object):
                     targetsToRemove.append(ii)
                     self.logCollision(
                         'mangaid={0} '.format(self.data['mangaid'][ii]) +
-                        'rejected because collides with target with ' +
+                        'rejected: collides with ' +
                         'RA={0:.5f}, Dec={0:.5f}'.format(
                             decollCatCoords[jj].ra.degrees,
                             decollCatCoords[jj].dec.degrees))
                     break
 
         self.data.remove_rows(targetsToRemove)
-
-        if len(targetsToRemove) > 0 and failOnCollision:
-            raise GohanError('exiting because there was a target rejection '
-                             'and failOnCollision=True')
 
     def cropCatalogue(self):
         self.data.sort('priority')
@@ -475,26 +477,30 @@ class InputCatalogue(object):
 
     def _createTableFromFile(self):
 
-        ext = os.path.splitext(self.file)[1]
+        ext = os.path.splitext(self.input)[1]
 
         if 'fits' in ext.lower():
             log.debug('File is a FITS file')
-            data = fitsio.read(self.file)
+            data = fitsio.read(self.input)
 
         elif ext.lower() == 'par':
             log.info('File is a Yanny file')
             structureName = self.kwargs['structure'] if 'structure' in \
                 self.kwargs else 'STRUCT1'
 
-            data = yanny.yanny(self.file, np=True)[structureName]
+            data = yanny.yanny(self.input, np=True)[structureName]
 
         else:
             log.info('File format unknown. Trying astropy.Table ...')
             try:
-                data = table.Table.read(self.file)
+                data = table.Table.read(self.input)
             except:
                 raise GohanError('file format not understood. '
                                  'Use fits or par.')
+
+        self._createData(data)
+
+    def _createData(self, data):
 
         tileIDCol = self.conv('tileid')
 
@@ -695,12 +701,19 @@ class InputCatalogue(object):
         return cls(tileid=tileid, format='file', type=type,
                    decollision=decollision, **kwargs)
 
-    def logCollision(self, text):
+    def logCollision(self, text, warnOnCollision=True):
 
-        if self.type == 'SCI':
-            warnings.warn(text, GohanCollisionWarning)
+        if self._warnOnCollision:
+            if self.type == 'SCI':
+                warnings.warn(text, GohanCollisionWarning)
+            else:
+                log.info(text)
         else:
             log.info(text)
+
+        if self._failOnCollision:
+            raise GohanError('exiting because there was a target rejection '
+                             'and failOnCollision=True')
 
     def plotStaralt(self, date, filename=None):
         """Plots a staralt graph for the catalogue centre position.
