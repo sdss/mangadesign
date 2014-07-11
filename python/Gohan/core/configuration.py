@@ -24,8 +24,8 @@ class GohanConfig(dict):
     def __init__(self, configurationFile):
 
         if not os.path.exists(configurationFile):
-            raise GohanError('configuration file', configurationFile,
-                             'not found.')
+            raise GohanError('configuration file ' + configurationFile +
+                             ' not found.')
 
         yamlData = yaml.load(open(configurationFile))
         if yamlData is None:
@@ -40,5 +40,5 @@ class GohanConfig(dict):
 
     def createTemplate(self, path=__GOHAN_CONFIG_PATH__):
 
-        defaultConfig = TotoroConfig(__DEFAULT_CONFIG_FILE__)
+        defaultConfig = GohanConfig(__DEFAULT_CONFIG_FILE__)
         defaultConfig.save()

@@ -1,4 +1,24 @@
 
+def readPath(path):
+    """Get a Totoro-formatted path and returns the real path.
+
+    Paths are expanded depending on the first characher of the input string.
+    If the first character is '+', the path is considered to be
+    Totoro-internal relative to the root of the package. Otherwise, the path
+    is expanded using os.path.expandvars and os.path.expanduser. So,
+    environment variables and user tildes '~' are valid in any path.
+
+    """
+
+    if path[0] == '+':
+        return os.path.realpath(
+            os.path.join(
+                os.path.dirname(__file__), path[1:]))
+
+    else:
+        return os.path.realpath(os.path.expanduser(os.path.expandvars(path)))
+
+
 from astropy.utils.misc import AstropyDeprecationWarning
 from astropy.wcs import FITSFixedWarning
 from astropy.io import fits
@@ -15,7 +35,7 @@ warnings.filterwarnings('ignore', 'Module argparse was already imported')
 from .exceptions import GohanWarning
 warnings.filterwarnings('always', category=GohanWarning)
 
-from .utils import runAll, readPath
+# from .utils.readPath import readPath
 import os
 
 __DEFAULT_CONFIG_FILE__ = readPath('+defaults.yaml')
@@ -32,6 +52,7 @@ if os.path.exists(__GOHAN_CONFIG_PATH__):
 # Creates the custom logging system
 from .core.logger import initLog
 log = initLog()
+log.info('test1')
 
 from .PlateInput import PlateInput
 # from .PlateMags import PlateMags

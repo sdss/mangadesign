@@ -28,7 +28,7 @@ import warnings
 from .exceptions import GohanUserWarning, GohanError, GohanNotImplemented
 from .exceptions import GohanCollisionWarning
 from . import config
-from .utils import readPath
+from . import readPath
 from sdss.utilities import yanny
 import fitsio
 import numpy as np

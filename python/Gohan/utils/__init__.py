@@ -2,7 +2,7 @@ import pywcsgrid2 as pywcsgrid2
 import colorama
 from getSDSSRun import getSDSSRun
 from .runAll import runAll
-from .readPath import readPath
+from .Skies import Skies
 
 try:
     from Staralt import Staralt
@@ -13,4 +13,4 @@ except:
 
 __all__ = ['loadDictionary', 'loadTemplateTable',
            'Staralt', 'pywcsgrid2', 'colorama', 'getSDSSRun',
-           'runAll', 'readPath']
+           'runAll', 'readPath', 'Skies']

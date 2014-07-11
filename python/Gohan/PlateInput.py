@@ -30,7 +30,7 @@ from astropy import coordinates as coo
 from astropy import units as uu
 from . import config, log
 from collections import OrderedDict
-from .utils import readPath
+from . import readPath
 
 __ALL__ = ['PLATEPLANS_TEMPLATE', 'PlateInput', 'PlateInputBase']
 
