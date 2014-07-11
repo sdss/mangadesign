@@ -34,9 +34,8 @@ from . import readPath
 
 __ALL__ = ['PLATEPLANS_TEMPLATE', 'PlateInput', 'PlateInputBase']
 
-platePlansTemplate = """
-PLATEPLANS {plateID} {designID} {locationID} -1 {platedesignversion}
-{{ 0.0 0.00000 0.00000 0.00000 0.00000 0.00000 }}
+platePlansTemplate = """PLATEPLANS {plateID} {designID} {locationID} -1
+{platedesignversion} {{ 0.0 0.00000 0.00000 0.00000 0.00000 0.00000 }}
 {temp} {epoch} {raCen} {decCen} {survey} {programname} {drillstyle} \" \"
 {plateRun} {chunk} \"{name}\" \"{comment}\"
 """
@@ -391,8 +390,7 @@ class PlateInputBase(object):
                                 target['ifudesignsize']))
 
         if ifuDesignSizeAssigned:
-            warnings.warn('some ifudesignsizes have been ' +
-                          'assigned automatically.', GohanUserWarning)
+            log.info('some ifudesignsizes have been assigned automatically.')
 
         # self.inputCatalogue.data.pprint(max_width=1000, max_lines=1000)
         # Checks if one or more ifuDesigns are missing.
@@ -406,8 +404,7 @@ class PlateInputBase(object):
         # reassignFerrules is True, reassign all the ferrules even if they
         # are defined in the input catalogue.
         if missingDesign and not self._reassignFerrules:
-            warnings.warn('one or all ifudesigns are missing. '
-                          'Reassigning IFUs.', GohanUserWarning)
+            log.info('one or all ifudesigns are missing. Reassigning IFUs.')
             self.inputCatalogue.data = self.assignFerrulesAnchorBlock()
         elif self._reassignFerrules:
             log.info('Reassigning all IFUs.')
