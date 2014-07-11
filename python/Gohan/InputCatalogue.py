@@ -213,7 +213,8 @@ class InputCatalogue(object):
                     warnings.warn(
                         'mangaid={0} '.format(inputTarget['mangaid']) +
                         'rejected because collides with target ' +
-                        'mangaid={0}'.format(otherTarget['mangaid']))
+                        'mangaid={0}'.format(otherTarget['mangaid']),
+                        GohanCollisionWarning)
 
         if len(targetsToRemove) > 0 and failOnCollision:
             raise GohanError('exiting because there was a target rejection '
