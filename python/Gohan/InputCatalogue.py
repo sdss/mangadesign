@@ -229,9 +229,8 @@ class InputCatalogue(object):
                 break
 
         if len(self) < self.nBundles:
-            warnings.warn('even after autocomplete, {0} '.format(
-                self.nBundles-len(self)) + 'bundles are still unassigned.',
-                GohanUserWarning)
+            log.important('even after autocomplete, {0} '.format(
+                self.nBundles-len(self)) + 'bundles are still unassigned.')
 
     def _getOptimalTarget(self, candidateTargets, bundleSize):
 
@@ -371,9 +370,9 @@ class InputCatalogue(object):
 
         self.data.add_row(newRow)
 
-        log.info('autocomplete: added target with mangaid=' +
-                 target['MANGAID'] +
-                 ' (ifudesignsize=' + str(int(bundleSize)) + ')')
+        log.important('autocomplete: added target with mangaid=' +
+                      target['MANGAID']  + ' (ifudesignsize=' +
+                      str(int(bundleSize)) + ')')
 
     def decollision(self, decollCatalogue, failOnCollision=False):
 
@@ -549,7 +548,7 @@ class InputCatalogue(object):
         self.checkIFUCoords()
 
         if len(self) < self.nBundles:
-            warnings.warn('number of targets < number of IFUs '
+            log.important('number of targets < number of IFUs '
                           '({0}<{1})'.format(len(self), self.nBundles))
 
     def checkIFUCoords(self):
@@ -575,7 +574,7 @@ class InputCatalogue(object):
                     target[ifuCol] = target[col]
                 elif target[ifuCol] > -100 and target[ifuCol] != target[col]:
                     target[col] = target[ifuCol]
-                    log.info('setting {0} from ifu_{0} for target'.format(
+                    log.important('setting {0} from ifu_{0} for target'.format(
                         col) + ' with mangaid={0}'.format(target['mangaid']))
 
     def convertColumns(self):
@@ -669,10 +668,9 @@ class InputCatalogue(object):
                 pair.lower()))
 
         if self.data.meta['fieldname'] == 'NA':
-            if self.tileid is not None:
-                self.data.meta['fieldname'] = self.tileid
-            elif self.data.meta['tileid'] != 'None':
-                self.data.meta['fieldname'] = self.data.meta['tileid']
+            self.data.meta['fieldname'] = \
+                'MJ{0:.5f}{1:+.5f}'.format(
+                    self.data.meta['racen'], self.data.meta['deccen'])
 
     def conv(self, key):
         return self.conversions[key] if key in self.conversions else key
@@ -700,7 +698,7 @@ class InputCatalogue(object):
     def logCollision(self, text):
 
         if self.type == 'SCI':
-            warnings.warn(text, GohanUserWarning)
+            warnings.warn(text, GohanCollisionWarning)
         else:
             log.info(text)
 

@@ -19,12 +19,23 @@ import shutil as sh
 # Initialize by calling initLog()
 log = None
 
+# Adds custom log level for important messages
+IMPORTANT = 25
+logging.addLevelName(IMPORTANT, 'IMPORTANT')
+
+
+def important(self, message, *args, **kws):
+    self._log(IMPORTANT, message, args, **kws)
+
+logging.Logger.important = important
+
 
 def initLog():
 
     from .. import config
 
     logging.setLoggerClass(GohanLogger)
+
     log = logging.getLogger('Gohan')
     log._set_defaults(
         logLevel=config['logging']['logLevel'].upper(),
@@ -61,6 +72,9 @@ class MyFormatter(logging.Formatter):
 
         elif record.levelno == logging.WARNING:
             self._fmt = MyFormatter.warning_fmp
+
+        elif record.levelno == IMPORTANT:
+            self._fmt = MyFormatter.info_fmt
 
         # Call the original formatter class to do the grunt work
         result = logging.Formatter.format(self, record)
@@ -114,8 +128,10 @@ class GohanLogger(Logger):
             print(record.levelname, end='')
         elif(record.levelno < logging.INFO):
             colourPrint(record.levelname, 'magenta', end='')
-        elif(record.levelno < logging.WARN):
+        elif(record.levelno < IMPORTANT):
             colourPrint(record.levelname, 'blue', end='')
+        elif(record.levelno < logging.WARNING):
+            colourPrint(record.levelname, 'lightmagenta', end='')
         elif(record.levelno < logging.ERROR):
             colourPrint(record.levelname, 'brown', end='')
         else:
