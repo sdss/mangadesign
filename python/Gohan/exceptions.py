@@ -21,7 +21,7 @@ class GohanError(Exception):
     pass
 
 
-class GohanNotImplemented():
+class GohanNotImplemented(GohanError):
     """A class for exceptions about functionalities not yet implemented."""
     pass
 
