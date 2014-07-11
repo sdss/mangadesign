@@ -19,6 +19,8 @@ python/Gohan/etc/BOSS_SNvsFibMag2.dat -text
 python/Gohan/etc/mangaDefinition_Default.par -text
 python/Gohan/etc/mangaInput_Default.par -text
 python/Gohan/etc/manga_simbmap_127.par -text
+python/Gohan/examples/generate2014.07.x.apogee2-manga.py -text
+python/Gohan/examples/generate_2014.07.x.manga-apogee2.py -text
 python/Gohan/exceptions.py -text
 python/Gohan/helpers/createAPASSCatalogue.py -text
 python/Gohan/helpers/createStandardCatalogue.py -text
