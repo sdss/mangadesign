@@ -30,7 +30,8 @@ def processField(tt, tileID, catID, idx=1):
     tNew.remove_columns(psfColnames)
 
     psfs = [row._data for row in tt[psfColnames]]
-    tNew.add_column(table.Column(data=psfs, name='psf', dtype='5f8'), index=3)
+    tNew.add_column(table.Column(data=psfs, name='psfmag', dtype='5f8'),
+                    index=3)
 
     sdss = tt['SDSS']
     tNew.remove_column('SDSS')
@@ -43,6 +44,9 @@ def processField(tt, tileID, catID, idx=1):
         tNew.add_column(table.Column(data=len(tt) * [tileID],
                                      name='tileid', dtype='S10'), index=0)
 
+    tNew.add_column(table.Column(data=len(tNew) * [23], name='manga_target1',
+                                 dtype=int))
+
     tNew.add_column(table.Column(data=np.arange(len(tt))+1, name='priority',
                                  dtype=int))
 
@@ -50,6 +54,9 @@ def processField(tt, tileID, catID, idx=1):
                 range(idx, idx+len(tt))]
     tNew.add_column(table.Column(mangaIDs, name='mangaid', dtype='S10'),
                     index=0)
+    tNew.add_column(table.Column(
+        data=np.zeros((len(tt), 7)),
+        name='extinction'))
 
     return tNew, idx+len(tt)
 
@@ -72,7 +79,9 @@ def createStandardCatalogue(catID, outName, files=[]):
             for row in tNew:
                 std.add_row(row)
 
-    std.rename_column('DEC', 'Dec')
+    for col in std.colnames:
+        if col != col.upper():
+            std.rename_column(col, col.upper())
 
     if os.path.exists(outName):
         os.remove(outName)
