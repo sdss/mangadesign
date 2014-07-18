@@ -137,10 +137,11 @@ class GohanLogger(Logger):
         else:
             colourPrint(record.levelname, 'red', end='')
 
-        if not hasattr(record, 'origin') or record.origin == '':
-            record.message = '{0}'.format(record.msg)
-        else:
-            record.message = '{0} [{1:s}]'.format(record.msg, record.origin)
+        record.message = '{0}'.format(record.msg)
+        # if not hasattr(record, 'origin') or record.origin == '':
+        #     record.message = '{0}'.format(record.msg)
+        # else:
+        #     record.message = '{0} [{1:s}]'.format(record.msg, record.origin)
 
         if len(record.message) > 70:
             tw = TextWrapper()
