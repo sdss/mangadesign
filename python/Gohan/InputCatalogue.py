@@ -53,6 +53,7 @@ defaultValues = {
     'ifudesign': -999,
     'ifudesignsize': -999,
     'manga_target1': 0,
+    'manga_target2': 0,
     'psfmag': [0.0, 0.0, 0.0, 0.0, 0.0],
     'sourcetype': None
 }
@@ -540,6 +541,10 @@ class InputCatalogue(object):
                 self.add_col(
                     defaultValues['manga_target1'], 'manga_target1', int)
                 log.debug('Automatically added column for manga_target1.')
+            elif col == 'manga_target2':
+                self.add_col(
+                    defaultValues['manga_target2'], 'manga_target2', int)
+                log.debug('Automatically added column for manga_target2.')
             elif col == 'psfmag':
                 self.add_col([defaultValues['psfmag']
                               for ii in range(len(self))], 'psfmag')

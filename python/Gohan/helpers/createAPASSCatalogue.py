@@ -39,8 +39,8 @@ def createAPASSCatalogue(catID, outName, cat):
                 range(1, 1+len(catTable))]
     catTable.add_column(table.Column(mangaIDs, name='MANGAID', dtype='S10'),
                         index=0)
-    catTable.add_column(table.Column(len(catTable) * [25],
-                                     name='MANGA_TARGET1', dtype=int))
+    catTable.add_column(table.Column(len(catTable) * [2**25],
+                                     name='MANGA_TARGET2', dtype=int))
 
     extData = []
     extFactors = np.array([0.0, 0.0, 0.0, 3.793, 2.751, 2.086, 0.0])

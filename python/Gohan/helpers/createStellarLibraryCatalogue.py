@@ -26,7 +26,7 @@ def createStellarLibraryCatalogue(catID, outName, files=[]):
         files = glob.glob('./*.cat')
 
     names = ['RA', 'DEC', 'PRIORITYTYPE', 'STDTYPE', 'SUBTYPE', 'PRIORITYSUB',
-             'MANGA_TARGET1', 'PRIORITY', 'FIELDNAME']
+             'MANGA_TARGET2', 'PRIORITY', 'FIELDNAME']
     stellTable = table.Table(None, names=names,
                              dtype=[float, float, 'S10', 'S3', 'S1', int,
                                     int, int, 'S10'])
@@ -45,21 +45,21 @@ def createStellarLibraryCatalogue(catID, outName, files=[]):
         tmpTable.add_column(table.Column(subType, 'SUBTYPE'))
         tmpTable.add_column(table.Column(priorityInSubType, 'PRIORITYSUB'))
 
-        mangaTarget1 = []
+        mangaTarget2 = []
         for ss in stdType:
             if 'OPT' in ss:
-                maskbit = 10
+                maskbit = 2
             elif 'NIR' in ss:
-                maskbit = 11
+                maskbit = 3
             else:
                 raise ValueError('Priority type not recognised.')
-            mangaTarget1.append(maskbit)
+            mangaTarget2.append(2**maskbit)
 
-        tmpTable.add_column(table.Column(mangaTarget1, 'MANGA_TARGET1'))
+        tmpTable.add_column(table.Column(mangaTarget2, 'MANGA_TARGET2'))
 
         fieldName = os.path.basename(file).split('_')[0]
 
-        tmpTable.sort(['MANGA_TARGET1', 'SUBTYPE', 'PRIORITYSUB'])
+        tmpTable.sort(['MANGA_TARGET2', 'SUBTYPE', 'PRIORITYSUB'])
 
         for nn, row in enumerate(tmpTable):
             stellTable.add_row(list(row) + [nn+1, fieldName.strip()])

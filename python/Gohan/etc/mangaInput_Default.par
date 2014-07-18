@@ -25,7 +25,8 @@ typedef struct {
     long ifudesign;
     long ifudesignsize;
     long manga_target1;
+    long manga_target2;
     long priority;
 } MANGAINPUT;
 
-MANGAINPUT 15.0 10.0 '12-123' SCI {0.0 0.0 0.0 0.0 0.0} 12701 127 1 1
+MANGAINPUT 15.0 10.0 '12-123' SCI {0.0 0.0 0.0 0.0 0.0} 12701 127 0 0 1

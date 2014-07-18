@@ -337,11 +337,13 @@ class PlateInput(list):
             for key in defDict:
                 data = self._setValue(data, key, defDict[key])
 
-            data.append('\n')
-            data.append('# Skies for MaNGA')
-            data.append('plateDesignSkies MANGA_SINGLE')
-            data.append('skyType SDSS')
-            data.append('\n')
+            if self._setValue(data, 'plateDesignSkies') is None and \
+                    self._setValue(data, 'skyType') is None:
+                data.append('\n')
+                data.append('# Skies for MaNGA')
+                data.append('plateDesignSkies MANGA_SINGLE')
+                data.append('skyType SDSS')
+                data.append('\n')
 
             return data
 
@@ -358,6 +360,8 @@ class PlateInput(list):
     def _setValue(self, data, key, value=None, idx=-1, noWarn=False):
 
         for nn, line in enumerate(data):
+            if len(line) == 0:
+                continue
             if line[0] == '#':
                 continue
             if (key.lower() + ' ') in line.lower():
@@ -372,6 +376,9 @@ class PlateInput(list):
                     data[nn] = line[0:line.find(' ')] + ' ' + str(value)
                     return data
 
+        if value is None:
+            return None
+
         if idx == -1:
             data.append(key + ' ' + str(value))
         else:
@@ -382,6 +389,8 @@ class PlateInput(list):
     def _findKey(self, data, key):
 
         for nn, line in enumerate(data):
+            if len(line) == 0:
+                continue
             if line[0] == '#':
                 continue
             if (key.lower() + ' ') in line.lower():

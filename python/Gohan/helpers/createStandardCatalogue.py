@@ -44,7 +44,8 @@ def processField(tt, tileID, catID, idx=1):
         tNew.add_column(table.Column(data=len(tt) * [tileID],
                                      name='tileid', dtype='S10'), index=0)
 
-    tNew.add_column(table.Column(data=len(tNew) * [23], name='manga_target1',
+    tNew.add_column(table.Column(data=len(tNew) * [2**23],
+                                 name='manga_target2',
                                  dtype=int))
 
     tNew.add_column(table.Column(data=np.arange(len(tt))+1, name='priority',
