@@ -43,7 +43,11 @@ platePlansTemplate = """PLATEPLANS {plateID} {designID} {locationID} -1
 plateDefinitionTemplate = readPath('+etc/mangaDefinition_Default.par')
 
 
-cartmap = yanny.yanny(os.path.expandvars(config['cartmap']), np=True)['CMAP']
+try:
+    cartmap = yanny.yanny(
+        os.path.expandvars(config['cartmap']), np=True)['CMAP']
+except:
+    cartmap = None
 
 
 def ifuDesign2Size(ifudesign):
