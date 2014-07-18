@@ -44,6 +44,8 @@ plateTypes:
         drillstyle: manga
 
 platelist: $PLATELIST_DIR
+mangacore: $MANGACORE_DIR
+cataloguePath: $MANGASAMPLE_DIR
 
 anchorBlocks:
     anchors: ['NE', 'SE', 'NW', 'SW']
