@@ -23,9 +23,14 @@ python/Gohan/examples/generate2014.07.x.apogee2-manga.py -text
 python/Gohan/examples/generate_2014.07.x.manga-apogee2.py -text
 python/Gohan/exceptions.py -text
 python/Gohan/helpers/__init__.py -text
+python/Gohan/helpers/catalogueParsers/__init__.py -text
+python/Gohan/helpers/catalogueParsers/catalogue12Parser.py -text
+python/Gohan/helpers/catalogueParsers/catalogue1Parser.py -text
+python/Gohan/helpers/catalogueParsers/utils.py -text
 python/Gohan/helpers/createAPASSCatalogue.py -text
 python/Gohan/helpers/createStandardCatalogue.py -text
 python/Gohan/helpers/createStellarLibraryCatalogue.py -text
+python/Gohan/helpers/runMaNGAPostDesign.py -text
 python/Gohan/utils/Staralt.py -text
 python/Gohan/utils/__init__.py -text
 python/Gohan/utils/colorama/__init__.py -text
