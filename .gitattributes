@@ -1,5 +1,6 @@
 * text=auto !eol
 bin/mangadesign_version -text
+etc/mangadesign.module -text
 perl/plateDefinition_write.pl -text
 perl/plateInputFiber_write.pl -text
 perl/plateInput_write.pl -text
