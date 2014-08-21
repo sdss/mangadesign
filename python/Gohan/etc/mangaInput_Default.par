@@ -12,7 +12,7 @@ designid         None
 instrument       MANGA
 locationid       None
 targettype       None
-tileid           -1
+manga_tileid           -1
 offset           0
 fieldname        NA
 

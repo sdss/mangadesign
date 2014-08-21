@@ -132,7 +132,10 @@ class PlateInput(list):
 
         if len(self) == 1:
             return self[0].struct1
-        return table.vstack([pp.struct1 for pp in self],
+        return table.vstack([pp.struct1[
+                             ['mangaid', 'ra', 'dec',
+                              'ifudesign', 'ifudesignsize']]
+                            for pp in self],
                             metadata_conflicts='silent')
 
     @struct1.setter
@@ -156,8 +159,9 @@ class PlateInput(list):
 
         """
 
-        designName = '{0:04d}'.format(int(self[0].meta['tileid'])) \
-            if int(self[0].meta['tileid']) != -1 else self[0].meta['fieldname']
+        designName = '{0:04d}'.format(int(self[0].meta['manga_tileid'])) \
+            if int(self[0].meta['manga_tileid']) != -1 else \
+            self[0].meta['fieldname']
 
         if filename is None:
             filename = 'plateIFUs_{0}_{1:04d}.pdf'.format(
@@ -830,8 +834,8 @@ class PlateInputBase(object):
 
     def getDefaultFilename(self):
 
-        designName = '{0:04d}'.format(int(self.meta['tileid'])) \
-            if int(self.meta['tileid']) != -1 else self.meta['fieldname']
+        designName = '{0:04d}'.format(int(self.meta['manga_tileid'])) \
+            if int(self.meta['manga_tileid']) != -1 else self.meta['fieldname']
 
         template = 'manga{type}_{designName:s}_{designid:04d}.par'.format(
             type=self.inputCatalogue.meta['targettype'].title(),

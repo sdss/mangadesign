@@ -128,7 +128,7 @@ class InputCatalogue(object):
                  removeSuperfluous=False, verbose=True,
                  decollision=False, failOnCollision=False,
                  warnOnCollision=True,
-                 autocomplete=True, **kwargs):
+                 autocomplete=False, **kwargs):
 
         log.setVerbose(verbose)
 
@@ -503,13 +503,13 @@ class InputCatalogue(object):
 
     def _createData(self, data):
 
-        tileIDCol = self.conv('tileid')
+        tileIDCol = self.conv('manga_tileid')
 
         if self.tileid is not None:
-            log.info('Only rows with tileid={0} have been selected'.format(
+            log.info('Only rows with manga_tileid={0} have been selected'.format(
                 self.tileid))
             if tileIDCol not in data.dtype.names:
-                raise GohanError('No tileid column found in the data. Try '
+                raise GohanError('No manga_tileid column found in the data. Try '
                                  'using conversions to specify it.')
             data = data[np.where(data[tileIDCol] == self.tileid)]
 
@@ -665,9 +665,9 @@ class InputCatalogue(object):
                 if self.tileid is not None:
                     self.data.meta['locationid'] = self.tileid
 
-            elif pair.lower() == 'tileid':
+            elif pair.lower() == 'manga_tileid':
                 if self.tileid is not None:
-                    self.data.meta['tileid'] = self.tileid
+                    self.data.meta['manga_tileid'] = self.tileid
 
             if pair.lower() == 'designid':
                 continue
@@ -699,7 +699,7 @@ class InputCatalogue(object):
             raise GohanError('The file to read does not exists.')
 
         data = table.Table.read(path, format=format)
-        tileid = data.meta['tileid']
+        tileid = data.meta['manga_tileid']
         type = [key for key in targettypeDic
                 if targettypeDic[key] == data.meta['targettype']][0]
 
@@ -708,13 +708,15 @@ class InputCatalogue(object):
 
     def logCollision(self, text, warnOnCollision=True):
 
-        if self._warnOnCollision:
+        if self._warnOnCollision is True:
             if self.type == 'SCI':
                 warnings.warn(text, GohanCollisionWarning)
             else:
-                log.info(text)
+                log.important(text)
+        elif self._warnOnCollision is False:
+            log.important(text)
         else:
-            log.info(text)
+            pass
 
         if self._failOnCollision:
             raise GohanError('exiting because there was a target rejection '
