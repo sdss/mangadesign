@@ -26,10 +26,10 @@ def createStellarLibraryCatalogue(catID, outName, files=[]):
         files = glob.glob('./*.cat')
 
     names = ['RA', 'DEC', 'PRIORITYTYPE', 'STDTYPE', 'SUBTYPE', 'PRIORITYSUB',
-             'MANGA_TARGET2', 'PRIORITY', 'FIELDNAME']
+             'MANGA_TARGET2']
     stellTable = table.Table(None, names=names,
                              dtype=[float, float, 'S10', 'S3', 'S1', int,
-                                    int, int, 'S10'])
+                                    int])
 
     for file in files:
         tmpTable = table.Table.read(file, format='ascii',
@@ -51,18 +51,18 @@ def createStellarLibraryCatalogue(catID, outName, files=[]):
                 maskbit = 2
             elif 'NIR' in ss:
                 maskbit = 3
+            elif 'PAR' in ss:
+                maskbit = 4
             else:
                 raise ValueError('Priority type not recognised.')
             mangaTarget2.append(2**maskbit)
 
         tmpTable.add_column(table.Column(mangaTarget2, 'MANGA_TARGET2'))
 
-        fieldName = os.path.basename(file).split('_')[0]
-
         tmpTable.sort(['MANGA_TARGET2', 'SUBTYPE', 'PRIORITYSUB'])
 
         for nn, row in enumerate(tmpTable):
-            stellTable.add_row(list(row) + [nn+1, fieldName.strip()])
+            stellTable.add_row(list(row))
 
     mangaID = ['{0:d}-{1:d}'.format(int(catID), nn+1)
                for nn in range(len(stellTable))]

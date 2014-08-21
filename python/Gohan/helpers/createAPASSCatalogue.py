@@ -32,8 +32,8 @@ def createAPASSCatalogue(catID, outName, cat):
         psf.append([0.0, row['G_UNCOR'], row['R_UNCOR'], row['I_UNCOR'], 0.0])
 
     catTable.add_column(table.Column(psf, 'PSFMAG'))
-    catTable.add_column(table.Column(np.arange(1, len(catTable)+1),
-                                     'PRIORITY'))
+    # catTable.add_column(table.Column(np.arange(1, len(catTable)+1),
+    #                                  'PRIORITY'))
 
     mangaIDs = ['{0}-{1}'.format(catID, ii) for ii in
                 range(1, 1+len(catTable))]
@@ -43,7 +43,7 @@ def createAPASSCatalogue(catID, outName, cat):
                                      name='MANGA_TARGET2', dtype=int))
 
     extData = []
-    extFactors = np.array([0.0, 0.0, 0.0, 3.793, 2.751, 2.086, 0.0])
+    extFactors = np.array([0.0, 3.793, 2.751, 2.086, 0.0])
     for ebv in catTable['EBV']:
         extData.append(extFactors * ebv)
 
