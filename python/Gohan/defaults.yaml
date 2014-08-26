@@ -43,7 +43,8 @@ plateTypes:
         programname: disk2
         drillstyle: manga
 
-sdss3work:
+nsaImaging:
+    baseURL: http://data.sdss3.org/sas/ebosswork/manga/atlas/v1/detect/v1_0/
     username: sdss3
     password: 4-surveys
 

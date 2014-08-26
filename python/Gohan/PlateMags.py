@@ -28,6 +28,7 @@ import cStringIO
 import bz2
 import warnings
 import shutil as sh
+from urlparse import urlparse
 
 from .exceptions import GohanWarning, GohanError
 from . import log, config, readPath
@@ -80,14 +81,13 @@ NIFUS = np.sum(config['IFUs'].values())
 
 __ALL__ = ['PlateMags', 'PlateMagsIFU']
 
-BASE_URL = 'http://data.sdss3.org/sas/ebosswork/' + \
-    'manga/atlas/v1/detect/v1_0/{0}/'
-BASE_URI = 'http://data.sdss3.org/sas'
+BASE_URL = os.path.join(config['nsaImaging']['baseURL'], '{0}/')
+BASE_URI = '{uri.scheme}://{uri.netloc}/'.format(uri=urlparse(BASE_URL))
 
 password_mgr = urllib2.HTTPPasswordMgrWithDefaultRealm()
 password_mgr.add_password(realm=None, uri=BASE_URI,
-                          user=config['sdss3work']['username'],
-                          passwd=config['sdss3work']['password'])
+                          user=config['nsaImaging']['username'],
+                          passwd=config['nsaImaging']['password'])
 auth_handler = urllib2.HTTPBasicAuthHandler(password_mgr)
 opener = urllib2.build_opener(auth_handler)
 urllib2.install_opener(opener)
@@ -511,7 +511,6 @@ class PlateMagsIFU(object):
 
         parentURL = baseURL + \
             '/atlases/{0}/{1}-parent-{0}.fits.gz'.format(pID, IAUName)
-        print(parentURL)
         varURL = baseURL + \
             '/atlases/{0}/{1}-ivar-{0}.fits.gz'.format(pID, IAUName)
         bpsfURL = [baseURL + '/{0}-{1}-bpsf.fits.gz'.format(IAUName, band)
