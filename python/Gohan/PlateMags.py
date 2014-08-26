@@ -29,7 +29,7 @@ import bz2
 import warnings
 import shutil as sh
 
-from .exceptions import GohanWarning
+from .exceptions import GohanWarning, GohanError
 from . import log, config, readPath
 from .utils import pywcsgrid2 as pw2
 from .utils import getSDSSRun
@@ -365,10 +365,8 @@ class PlateMagsIFU(object):
 
         else:
 
-            log.debug(
-                'no available data for {0}'.format(
-                    self.MaNGAID.strip()),
-                quiet=False)
+            log.important(
+                'no available data for {0}'.format(self.MaNGAID.strip()))
 
         if not keepImages:
             self._deleteImages()
@@ -632,8 +630,7 @@ class PlateMagsIFU(object):
             try:
                 self._getSDSSImage(run, rerun, camcol, field)
             except:
-                log.debug('images could not be downloaded.')
-                return False
+                raise GohanError('images could not be downloaded.')
 
         self.dataOrigin = 'SDSS'
 
