@@ -67,7 +67,7 @@ class InputCatalogue(object):
 
     Parameters
     ----------
-    tileID : int or None, optional
+    manga_tileid : int or None, optional
         The tile id of the field. If an integer, only the rows matching that
         tileID will be used. If None, all the rows in the master catalogue
         will be used.
@@ -123,8 +123,8 @@ class InputCatalogue(object):
 
     """
 
-    def __init__(self, tileid=None, input=None, format='file', type='SCI',
-                 conversions=None, fill=False, meta=None,
+    def __init__(self, manga_tileid=None, input=None, format='file',
+                 type='SCI', conversions=None, fill=False, meta=None,
                  removeSuperfluous=False, verbose=True,
                  decollision=False, failOnCollision=False,
                  warnOnCollision=True,
@@ -132,7 +132,7 @@ class InputCatalogue(object):
 
         log.setVerbose(verbose)
 
-        self.tileid = tileid
+        self.manga_tileid = manga_tileid
         self.format = format
         self.type = type.upper()
         self.input = input
@@ -174,6 +174,7 @@ class InputCatalogue(object):
         if self.fill is True:
             warnings.warn('fill=True not yet implemented. Setting fill=False',
                           GohanUserWarning)
+            self.fill = False
 
         if self.format == 'database':
             raise GohanNotImplemented('The DB access is not yet implemented.')
@@ -503,13 +504,13 @@ class InputCatalogue(object):
 
     def _createData(self, data):
 
-        tileIDCol = self.conv('manga_tileid')
+        tileIDCol = self.conv('tileid')
 
         if self.tileid is not None:
-            log.info('Only rows with manga_tileid={0} have been selected'.format(
+            log.info('Only rows with tileid={0} have been selected'.format(
                 self.tileid))
             if tileIDCol not in data.dtype.names:
-                raise GohanError('No manga_tileid column found in the data. Try '
+                raise GohanError('No tileid column found in the data. Try '
                                  'using conversions to specify it.')
             data = data[np.where(data[tileIDCol] == self.tileid)]
 
@@ -662,12 +663,12 @@ class InputCatalogue(object):
                 log.debug('Pair targettype set by using type keyword.')
 
             elif pair.lower() == 'locationid':
-                if self.tileid is not None:
-                    self.data.meta['locationid'] = self.tileid
+                if self.manga_tileid is not None:
+                    self.data.meta['locationid'] = self.manga_tileid
 
             elif pair.lower() == 'manga_tileid':
                 if self.tileid is not None:
-                    self.data.meta['manga_tileid'] = self.tileid
+                    self.data.meta['manga_tileid'] = self.manga_tileid
 
             if pair.lower() == 'designid':
                 continue
@@ -699,7 +700,7 @@ class InputCatalogue(object):
             raise GohanError('The file to read does not exists.')
 
         data = table.Table.read(path, format=format)
-        tileid = data.meta['manga_tileid']
+        tileid = data.meta['tileid']
         type = [key for key in targettypeDic
                 if targettypeDic[key] == data.meta['targettype']][0]
 

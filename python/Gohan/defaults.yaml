@@ -58,6 +58,13 @@ IFUs: {19: 2, 37: 4, 61: 4, 91: 2, 127: 5}
 miniBundles: {7: 12}
 skies: {1: 96}
 
-reffField: 'PETROTH50'
+mangaInputStructure: 'MANGAINPUT'
 
+plateMags:
+    filters : ['g', 'r', 'i', 'z']
+    BOSS_SN: +etc/BOSS_SNvsFibMag2.dat
+    simbmap: $MANGACORE_DIR/metrology/fiducial/manga_simbmap_127.par
+    targetSeeing: 2
+
+reffField: 'PETROTH50'
 cartmap: $MANGACORE_DIR/cartmaps/cartmap-02-56687.par

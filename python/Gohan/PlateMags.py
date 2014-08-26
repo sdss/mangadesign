@@ -14,6 +14,8 @@ Revision history:
       to download SDSS images.
     3 March 2014: J. Sánchez-Gallego
       Added documentation.
+    25 August 2014: J. Sánchez-Gallego
+      General update. Now the input is a plateInput file or a design ID.
 
 """
 
@@ -21,48 +23,70 @@ import numpy as np
 import tempfile
 import urllib2
 import urllib
-from astropy.io import fits
 import os
 import cStringIO
 import bz2
 import warnings
-from .exceptions import GohanWarning, GohanInfo
+import shutil as sh
+
+from .exceptions import GohanWarning
+from . import log, config, readPath
+from .utils import pywcsgrid2 as pw2
 from .utils import getSDSSRun
-from .utils.colorama import Fore, Style
+
+from sdss.utilities.yanny import yanny, write_ndarray_to_yanny
 from astropy import wcs
+from astropy.io import fits
 from scipy.ndimage.filters import gaussian_filter
 from scipy.misc import imsave
 from scipy import interpolate
 from astropy.modeling import models, fitting
 from astropy import table
-from .utils import write_ndarray_to_yanny
-import shutil as sh
 from matplotlib import pyplot as plt
 import mpl_toolkits.axes_grid1.axes_grid as axes_grid
-from .utils import pywcsgrid2 as pw2
 from matplotlib.patches import Ellipse
 from matplotlib.collections import EllipseCollection
 import gzip
 from matplotlib.backends.backend_pdf import PdfPages
+
 import matplotlib
 matplotlib.rc('font', size=10)
 matplotlib.rc('text', usetex=True)
+plt.ioff()
 
-from .defaults import MANGA_SAMPLE, FILTERS, NFILTERS, NSAFILTERPOS
-from .defaults import MANGACORE, UNDEFINED
-from .defaults import BOSS_SN, SIMBMAP
+
+MANGA_SAMPLE = table.Table.read(
+    os.path.expandvars(config['files']['sciSample']), format='fits')
+
+MANGACORE = readPath(config['mangacore'])
+
+FILTERS = config['plateMags']['filters']
+NFILTERS = len(FILTERS)
+NSAFILTERPOS = {'u': 0, 'g': 1, 'r': 2, 'i': 3, 'z': 4}
+
+TARGET_SEEING = config['plateMags']['targetSeeing']
+
+SIMBMAP = table.Table(yanny(readPath(config['plateMags']['simbmap']),
+                            np=True)['SIMBMAP'])
+
+BOSS_SN_DATA = table.Table.read(
+    readPath(config['plateMags']['BOSS_SN']),
+    format='ascii.commented_header')
+
+BOSS_SN = interpolate.interp1d(BOSS_SN_DATA['fiber2flux'][::-1],
+                               BOSS_SN_DATA['sn_hour'][::-1])
+
+NIFUS = np.sum(config['IFUs'].values())
 
 __ALL__ = ['PlateMags', 'PlateMagsIFU']
 
 BASE_URL = 'http://sdss.physics.nyu.edu/mblanton/v1b/detect/v1b_0/{0}/'
 
-TARGET_SEEING = 2.
-
 PLATE_MAGS_TABLE = table.Table(
     None,
     names=['IFUDESIGN', 'MANGAID', 'FNUMDESIGN',
            'RAOFF', 'DECOFF', 'FIBER2MAG'],
-    dtype=[int, 'S20', int, 'f8', 'f8', ('f8', NFILTERS())])
+    dtype=[int, 'S20', int, 'f8', 'f8', ('f8', NFILTERS)])
 
 TMP_DIR = tempfile.gettempdir()
 
@@ -94,26 +118,30 @@ class PlateMags(list):
 
     Parameters
     ----------
-    plateInput : `PlateInput` object
-        An instance of PlateInput.
+    plateInput : str
+        The path to the plateInput file to use.
     kwarg : dict
         Keyword arguments to be passed to PlateMagsIFU.
 
     """
 
-    def __init__(self, plateInput, **kwargs):
+    def __init__(self, plateInput, designid=None, **kwargs):
 
         self.plateInput = plateInput
-        self.struct1 = self.plateInput.struct1
+        self.struct1 = table.Table(
+            yanny(self.plateInput, np=True)[config['mangaInputStructure']])
         self.kwargs = kwargs
 
-        self.verbose = False
-        if 'verbose' in self.kwargs:
-            self.verbose = self.kwargs['verbose']
+        self.plateMags = None
 
-        plateMagsIFUList = [PlateMagsIFU(row, **kwargs)
+        if designid is not None:
+            self.designid = designid
+        else:
+            self.designid = int(self.plateInput.split('_')[-1][0:4])
+
+        plateMagsIFUList = [PlateMagsIFU(row, **self.kwargs)
                             for row in self.struct1
-                            if row['IFUDESIGNSIZE'] >= IFU_MIN_SIZE]
+                            if row['ifudesignsize'] >= IFU_MIN_SIZE]
 
         list.__init__(self, plateMagsIFUList)
 
@@ -124,7 +152,7 @@ class PlateMags(list):
         """Returns a list of preimage filenames for all IFUs."""
         return [ss.preImage for ss in self if ss.preImage is not None]
 
-    def plot(self, filename=None, copyToRepo=False, moveToRepo=False):
+    def plot(self, filename=None, toRepo=False):
         """Plots the bundle position and flux for each target.
 
         This method recursively calls `PlateMags.plot()` for each target
@@ -139,10 +167,10 @@ class PlateMags(list):
         """
 
         if filename is None:
-            filename = 'plateMags-{0:04d}.pdf'.format(self.plateInput.designid)
+            filename = 'plateMags-{0:04d}.pdf'.format(self.designid)
 
-        # plt.cla()
-        # plt.clf()
+        plt.cla()
+        plt.clf()
 
         pp = PdfPages(filename)
 
@@ -155,12 +183,10 @@ class PlateMags(list):
 
         pp.close()
 
-        self.printInfo('plot saved as {0}'.format(filename))
+        log.info('plot saved as {0}'.format(filename))
 
-        if copyToRepo:
+        if toRepo:
             self._toRepo(filename)
-        elif moveToRepo:
-            self._toRepo(filename, command=sh.move)
 
     def _createPlateMags(self):
         """Creates a `Table` with the plateMags columns."""
@@ -172,8 +198,8 @@ class PlateMags(list):
             if ifu.fluxTable is None:
                 missingIFUs += 1
                 continue
-            ifuDesign = ifu.row['IFUDESIGN']
-            mangaID = ifu.row['MANGAID']
+            ifuDesign = ifu.row['ifudesign']
+            mangaID = ifu.row['mangaid']
             for fibre in ifu.fluxTable:
                 fNumDesign = fibre['fnumdesign']
                 raOff = fibre['raoff']
@@ -191,7 +217,7 @@ class PlateMags(list):
         self._missingIFUs = missingIFUs
         del plateMags
 
-    def write(self, filename=None, copyToRepo=False, moveToRepo=False):
+    def write(self, filename=None, toRepo=False):
         """Writes a plateMags file to disk.
 
         Parameters
@@ -208,12 +234,9 @@ class PlateMags(list):
         if len(self.plateMags) == 0:
             raise ValueError('plateMags has not values.')
 
-        if copyToRepo and moveToRepo:
-            copyToRepo = False
-
         if filename is None:
             plateMagsFilename = 'plateMags-{0:04d}.par'.format(
-                self.plateInput.designid)
+                self.designid)
         else:
             plateMagsFilename = filename
 
@@ -228,35 +251,26 @@ class PlateMags(list):
                 self._missingIFUs) + 'The remaining data has been saved.',
                 GohanWarning)
 
-        GohanInfo('plateMags saved as {0}'.format(plateMagsFilename))
+        log.info('plateMags saved as {0}'.format(plateMagsFilename))
 
-        if copyToRepo:
-            self._toRepo(plateMagsFilename, command=sh.copy)
-        if moveToRepo:
-            self._toRepo(plateMagsFilename, command=sh.move)
+        if toRepo:
+            self._toRepo(plateMagsFilename)
 
         return plateMagsFilename
 
-    def _toRepo(self, filename, command=sh.copy):
+    def _toRepo(self, filename):
         """Copies/moves a file to $MANGACORE/plateMags/ """
 
-        plateMagsPath = MANGACORE + '/platedesign/platemags/'
-        dDir = 'D{0:d}XX/'.format(int(self.plateInput.designid/100.))
+        plateMagsPath = os.path.join(MANGACORE, '/platedesign/platemags/')
+        dDir = 'D{0:d}XX/'.format(int(self.designid/100.))
         plateMagsPath += dDir
 
         if not os.path.exists(plateMagsPath):
             os.makedirs(plateMagsPath)
 
-        command(filename, plateMagsPath + filename)
+        sh.copy(filename, plateMagsPath + filename)
 
-        if command == sh.copy:
-            GohanInfo('{0} copied to repo.'.format(filename))
-        elif command == sh.move:
-            GohanInfo('{0} moved to repo.'.format(filename))
-
-    def printInfo(self, text, quiet=True):
-        if self.verbose or not quiet:
-            GohanInfo(text)
+        log.info('{0} copied to repo.'.format(filename))
 
 
 class PlateMagsIFU(object):
@@ -306,9 +320,6 @@ class PlateMagsIFU(object):
     createPreimages : bool, optional
         If True (the default), MaNGA preimaging files are saved to disk.
         These preimages are not deleted even if ``keepImages=True``.
-    verbose : bool, optional
-        Sets the level of information printed to stdout. Note that warnings
-        are also controlled by the standard Python `warnings` library.
     overwrite : bool, optional
         If True, imaging data is redownloaded and rewritten even if imaging
         with matching filenames is found. Otherwise, the already existing data
@@ -317,17 +328,13 @@ class PlateMagsIFU(object):
     """
 
     def __init__(self, struct1Row, keepImages=False,
-                 verbose=False, overwrite=False,
-                 createPreimages=True,
-                 **kwargs):
+                 overwrite=False, createPreimages=True, **kwargs):
 
         self.row = struct1Row
-        # print self.row
-        self.RA = self.row['RA']
-        self.Dec = self.row['DEC']
-        self.MaNGAID = self.row['MANGAID'].strip()
+        self.RA = self.row['ra']
+        self.Dec = self.row['dec']
+        self.MaNGAID = self.row['mangaid'].strip()
 
-        self.verbose = verbose
         self.createPreimages = createPreimages
         self.overwrite = overwrite
 
@@ -345,9 +352,7 @@ class PlateMagsIFU(object):
         self.preimageIRG = self._tmpDir + \
             '/preimage-{0}_irg.jpg'.format(self.MaNGAID)
 
-        if self.verbose:
-            print '\n{0}MANGA-{1}{2}'.format(
-                Fore.MAGENTA, self.MaNGAID, Style.RESET_ALL)
+        log.debug('MANGAID: {0}'.format(self.MaNGAID))
 
         preimageData = self._getPreimageData()
 
@@ -360,7 +365,7 @@ class PlateMagsIFU(object):
 
         else:
 
-            self.doWarn(
+            log.debug(
                 'no available data for {0}'.format(
                     self.MaNGAID.strip()),
                 quiet=False)
@@ -391,7 +396,7 @@ class PlateMagsIFU(object):
         if os.path.exists(self.preImage) and not self.overwrite:
 
             preimageData = fits.open(self.preImage)
-            self.doWarn('using previously saved preimage data.')
+            log.debug('using previously saved preimage data.')
             if 'DSOURCE' in preimageData[1].header:
                 self.dataOrigin = preimageData[1].header['DSOURCE']
             return preimageData
@@ -410,9 +415,19 @@ class PlateMagsIFU(object):
         preimageData = self._cropHDUs(data)
 
         if self.createPreimages:
+
+            tmpNonGzip = tempfile.NamedTemporaryFile(
+                dir=self._tmpDir, suffix='.fits', delete=False)
+            preimageData.writeto(tmpNonGzip)
+            preimageData.close()
+
             preimageUnit = gzip.open(self.preImage, 'wb')
-            preimageData.writeto(preimageUnit, clobber=True)
+            tmpData = open(tmpNonGzip.name, 'rb')
+            preimageUnit.writelines(tmpData)
+            tmpData.close()
             preimageUnit.close()
+
+            os.remove(tmpNonGzip.name)
 
         # It has to be r because the astrometry of the IRG image
         # in SDSS matches the one in the r frame. In NSA all frames
@@ -426,17 +441,18 @@ class PlateMagsIFU(object):
         return preimageData
 
     def _getNSAParams(self, data):
-        """Determines if enough data is present to download NSa imaging."""
+        """Determines if enough data is present to download NSA imaging."""
 
         cols = [col.upper() for col in data.colnames]
-        neededCols = ['IAUNAME', 'SUBDIR', 'PID']
+        neededCols = ['iauname', 'subdir', 'pid']
 
         returnValues = []
 
         for neededCol in neededCols:
             if neededCol not in cols:
                 return None
-            if data[neededCol] in UNDEFINED:
+
+            if data[neededCol] in [-999, '-999', '-999.', 'NULL']:
                 return None
             returnValues.append(data[neededCol])
 
@@ -445,8 +461,7 @@ class PlateMagsIFU(object):
     def _getFromNSA(self):
         """Main routine to download NSA data for the target."""
 
-        if self.verbose:
-            print '... Trying to get NSA data.'
+        log.debug('... Trying to get NSA data.')
 
         nsaParams = self._getNSAParams(self.row)
 
@@ -458,9 +473,7 @@ class PlateMagsIFU(object):
 
         else:
 
-            self.doWarn(
-                '{0} not found in NSA.'.format(self.MaNGAID.strip()))
-
+            log.debug('{0} not found in NSA.'.format(self.MaNGAID.strip()))
             return False
 
         self._imageName = self._tmpDir + '/{0}_NSA.fits'.format(self.IAUName)
@@ -471,15 +484,16 @@ class PlateMagsIFU(object):
                 self.IAUName, self.subDir, self.pID)
 
             if nsaImageSuccess is False:
-                self.doWarn('{0} has no NSA data.'.format(self.MaNGAID))
+                log.debug('{0} has no NSA data.'.format(self.MaNGAID))
                 return False
 
         else:
 
-            self.doWarn('{0} already exists.'.format(
+            log.debug('{0} already exists.'.format(
                 os.path.basename(self._imageName)))
 
         self.dataOrigin = 'NSA'
+
         return True
 
     def getNSAImage(self, IAUName, subDir, pID):
@@ -496,7 +510,7 @@ class PlateMagsIFU(object):
 
         hdus = []
         for url in [parentURL] + [varURL] + bpsfURL:
-            hdus.append(self._getNSAHDU(url, IAUName))
+            hdus.append(self._getNSAHDU(url))
             if None in hdus:
                 return False
 
@@ -511,7 +525,7 @@ class PlateMagsIFU(object):
 
         return True
 
-    def _getNSAHDU(self, url, IAUName):
+    def _getNSAHDU(self, url):
         """Gets a NSA file."""
 
         ff = tempfile.NamedTemporaryFile(
@@ -520,7 +534,7 @@ class PlateMagsIFU(object):
         try:
             response = urllib2.urlopen(url)
         except urllib2.HTTPError:
-            self.doWarn('URL not found.')
+            log.debug('URL not found.')
             self.removeFile(ff.name)
             return None
 
@@ -545,7 +559,7 @@ class PlateMagsIFU(object):
             fullHDU.append(hdus[1][nn].copy())    # variance
             fullHDU.append(hdus[2+ii][0].copy())  # psf
 
-        for ii in range(NFILTERS()):
+        for ii in range(NFILTERS):
             fullHDU[ii*3+1].header['EXTNAME'] = '{0} img'.format(FILTERS[ii])
             fullHDU[ii*3+1].header['FLUXUNIT'] = 'nanomaggies'
             fullHDU[ii*3+2].header['EXTNAME'] = \
@@ -561,15 +575,14 @@ class PlateMagsIFU(object):
     def _cropHDUs(self, hdu):
         """Trims and HDU to the size of an IFU."""
 
-        if self.verbose:
-            print '... Creating preimage.'
+        log.debug('... Creating preimage.')
 
         newHDU = self.copyHDUList(hdu)
 
-        ra = self.row['RA']
-        dec = self.row['DEC']
+        ra = self.row['ra']
+        dec = self.row['dec']
 
-        for ii in range(NFILTERS()):
+        for ii in range(NFILTERS):
 
             imgIdx = ii*3 + 1
             varIdx = ii*3 + 2
@@ -588,7 +601,8 @@ class PlateMagsIFU(object):
                     'DSOURCE', self.dataOrigin, 'The source of the data')
 
             for nn in [imgIdx, varIdx]:
-                newHDU[nn].data = newHDU[nn].data[ymin:ymax, xmin:xmax]
+                newHDU[nn].data = np.array(
+                    newHDU[nn].data[ymin:ymax, xmin:xmax])
                 newHDU[nn].header['CRPIX1'] -= xmin
                 newHDU[nn].header['CRPIX2'] -= ymin
 
@@ -597,21 +611,20 @@ class PlateMagsIFU(object):
     def _getFromSDSS(self):
         """Determines the SDSS field for the target and gets the data."""
 
-        if self.verbose:
-            print '... Trying to get SDSS data.'
+        log.debug('... Trying to get SDSS data.')
 
         self.SDSSField = getSDSSRun(self.RA, self.Dec)
         run, rerun, camcol, field = self.SDSSField
 
         if None in [run, rerun, camcol, field]:
-            self.doWarn('galaxy not in SDSS footprint.', color=Fore.RED)
+            log.debug('galaxy not in SDSS footprint.')
             return False
 
         self._imageName = self._tmpDir + '/Field_{0}_{1}_{2}_SDSS.fits'.format(
             run, camcol, field)
 
         if os.path.exists(self._imageName) and not self.overwrite:
-            self.doWarn('{0} already exists.'.format(
+            log.debug('{0} already exists.'.format(
                 os.path.basename(self._imageName)))
 
         else:
@@ -619,10 +632,11 @@ class PlateMagsIFU(object):
             try:
                 self._getSDSSImage(run, rerun, camcol, field)
             except:
-                self.doWarn('images could not be downloaded.', color=Fore.RED)
+                log.debug('images could not be downloaded.')
                 return False
 
         self.dataOrigin = 'SDSS'
+
         return True
 
     def _getSDSSImage(self, run, rerun, camcol, field):
@@ -793,12 +807,11 @@ class PlateMagsIFU(object):
     def binData(self, data):
         """Bins the data to TARGET_SEEING using a Gaussian kernel."""
 
-        if self.verbose:
-            print '... Rebinning images.'
+        log.debug('... Rebinning images.')
 
         rebin = self.copyHDUList(data)
 
-        for ii in range(NFILTERS()):
+        for ii in range(NFILTERS):
 
             img = data[3*ii+1]
             psf = data[3*ii+3]
@@ -811,10 +824,10 @@ class PlateMagsIFU(object):
 
             if seeingArcSec < TARGET_SEEING:
 
-                if self.verbose:
-                    print '...... Band ' + \
-                        '{0} from seeing {1:.3f} arcsec to {2} arcsec.'.format(
-                            FILTERS[ii], seeingArcSec, TARGET_SEEING)
+                log.debug(
+                    '...... Band ' +
+                    '{0} from seeing {1:.3f} arcsec to {2} arcsec.'.format(
+                        FILTERS[ii], seeingArcSec, TARGET_SEEING))
 
                 targetSigma = TARGET_SEEING / (2*np.sqrt(2*np.log(2))) / scale
                 sourceSigma = seeingPix / (2*np.sqrt(2*np.log(2)))
@@ -824,9 +837,8 @@ class PlateMagsIFU(object):
 
             else:
 
-                if self.verbose:
-                    print '...... Band {0}: '.format(FILTERS[ii]) + \
-                        'target seeing is lower than the image seeing.'
+                log.debug('...... Band {0}: '.format(FILTERS[ii]) +
+                          'target seeing is lower than the image seeing.')
 
                 rebinnedData = img.data
 
@@ -857,7 +869,7 @@ class PlateMagsIFU(object):
 
         gInit = models.Gaussian2D(amplitude=1., x_mean=xMean, y_mean=yMean,
                                   x_stddev=1., y_stddev=1.)
-        f2 = fitting.NonLinearLSQFitter()
+        f2 = fitting.LevMarLSQFitter()
         gg = f2(gInit, xx, yy, psf.data)
 
         fwhm = np.sqrt(gg.x_stddev.value * gg.y_stddev.value) * 2 * \
@@ -875,8 +887,7 @@ class PlateMagsIFU(object):
     def _calculateFluxes(self, data):
         """Calculates the flux for each fibre and updates self.fluxTable."""
 
-        if self.verbose:
-            print '... Calculating fluxes.'
+        log.debug('... Calculating fluxes.')
 
         factor = 10  # Factor to resample the image to improve photometry.
 
@@ -899,7 +910,7 @@ class PlateMagsIFU(object):
         fibrePixXArray = np.zeros((len(fibreWorld), len(FILTERS)), float)
         fibrePixYArray = np.zeros((len(fibreWorld), len(FILTERS)), float)
 
-        for jj in range(NFILTERS()):
+        for jj in range(NFILTERS):
 
             img = data[jj*3+1]
             ww = wcs.WCS(img.header)
@@ -976,8 +987,8 @@ class PlateMagsIFU(object):
     def _getFibreCoordinates(self):
         """Returns the RA,DEC coordinates for each fibre."""
 
-        raCen = self.row['RA']
-        decCen = self.row['DEC']
+        raCen = self.row['ra']
+        decCen = self.row['dec']
 
         fibreWorld = np.zeros((len(SIMBMAP), 2), float)
 
@@ -1025,11 +1036,16 @@ class PlateMagsIFU(object):
 
         """
 
-        # plt.cla()
-        # plt.clf()
+        plt.cla()
+        plt.clf()
 
         hh = self.binnedData[1].header
         ww = wcs.WCS(hh)
+
+        # Backwards compatibility for the sake of pywcsgrid2
+        ww.wcs_pix2sky = ww.wcs_pix2world
+        ww.wcs_sky2pix = ww.wcs_world2pix
+
         scale = SCALE
 
         fig = plt.figure(figsize=(8.5, 11), tight_layout=True)
@@ -1038,7 +1054,7 @@ class PlateMagsIFU(object):
 
         grid = axes_grid.ImageGrid(
             fig, 111,
-            nrows_ncols=(NFILTERS()+1, 3),
+            nrows_ncols=(NFILTERS+1, 3),
             ngrids=None,
             direction='row',
             axes_pad=0.04, add_all=True,
@@ -1048,7 +1064,7 @@ class PlateMagsIFU(object):
 
         irgImg = plt.imread(self.preimageIRG, format='jpg')
 
-        nRows = NFILTERS() + 1
+        nRows = NFILTERS + 1
         nCols = 3
 
         nn = 0
@@ -1060,11 +1076,16 @@ class PlateMagsIFU(object):
 
                 filt = FILTERS[ii-1]
 
-                if ii == 0 and jj != 2:
+                if ii == 0:
 
-                    if jj < 2:
-                        filt = 'r'
+                    if jj == 0:
                         grid[nn].imshow(irgImg, origin='lower')
+
+                    elif jj == 1:
+                        grid[nn].imshow(irgImg, origin='lower')
+                        filterIdx = FILTERS.index('r')
+                        self._plotBundle(grid[nn], scale,
+                                         filterIdx=filterIdx)
 
                     else:
                         self._addCaptions(grid[nn])
@@ -1100,9 +1121,9 @@ class PlateMagsIFU(object):
         else:
             multipage.savefig(dpi=DPI)
 
-        # del imgData
-        # del grid
-        # plt.close('all')
+        del imgData
+        del grid
+        plt.close('all')
 
     def _plotBundle(self, ax, scale, filterIdx=0):
         """Plots the location of each fibre in the bundle on the target."""
@@ -1125,7 +1146,7 @@ class PlateMagsIFU(object):
                     linewidth=0.5, linestyle='solid', zorder=10)
                 ax.add_artist(ell)
 
-        ifuSize = self.row['IFUDESIGNSIZE']
+        ifuSize = self.row['ifudesignsize']
 
         width = TARGET_SEEING / scale
         coords = self.fluxTable['x', 'y', 'fnumdesign']
@@ -1207,12 +1228,12 @@ class PlateMagsIFU(object):
 
         # Returns the effective radius of the galaxy, if exists.
 
-        if 'RE' in self.row.colnames:
-            re = self.row['RE']
+        if config['reffField'].lower() in self.row.colnames:
+            re = self.row[config['reffField'].lower()]
         elif len(MANGA_SAMPLE[MANGA_SAMPLE['MANGAID'] ==
                  self.MaNGAID]) > 0:
             re = MANGA_SAMPLE[MANGA_SAMPLE['MANGAID'] ==
-                              self.MaNGAID][0]['RE']
+                              self.MaNGAID][0][config['reffField']]
         else:
             re = None
 
@@ -1233,33 +1254,30 @@ class PlateMagsIFU(object):
             verticalalignment='center',
             transform=ax.transAxes, fontsize=6)
 
-        if 'STELLAR_MASS' in self.row.colnames:
-            sMass = self.row['STELLAR_MASS']
-        elif len(MANGA_SAMPLE[MANGA_SAMPLE['MANGAID'] ==
-                 self.MaNGAID]) > 0:
+        if 'stellar_mass' in self.row.colnames:
+            sMass = self.row['stellar_mass']
+        elif len(MANGA_SAMPLE[MANGA_SAMPLE['MANGAID'] == self.MaNGAID]) > 0:
             sMass = MANGA_SAMPLE[MANGA_SAMPLE['MANGAID'] ==
                                  self.MaNGAID][0]['STELLAR_MASS']
         else:
             sMass = None
 
-        if 'Z' in self.row.colnames:
-            zz = self.row['Z']
-        elif 'REDSHIFT' in self.row.colnames:
-            zz = self.row['REDSHIFT']
-        elif len(MANGA_SAMPLE[MANGA_SAMPLE['MANGAID'] ==
-                 self.MaNGAID]) > 0:
-            zz = MANGA_SAMPLE[MANGA_SAMPLE['MANGAID'] ==
-                              self.MaNGAID][0]['Z']
+        if 'z' in self.row.colnames:
+            zz = self.row['z']
+        elif 'redshift' in self.row.colnames:
+            zz = self.row['redshift']
+        elif len(MANGA_SAMPLE[MANGA_SAMPLE['MANGAID'] == self.MaNGAID]) > 0:
+            zz = MANGA_SAMPLE[MANGA_SAMPLE['MANGAID'] == self.MaNGAID][0]['Z']
         else:
             zz = None
 
         targetSubsample = None
-        if 'MANGA_TARGET1' in self.row.colnames and \
-                'MANGA_TARGET2' in self.row.colnames:
-            if self.row['MANGA_TARGET1'] >= 1:
-                targetSubsample = 'Primary'
-            elif self.row['MANGA_TARGET2'] >= 1:
-                targetSubsample = 'Secondary'
+        # if 'MANGA_TARGET1' in self.row.colnames and \
+        #         'MANGA_TARGET2' in self.row.colnames:
+        #     if self.row['MANGA_TARGET1'] >= 1:
+        #         targetSubsample = 'Primary'
+        #     elif self.row['MANGA_TARGET2'] >= 1:
+        #         targetSubsample = 'Secondary'
 
         re = self._getRe()
 
@@ -1269,7 +1287,8 @@ class PlateMagsIFU(object):
         if zz is not None:
             text += r'$z={0:.3f}$'.format(zz) + '\n'
         if re is not None:
-            text += r'$R_{{\rm e}}={0:.2f}\,{{\rm arcsec}}$'.format(re) + '\n'
+            text += r'$R_{{\rm e}}={0:.2f}\,{{\rm arcsec}}$'.format(re) + \
+                '\n'
         if targetSubsample is not None:
             text += '{0}'.format(targetSubsample)
 
@@ -1280,8 +1299,3 @@ class PlateMagsIFU(object):
                 horizontalalignment='center',
                 verticalalignment='center',
                 transform=ax.transAxes, fontsize=12)
-
-    def doWarn(self, text, quiet=True):
-        """Helper function to raise a warning."""
-        if not quiet or self.verbose:
-            warnings.warn(text, GohanWarning)

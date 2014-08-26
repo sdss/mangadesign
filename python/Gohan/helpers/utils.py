@@ -47,7 +47,7 @@ def getPlateListDir():
     return plateListDir
 
 
-def getPlates(plateRun):
+def getPlates(plateRun, column='plateid'):
 
     plateListDir = getPlateListDir()
     platePlansFile = os.path.join(plateListDir, 'platePlans.par')
@@ -57,7 +57,7 @@ def getPlates(plateRun):
 
     platePlans = yanny(platePlansFile, np=True)['PLATEPLANS']
 
-    return platePlans[np.where(platePlans['platerun'] == plateRun)]['plateid']
+    return platePlans[np.where(platePlans['platerun'] == plateRun)][column]
 
 
 def getPlateDir(plateid):
@@ -240,3 +240,31 @@ def getPointing(plateInputData):
             'target_dec': plateInputData['target_dec'],
             'ifu_ra': plateInputData['ifu_ra'],
             'ifu_dec': plateInputData['ifu_ra']}
+
+
+def getMangaScience(designID):
+
+    plateDefinition = getPlateDefinition(designID)
+
+    plateDefYanny = yanny(plateDefinition)
+
+    for key in plateDefYanny.keys():
+        if 'plateInput' in key:
+            if 'mangaScience' in plateDefYanny[key]:
+                return os.path.join(readPath(config['platelist']), 'inputs',
+                                    plateDefYanny[key])
+
+    raise ValueError('no plateInput file found')
+
+
+def getPlateDefinition(designID):
+
+    path = os.path.join(
+        readPath(config['platelist']),
+        'definitions/00{0}XX/plateDefinition-{1:06d}.par'
+        .format('{0:04d}'.format(designID)[0:2], designID))
+
+    if os.path.exists(path):
+        return path
+    else:
+        raise ValueError('plateDefinition does not exist.')

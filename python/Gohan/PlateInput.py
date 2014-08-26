@@ -159,11 +159,12 @@ class PlateInput(list):
 
         """
 
-        designName = '{0:04d}'.format(int(self[0].meta['manga_tileid'])) \
-            if int(self[0].meta['manga_tileid']) != -1 else \
-            self[0].meta['fieldname']
-
         if filename is None:
+
+            designName = '{0:04d}'.format(int(self[0].meta['manga_tileid'])) \
+                if int(self[0].meta['manga_tileid']) != -1 else \
+                self[0].meta['fieldname']
+
             filename = 'plateIFUs_{0}_{1:04d}.pdf'.format(
                 designName, self.designid)
 

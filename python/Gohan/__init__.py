@@ -19,13 +19,12 @@ def readPath(path):
         return os.path.realpath(os.path.expanduser(os.path.expandvars(path)))
 
 
-from astropy.utils.misc import AstropyDeprecationWarning
 from astropy.wcs import FITSFixedWarning
-from astropy.io import fits
+# from astropy.io import fits
 
 import warnings
-warnings.simplefilter('ignore', fits.file.AstropyUserWarning)
-warnings.simplefilter('ignore', AstropyDeprecationWarning)
+# warnings.simplefilter('ignore', fits.file.AstropyUserWarning)
+# warnings.simplefilter('ignore', AstropyDeprecationWarning)
 warnings.simplefilter('ignore', FITSFixedWarning)
 warnings.filterwarnings(
     'ignore',
