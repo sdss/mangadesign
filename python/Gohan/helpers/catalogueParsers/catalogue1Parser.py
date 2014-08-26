@@ -20,7 +20,7 @@ from Gohan.exceptions import GohanError
 import numpy as np
 from collections import OrderedDict
 from ..runMaNGAPostDesign import log
-from .utils import getSampleCatalogue, getPlateHolesSortedPath, \
+from ..utils import getSampleCatalogue, getPlateHolesSortedPath, \
     getPlateInputData, getPointing
 from sdss.utilities.yanny import yanny
 

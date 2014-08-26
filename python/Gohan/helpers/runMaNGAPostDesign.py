@@ -19,7 +19,7 @@ from astropy import table
 import warnings
 import os
 from Gohan import log, config, readPath
-from Gohan.helpers.catalogueParsers import utils
+from Gohan.helpers import utils
 from Gohan.exceptions import GohanUserWarning
 from collections import OrderedDict
 from shutil import copy

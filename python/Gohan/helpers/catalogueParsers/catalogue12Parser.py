@@ -21,7 +21,7 @@ import os
 import numpy as np
 from collections import OrderedDict
 from ..runMaNGAPostDesign import log
-from .utils import getPlateHolesSortedPath, getPlateInputData, getPointing, \
+from ..utils import getPlateHolesSortedPath, getPlateInputData, getPointing, \
     getSampleCatalogue
 from sdss.utilities.yanny import yanny
 
