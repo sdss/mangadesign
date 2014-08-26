@@ -80,7 +80,17 @@ NIFUS = np.sum(config['IFUs'].values())
 
 __ALL__ = ['PlateMags', 'PlateMagsIFU']
 
-BASE_URL = 'http://sdss.physics.nyu.edu/mblanton/v1b/detect/v1b_0/{0}/'
+BASE_URL = 'http://data.sdss3.org/sas/ebosswork/' + \
+    'manga/atlas/v1/detect/v1_0/{0}/'
+BASE_URI = 'http://data.sdss3.org/sas'
+
+password_mgr = urllib2.HTTPPasswordMgrWithDefaultRealm()
+password_mgr.add_password(realm=None, uri=BASE_URI,
+                          user=config['sdss3work']['username'],
+                          passwd=config['sdss3work']['password'])
+auth_handler = urllib2.HTTPBasicAuthHandler(password_mgr)
+opener = urllib2.build_opener(auth_handler)
+urllib2.install_opener(opener)
 
 PLATE_MAGS_TABLE = table.Table(
     None,
@@ -441,12 +451,12 @@ class PlateMagsIFU(object):
     def _getNSAParams(self, data):
         """Determines if enough data is present to download NSA imaging."""
 
-        cols = [col.upper() for col in data.colnames]
+        cols = [col for col in data.colnames]
         neededCols = ['iauname', 'subdir', 'pid']
 
         returnValues = []
-
         for neededCol in neededCols:
+
             if neededCol not in cols:
                 return None
 
@@ -501,6 +511,7 @@ class PlateMagsIFU(object):
 
         parentURL = baseURL + \
             '/atlases/{0}/{1}-parent-{0}.fits.gz'.format(pID, IAUName)
+        print(parentURL)
         varURL = baseURL + \
             '/atlases/{0}/{1}-ivar-{0}.fits.gz'.format(pID, IAUName)
         bpsfURL = [baseURL + '/{0}-{1}-bpsf.fits.gz'.format(IAUName, band)

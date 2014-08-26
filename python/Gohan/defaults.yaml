@@ -43,6 +43,10 @@ plateTypes:
         programname: disk2
         drillstyle: manga
 
+sdss3work:
+    username: sdss3
+    password: 4-surveys
+
 platelist: $PLATELIST_DIR
 mangacore: $MANGACORE_DIR
 cataloguePath: $MANGASAMPLE_DIR
