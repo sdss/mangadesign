@@ -23,6 +23,7 @@ from Gohan.helpers.catalogueParsers import utils
 from Gohan.exceptions import GohanUserWarning
 from collections import OrderedDict
 from shutil import copy
+import numpy as np
 
 
 def addTargets(plateTargetsPath, newPlateTargetsTable, overwrite=False):
