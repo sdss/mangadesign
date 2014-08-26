@@ -261,14 +261,14 @@ class PlateMags(list):
     def _toRepo(self, filename):
         """Copies/moves a file to $MANGACORE/plateMags/ """
 
-        plateMagsPath = os.path.join(MANGACORE, '/platedesign/platemags/')
-        dDir = 'D{0:d}XX/'.format(int(self.designid/100.))
+        plateMagsPath = os.path.join(MANGACORE, 'platedesign/platemags/')
+        dDir = 'D00{0:s}XX/'.format('{0:d}'.format(self.designid)[0:2])
         plateMagsPath += dDir
 
         if not os.path.exists(plateMagsPath):
             os.makedirs(plateMagsPath)
 
-        sh.copy(filename, plateMagsPath + filename)
+        sh.copy(filename, os.path.join(plateMagsPath, filename))
 
         log.info('{0} copied to repo.'.format(filename))
 
