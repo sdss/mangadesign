@@ -46,6 +46,7 @@ plateTypes:
 platelist: $PLATELIST_DIR
 mangacore: $MANGACORE_DIR
 cataloguePath: $MANGASAMPLE_DIR
+preImaging: $PREIMAGING_DIR
 
 anchorBlocks:
     anchors: ['NE', 'SE', 'NW', 'SW']
