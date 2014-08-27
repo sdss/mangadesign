@@ -150,7 +150,7 @@ class PlateMags(list):
             self.designid = int(self.plateInput.split('_')[-1][0:4])
 
         plateMagsIFUList = [PlateMagsIFU(row, **self.kwargs)
-                            for row in self.struct1[0:1]
+                            for row in self.struct1
                             if row['ifudesignsize'] >= IFU_MIN_SIZE]
 
         list.__init__(self, plateMagsIFUList)
