@@ -150,7 +150,7 @@ class PlateMags(list):
             self.designid = int(self.plateInput.split('_')[-1][0:4])
 
         plateMagsIFUList = [PlateMagsIFU(row, **self.kwargs)
-                            for row in self.struct1
+                            for row in self.struct1[0:1]
                             if row['ifudesignsize'] >= IFU_MIN_SIZE]
 
         list.__init__(self, plateMagsIFUList)
@@ -1165,8 +1165,9 @@ class PlateMagsIFU(object):
                    for fnum in coords['fnumdesign']]
 
         cc = EllipseCollection(
-            width, width, 0.0, units='xy', transOffset=ax.transData,
-            offsets=xy, linewidth=0.7, facecolor='None', edgecolor=colours,
+            width, width, 0.0, units='x', offsets=xy,
+            transOffset=ax.transData,
+            linewidth=0.7, facecolor='None', edgecolor=colours,
             zorder=20)
         ax.add_collection(cc)
 
@@ -1213,7 +1214,7 @@ class PlateMagsIFU(object):
         xy = np.array(xy)
 
         cc = EllipseCollection(
-            width, width, 0.0, units='xy', transOffset=ax.transData,
+            width, width, 0.0, units='x', transOffset=ax.transData,
             offsets=xy, linewidth=0.7, edgecolor=fluxesStr,
             facecolor=fluxesStr)
         ax.add_collection(cc)
@@ -1279,12 +1280,12 @@ class PlateMagsIFU(object):
             zz = None
 
         targetSubsample = None
-        # if 'MANGA_TARGET1' in self.row.colnames and \
-        #         'MANGA_TARGET2' in self.row.colnames:
-        #     if self.row['MANGA_TARGET1'] >= 1:
-        #         targetSubsample = 'Primary'
-        #     elif self.row['MANGA_TARGET2'] >= 1:
-        #         targetSubsample = 'Secondary'
+        if 'MANGA_TARGET1' in self.row.colnames and \
+                'MANGA_TARGET2' in self.row.colnames:
+            if self.row['MANGA_TARGET1'] >= 1:
+                targetSubsample = 'Primary'
+            elif self.row['MANGA_TARGET2'] >= 1:
+                targetSubsample = 'Secondary'
 
         re = self._getRe()
 
