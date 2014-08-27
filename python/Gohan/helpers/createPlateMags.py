@@ -50,7 +50,13 @@ def createPlateMags(input, mode='drillRun',
         for handler in log.handlers:
             handler.setLevel('DEBUG')
 
-    for designID in designIDs:
+    nDesigns = len(designIDs)
+
+    for nn, designID in enumerate(designIDs):
+
+        if mode == 'drillRun':
+            log.info('Creating plateMags for designID={0:d} ({1}/{2})'
+                     .format(designID, nn+1, nDesigns))
 
         mangaScience = getMangaScience(designID)
 
