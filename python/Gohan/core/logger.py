@@ -127,17 +127,20 @@ class GohanLogger(Logger):
         if record.levelno < logging.DEBUG:
             print(record.levelname, end='')
         elif(record.levelno < logging.INFO):
-            colourPrint(record.levelname, 'magenta', end='')
+            colourPrint(record.levelname, 'green', end='')
         elif(record.levelno < IMPORTANT):
-            colourPrint(record.levelname, 'blue', end='')
+            colourPrint(record.levelname, 'magenta', end='')
         elif(record.levelno < logging.WARNING):
-            colourPrint(record.levelname, 'lightmagenta', end='')
+            colourPrint(record.levelname, 'lightblue', end='')
         elif(record.levelno < logging.ERROR):
             colourPrint(record.levelname, 'brown', end='')
         else:
             colourPrint(record.levelname, 'red', end='')
 
         record.message = '{0}'.format(record.msg)
+        if record.levelno == logging.WARN:
+            record.message = '{0}'.format(record.msg[record.msg.find(':')+2:])
+
         # if not hasattr(record, 'origin') or record.origin == '':
         #     record.message = '{0}'.format(record.msg)
         # else:
