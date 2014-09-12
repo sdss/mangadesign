@@ -32,10 +32,7 @@ def getPlateTargetsPath(catID):
         readPath(config['mangacore']), 'platedesign/platetargets/',
         'plateTargets-{0}.par'.format(catID))
 
-    if not os.path.exists(plateTargetsPath):
-        return None
-    else:
-        return plateTargetsPath
+    return plateTargetsPath
 
 
 def getPlateListDir():
@@ -57,7 +54,8 @@ def getPlates(plateRun, column='plateid'):
 
     platePlans = yanny(platePlansFile, np=True)['PLATEPLANS']
 
-    return platePlans[np.where(platePlans['platerun'] == plateRun)][column]
+    return sorted(
+        platePlans[np.where(platePlans['platerun'] == plateRun)][column])
 
 
 def getPlateDir(plateid):
@@ -124,10 +122,10 @@ def sortByCatID(mangaids):
 def getParsingFunction(catID):
 
     if catID == 1:
-        from .catalogue1Parser import parseCatalogID_1
+        from .catalogueParsers import parseCatalogID_1
         return parseCatalogID_1
     elif catID == 12:
-        from .catalogue12Parser import parseCatalogID_12
+        from .catalogueParsers import parseCatalogID_12
         return parseCatalogID_12
     else:
         return None
@@ -184,9 +182,17 @@ def getPlateInputData(mangaid, plateHolesSorted):
         elif 'STRUCT1' in plateInput.keys():
             structName = 'STRUCT1'
         else:
-            warnings.warn('cannot identify structure name for plateInput '
-                          '{0}'.format(plateInputPath), GohanUserWarning)
+            # warnings.warn('cannot identify structure name for plateInput '
+            #               '{0}'.format(plateInputPath), GohanUserWarning)
             continue
+
+        if 'manga_tileid' in plateInput:
+            manga_tileid = plateInput['manga_tileid']
+        elif 'tileid' in plateInput:
+            manga_tileid = plateInput['tileid']
+        else:
+            raise GohanError('no maga_tileid or tileid field found in '
+                             'plateInput {0}'.format(plateInputPath))
 
         tbStructure = table.Table(
             plateInput[structName],
@@ -201,7 +207,8 @@ def getPlateInputData(mangaid, plateHolesSorted):
             if row['mangaid'] == mangaid:
                 return {'MANGAINPUT': row, 'racen': plateInput['racen'],
                         'deccen': plateInput['deccen'],
-                        'designid': plateInput['designid']}
+                        'designid': plateInput['designid'],
+                        'manga_tileid': manga_tileid}
 
     raise GohanError('it has not been possible to find a plateInput for '
                      'mangaid={0}'.format(mangaid))
@@ -268,3 +275,16 @@ def getPlateDefinition(designID):
         return path
     else:
         raise ValueError('plateDefinition does not exist.')
+
+
+def getTargetFix(plateID):
+
+    path = os.path.join(
+        readPath(config['mangacore']), 'platedesign/targetfix/',
+        '{0:04d}XX'.format(int(plateID/100)),
+        'targetfix-{0}.par'.format(plateID))
+
+    if not os.path.exists(path):
+        return None
+    else:
+        return path

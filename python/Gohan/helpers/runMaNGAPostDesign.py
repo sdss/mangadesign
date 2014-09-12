@@ -20,41 +20,68 @@ import warnings
 import os
 from Gohan import log, config, readPath
 from Gohan.helpers import utils
-from Gohan.exceptions import GohanUserWarning
+from Gohan.exceptions import GohanUserWarning, GohanError
 from collections import OrderedDict
-from shutil import copy
+import shutil
 import numpy as np
 
 
-def addTargets(plateTargetsPath, newPlateTargetsTable, overwrite=False):
+def addTargets(plateTargetsPath, newPlateTargetsTable, removeFirst=False,
+               overwrite=False):
 
     plateTargets = yanny(plateTargetsPath, np=True)
-    plateTargetsTable = table.Table(plateTargets['PLTTRGT'])
+    plateTargetsTable = table.Table(plateTargets['PLTTRGT'], copy=True)
 
-    if overwrite is False:
-        rowsToDelete = []
-        for nn, newTarget in enumerate(newPlateTargetsTable):
+    if removeFirst:
+        plateTargetsTable.remove_row(0)
 
-            plateid = newTarget['plateid']
-            mangaid = newTarget['mangaid']
-            designid = newTarget['designid']
+    header = []
+    for row in plateTargets._contents.split('\n'):
+        if row.strip() == '':
+            header.append('')
+        elif row.strip()[0] == '#':
+            header.append(row)
+        else:
+            break
 
-            tmpRow = plateTargetsTable[
-                (plateTargetsTable['plateid'] == plateid) &
-                (plateTargetsTable['designid'] == designid) &
-                (plateTargetsTable['mangaid'] == mangaid)]
+    header = '\n'.join(map(str, header)).strip() + '\n\n'  # Strips empty lines
 
-            if len(tmpRow) > 0:
-                warnings.warn('mangaid={0} is already present in plateTargets'
-                              'with the same plateid and designid. Skipping'
-                              .format(mangaid))
-                rowsToDelete.append(nn)
+    nNewLines = 0
+    for newTarget in newPlateTargetsTable:
 
-        newPlateTargetsTable.remove_rows(rowsToDelete)
+        plateid = newTarget['plateid']
+        mangaid = newTarget['mangaid']
 
-    plateTargets.append({'PLTTRGT': newPlateTargetsTable})
+        currentRecords = np.where(
+            (plateTargetsTable['plateid'] == plateid) &
+            (plateTargetsTable['mangaid'] == mangaid))[0]
+
+        if len(currentRecords) == 1:
+            if overwrite:
+                plateTargetsTable.remove_row(currentRecords[0])
+            else:
+                log.debug('mangaid={0} in plateid={1} skipped because already'
+                          ' exists in {2} and overwrite=False'.format(
+                              os.path.basename(mangaid), plateid,
+                              plateTargetsPath))
+                continue
+
+        elif len(currentRecords) > 1:
+            raise GohanError('{0} has more than one row with plateid={1} and '
+                             'mangaid={2}'.format(
+                                 os.path.basename(plateTargetsPath),
+                                 plateid, mangaid))
+
+        plateTargetsTable.add_row(newTarget._data)
+        nNewLines += 1
+
+    os.remove(plateTargetsPath)
+    plateTargets['PLTTRGT'] = plateTargetsTable
+    plateTargets.write(plateTargetsPath, comments=header)
+
+    # plateTargets.append({'PLTTRGT': newPlateTargetsTable})
     log.info('Appended {0} targets to {1}'.format(
-        len(newPlateTargetsTable), os.path.basename(plateTargetsPath)))
+        nNewLines, os.path.basename(plateTargetsPath)))
 
 
 def runMaNGAPostDesign(plateRun, overwrite=False):
@@ -95,6 +122,10 @@ def runMaNGAPostDesign(plateRun, overwrite=False):
 
     log.info('Sorting mangaids by catalogid ... ')
 
+    if len(catPlateMangaID.keys()) == 0:
+        log.important('No targets found for that platerun.')
+        return
+
     for catID in catPlateMangaID.keys():
 
         log.info('Doing catalogid={0} now ...'.format(catID))
@@ -109,16 +140,32 @@ def runMaNGAPostDesign(plateRun, overwrite=False):
                           GohanUserWarning)
             continue
 
+        template = False
         plateTargetsPath = utils.getPlateTargetsPath(catID)
-        if plateTargetsPath is None:
-            log.important('not plateTargets-{0}.par found. A template '
-                          'is necessary. Skipping catID={0}}.'.format(catID))
-            continue
+
+        if not os.path.exists(plateTargetsPath):
+            log.important('no plateTargets-{0}.par found. Using a template.'
+                          .format(catID))
+
+            templatePath = os.path.join(
+                readPath(config['plateTargets']['templates']),
+                'plateTargets-{0}.template'.format(catID))
+
+            if not os.path.exists(templatePath):
+                warnings.warn('template cannot be found. Skipping.')
+                continue
+            else:
+                shutil.copy(templatePath, plateTargetsPath)
+                template = True
+
+        log.info('{0} plates found for catalogid={1}'.format(
+            len(catPlateMangaID[catID]), catID))
 
         plateTargetsTable = parsingFunction(
             catPlateMangaID[catID], plateTargetsPath)
 
-        addTargets(plateTargetsPath, plateTargetsTable, overwrite=False)
+        addTargets(plateTargetsPath, plateTargetsTable,
+                   removeFirst=template, overwrite=overwrite)
 
     log.info('Copying plateHolesSorted to mangacore ...')
 
@@ -146,7 +193,7 @@ def runMaNGAPostDesign(plateRun, overwrite=False):
                           .format(os.path.basename(plateHolesSortedPath)),
                           GohanUserWarning)
 
-        copy(plateHolesSortedPath, destinationPath)
+        shutil.copy(plateHolesSortedPath, destinationPath)
         log.info('{0} copied to mangacore'.format(
             os.path.basename(plateHolesSortedPath)))
 
@@ -161,8 +208,11 @@ if __name__ == '__main__':
         description='Performs MaNGA post-design actions.')
     parser.add_argument('--force', '-f', action='store_true',
                         help='forces overwrite of existing records.')
-    parser.add_argument('plateRun', help='the plate run to process.')
+    parser.add_argument('plateRuns', type=str, nargs='+',
+                        help='the plate run to process.')
 
     args = parser.parse_args()
 
-    runMaNGAPostDesign(args.plateRun, overwrite=args.force)
+    for plateRun in args.plateRuns:
+        log.info('Plate run: ' + plateRun)
+        runMaNGAPostDesign(plateRun, overwrite=args.force)

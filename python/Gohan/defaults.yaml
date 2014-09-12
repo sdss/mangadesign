@@ -53,6 +53,10 @@ mangacore: $MANGACORE_DIR
 cataloguePath: $MANGASAMPLE_DIR
 preImaging: $PREIMAGING_DIR
 
+plateTargets:
+    neverobserve: +etc/neverobserve.dat
+    templates: +etc/
+
 anchorBlocks:
     anchors: ['NE', 'SE', 'NW', 'SW']
     NE: [30, 31, 57, 58, 59, 32, 33, 34]
