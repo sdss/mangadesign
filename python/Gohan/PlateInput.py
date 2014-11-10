@@ -15,816 +15,709 @@ Major revision history:
       Added documentation.
     22 May 2014 J. Sánchez-Gallego
       Partially rewritten to work with the changes to InputCatalogue.
+    9 Nov 2014 J. Sánchez-Gallego
+      Extense rewrite. Now it does not work with an InputCatalogue instance.
 
 """
 
-from astropy import table
 import numpy as np
-from sdss.utilities import yanny
 import os
 import shutil as sh
-from .exceptions import GohanUserWarning, GohanError
+import glob
 import warnings
-# from PlateMags import PlateMags
-from astropy import coordinates as coo
-from astropy import units as uu
-from . import config, log
 from collections import OrderedDict
-from . import readPath
 
-__ALL__ = ['PLATEPLANS_TEMPLATE', 'PlateInput', 'PlateInputBase']
+from astropy import coordinates as coo
+from astropy import table
 
-platePlansTemplate = """PLATEPLANS {plateID} {designID} {locationID} -1
-{platedesignversion} {{ 0.0 0.00000 0.00000 0.00000 0.00000 0.00000 }}
-{temp} {epoch} {raCen} {decCen} {survey} {programname} {drillstyle} \" \"
-{plateRun} {chunk} \"{name}\" \"{comment}\"
-"""
-
-plateDefinitionTemplate = readPath('+etc/mangaDefinition_Default.par')
+from Gohan import config, log, readPath
+from Gohan import exceptions
+from Gohan.utils import yanny, sortTargets
+from Gohan.utils import assignIFUDesigns
+from Gohan.utils import autocomplete
 
 
-try:
-    cartmap = yanny.yanny(
-        os.path.expandvars(config['cartmap']), np=True)['CMAP']
-except:
-    cartmap = None
-
-
-def ifuDesign2Size(ifudesign):
-    row = cartmap[cartmap['ifuDesign'] == ifudesign][0]
-    if len(row) == 0:
-        raise GohanError('Invalid ifudesign {0}'.format(ifudesign))
-    return row['ifusize']
-
-
-class PlateInput(list):
+class PlateInput(object):
     """A class to construct plateInput files.
 
-    This files uses an ``InputCatalogue`` instance to create an
-    object with the information necessary to write a plateInput file. The
-    plateInput file has two components: a structure, that correspond to the
-    records in the InputCatalogue object; and a pairs element that is populated
-    from the metadata in the input catalogue. Additional key/value pairs can
-    be defined manually.
-
-    PlateInput objects are lists. They can be initialised by providing one or
-    more InputCatalogue instances. Each element of the resulting PlateInput
-    object correspond to one plateInput file that can be saved to disk.
-    Additional methos allow to create plateDefinition and platePlans files
-    for the corresponding set of plateInputs.
-
-    Note that the values defined for `pairs` and `reassignFerrules` affect to
-    all the elements in then PlateInput object.
+    To be written.
 
     Parameters
     ----------
     designid : int
         The designID for the plate.
-    plateRun : str
+    targettype : str
+        Either `'science'`, `'standard'` or `'sky'` depending on the type of
+        targets the plateInput file will contain.
+    plateRun : str, optional
         A string with the plateRun (e.g., '2014.02.x.manga').
-    catalogues : a single ``InputCatalogue`` or a path or a list of them
-        The input catalogue data, either as a single InputCatalogue
-        or as a list of InputCatalogue instances. If strings (or list of
-        strings) are provided, InputCatalogues will be read from them.
-    plateType : str, optional
-        The type of plate to be designed. By default it assumes MaNGA leading
-        ('mangaLeading').
-    pairs : dict, optional
-        Additional keyword/value pairs to be added to the plateInput files.
-        Note that if a key is defined in pairs, it supersedes the metadata
-        for each input catalogue.
-    reassignFerrules : bool
-        If True, ifudesigns are automatically assigned to optimise their
-        distribution per anchor block. This will still happen for each target
-        for which ifudesign is undefined.
-    verbose : bool, optional
-        If False, only prints warnings. If None, only errors are raised.
+    catalogues : file or list of files, optional
+        The input catalogue data. If None, the default value based on the
+        targettype, will be used. It can be a list of catalogues, and they
+        will be used in the input order. Catalogues must be in FITS format.
+    surveyMode : str, optional
+        Either `'mangaLead'` or `'apogeeLead'`. Defaults to `'mangaLead'`
+    raCen, decCen : float, optional
+        The coordinates of the centre of the field. Mandatory if the plateInput
+        is MaNGA lead. If APOGEE lead, the coordinates are taken from the
+        APOGEE plateInput files.
+    locationid : int, optional
+        The locationid of the field. If `surveyMode='mangaLead'`, `locationid`
+        has to be defined. If `'apogeeLead'`, the value is taken from the
+        APOGEE plateInput files.
+    manga_tileid : int, optional
+        Same as `locationid`, but if `surveyMode='apogeeLead'`,
+        `manga_tileid=-999`
+    fieldName : str, optional
+        The `fieldName` value to be used. Defaults to `none`.
+    decollide : bool, optional
+        If True (the default), decollides the input targets against themselves
+        and, if `surveyMode='apogeeLead'`, against APOGEE targets.
+    decollidePlateInputs : list, optional
+        A list of `PlateInput` instances that have higher priority than then
+        current PlateInput. Their targets will be used for decollision.
+    sort : bool, optional
+        If True, sorts the targets so that they are evenly distributed on the
+        field. Default is False. The number of targets that will be selected to
+        be sorted is defined in the `defaults` file.
+    rejectTargets : list, optional
+        A list of mangaids of targets to be rejected.
+    plotIFUs : bool, optional
+        If True, a plot with the position of each IFU on the plate is saved.
+    silentOnCollision : bool, optional
+        If False, does not raise a warning on collision. Default is False.
+    autocomplete : bool, optional
+        If True (the deafult) and `targettype='science'`, autocompletes
+        unallocated bundles using NSA targets.
 
     """
 
-    def __init__(self, designid, plateRun, catalogues,
-                 plateType='mangaLeading', pairs={},
-                 reassignFerrules=False,
-                 verbose=True, **kwargs):
+    def __init__(self, designid, targettype, plateRun=None, catalogues=None,
+                 surveyMode='mangaLead', raCen=None, decCen=None,
+                 locationid=None, manga_tileid=None, fieldName=None,
+                 rejectTargets=[], plotIFUs=False, **kwargs):
 
-        log.setVerbose(verbose)
+        assert isinstance(rejectTargets, (list, tuple, np.ndarray))
+        assert surveyMode in ['mangaLead', 'apogeeLead', 'mangaOnly']
 
         self.designid = designid
-        self.plateType = plateType
+        self.targettype = targettype
         self.plateRun = plateRun
-        self.kwargs = kwargs
+        self.surveyMode = surveyMode
+        self.locationid = locationid
+        self.fieldName = fieldName
+        self.manga_tileid = manga_tileid
 
-        catalogues = np.atleast_1d(catalogues)
+        log.info('creating {0} plateInput for design {1}'.format(
+                 targettype, designid))
+        log.debug('surveyMode={0}'.format(surveyMode))
 
-        inputs = [
-            PlateInputBase(self.designid, catalogues[ii],
-                           pairs=pairs,
-                           reassignFerrules=reassignFerrules,
-                           plateRun=self.plateRun)
-            for ii in range(len(catalogues))
-        ]
+        if surveyMode == 'apogeeLead':
 
-        list.__init__(self, inputs)
+            self.manga_tileid = manga_tileid \
+                if manga_tileid is not None else -999
 
-    @property
-    def struct1(self):
-        """Returns a stacked table with every struct1 table in self."""
+            if plateRun is None:
+                raise exceptions.GohanPlateInputError(
+                    'if surveyMode=apogeeLead, plateRun needs to be defined.')
 
-        if len(self) == 1:
-            return self[0].struct1
-        return table.vstack([pp.struct1[
-                             ['mangaid', 'ra', 'dec',
-                              'ifudesign', 'ifudesignsize']]
-                            for pp in self],
-                            metadata_conflicts='silent')
-
-    @struct1.setter
-    def struct1(self, value):
-        raise ValueError('It is not possible to set struct1.')
-
-    # def getPlateMags(self, **kwargs):
-    #     """Returns a PlateMags instance from this plateInput instance."""
-    #     return PlateMags(self, **kwargs)
-
-    def plotIFUs(self, filename=None, **kwargs):
-        """ Plots the location of the IFUs in the plate.
-
-        Parameters
-        ----------
-        filename : str, optional
-            The filename of the output plot. If not defined, the default
-            filename is plateIFUs-XXXX.pdf with XXXX the designID.
-        kwars
-            Other parameters to be passed to ``PlateInputBase.plotIFUs```.
-
-        """
-
-        if filename is None:
-
-            designName = '{0:04d}'.format(int(self[0].meta['manga_tileid'])) \
-                if int(self[0].meta['manga_tileid']) != -1 else \
-                self[0].meta['fieldname']
-
-            filename = 'plateIFUs_{0}_{1:04d}.pdf'.format(
-                designName, self.designid)
-
-        self[0].plotIFUs(filename, struct1=self.struct1, **kwargs)
-
-    def check(self):
-        """
-        To be written. This method will provide a number of sanity checks to
-        the plateInput data, such as checking that the RA and Dec centres are
-        the same for all plateInput files, checking ifuDesign and ifuSize, etc.
-        """
-
-    def write(self, toRepo=False, platePlans=False):
-        """Writes the plateInput, platePlan and plateDefinition files.
-
-        This methods creates the plateInput, plateDefinition and platePlans
-        files with the appropriate filenames.
-
-        Parameters
-        ----------
-        toRepo : bool, optional
-            Copies the plateInput files and plateDefinition to the repository.
-        appendDefinition : bool, optional
-            If the plateDefinition file exists in the repo, only appends the
-            plateInput files, but does not overwrite other information. Note
-            that this parameter is only relevant if copyToRepo or moveToRepo
-            are True. [TO BE IMPLEMENTED]
-        platePlans : bool, optional
-            If True, write also the platePlans line to a text file.
-
-        """
-
-        plateInputFilenames = []
-        for plateInput in self:
-            filename = plateInput.write(toRepo=toRepo)
-            plateInputFilenames.append(filename)
-
-        if self.plateType == 'apogeeLeading':
-            appendDefinition = True
-        else:
-            appendDefinition = False
-
-        plateDefinitionFilename = self.writePlateDefinition(
-            toRepo=toRepo, append=appendDefinition)
-
-        platePlansFilename = None
-        if platePlans:
-            platePlansFilename = self.writePlatePlans()
-
-        return plateInputFilenames, plateDefinitionFilename, platePlansFilename
-
-    def getPlateDefinitionYanny(self):
-        """Return the platePlans text."""
-
-        raCen = self[0].pairs['racen']
-        decCen = self[0].pairs['deccen']
-        nInputs = len(self)
-        priority = ' '.join([str(ii+1) for ii in range(nInputs)])
-
-        defDict = OrderedDict(
-            [['raCen', raCen], ['decCen', decCen], ['nInputs', nInputs],
-             ['priority', priority], ['designID', self.designid]])
-
-        defDict['plateType'] = \
-            config['plateTypes'][self.plateType]['plateType']
-        defDict['plateLead'] = \
-            config['plateTypes'][self.plateType]['plateLead']
-        defDict['platedesignversion'] = \
-            config['plateTypes'][self.plateType]['platedesignversion']
-        defDict['defaultSurveyMode'] = \
-            config['plateTypes'][self.plateType]['defaultSurveyMode']
-
-        inputs = []
-        for nn, plateInput in enumerate(self):
-
-            if plateInput.filename is None:
-                raise GohanError('filename not set for plateInput with ' +
-                                 'designID={0}. '.format(plateInput.designID) +
-                                 'Write it to disk or set the filename ' +
-                                 'before writing the plateDefinition file.')
-
-            inputFilename = 'manga/{0}/{1}'.format(self.plateRun,
-                                                   self[nn].filename)
-            inputs += [['plateInput{0:d}'.format(nn+1), inputFilename]]
-
-        inputs = OrderedDict(inputs)
-        defDict.update(inputs)
-
-        template = yanny.yanny(plateDefinitionTemplate)
-
-        for key in defDict:
-            template[key] = defDict[key]
-
-        return template
-
-    def writePlateDefinition(self, toRepo=False, append=False):
-
-        filename = 'plateDefinition-{0:06d}.par'.format(self.designid)
-
-        pathRoot = '{0:04d}XX/'.format(int(self.designid / 100))
-        plateDefinitionPath = os.path.join(
-            os.path.expandvars(config['platelist']),
-            'definitions', pathRoot)
-        plateDefinitionRepoFile = os.path.join(plateDefinitionPath, filename)
-
-        if append:
-            plateDefinition = self._getPlateDefinitionAppend(
-                plateDefinitionRepoFile)
-
-            blob = open(filename, 'w')
-            for line in plateDefinition:
-                blob.write(line + '\n')
-            blob.close()
+            targets = self._getAPOGEELeadTargets(
+                catalogues, raCen=raCen, decCen=decCen,
+                rejectTargets=rejectTargets, **kwargs)
 
         else:
-            definitionYanny = self.getPlateDefinitionYanny()
-            definitionYanny.set_filename(filename)
+            if raCen is None or decCen is None:
+                raise exceptions.GohanPlateInputError(
+                    'if surveyMode=mangaLed or mangaOnly, raCen and decCen '
+                    'need to be defined.')
 
-            if os.path.exists(filename):
-                os.remove(filename)
+            assert self.manga_tileid is not None
+            assert self.locationid is not None
 
-            definitionYanny.write()
+            self.raCen, self.decCen = raCen, decCen
 
-        log.info('plateDefinition file {0} saved.'.format(filename))
+            if fieldName is None:
+                self.fieldName = 'MJ{0:.5f}{1:+.5f}'.format(
+                    self.raCen, self.decCen)
 
-        if toRepo:
+            targets = self._getMaNGALeadTargets(
+                catalogues, raCen, decCen,
+                rejectTargets=rejectTargets, **kwargs)
 
-            if not os.path.exists(plateDefinitionPath):
-                os.makedirs(plateDefinitionPath)
+        targets = self._tidyUpTargets(targets)
 
-            sh.copy(filename, plateDefinitionRepoFile)
-            log.info('plateDefinition file {0} '.format(filename) +
-                     'saved to platelist repo.')
+        log.debug('reassigning IFUs ... ')
+        targets = assignIFUDesigns(targets, (self.raCen, self.decCen),
+                                   targettype=self.targettype,
+                                   plot=plotIFUs,
+                                   filename='ifuPlot_{0}.pdf'.format(
+                                       self.designid))
 
-        return filename
+        self.mangaInput = targets
 
-    def _getPlateDefinitionAppend(self, plateDefinitionRepoFile):
+        # Tweaks the default fill_values
+        for column in self.mangaInput.colnames:
+            dd = self.mangaInput[column].dtype.type
+            if dd == np.string_:
+                self.mangaInput[column].fill_value = 'none'
+            else:
+                self.mangaInput[column].fill_value = -999
 
-        if not os.path.exists(plateDefinitionRepoFile):
-            raise GohanError('no file {0}. Make sure that the plateDefinition '
-                             'file is commited'.format(
-                                 os.path.basename(plateDefinitionRepoFile)))
+    def getTargetCoords(self):
+        """Returns a Nx2 array with the coordinates of the targets in this
+        plateInput file."""
 
-        data = open(plateDefinitionRepoFile, 'r').read().splitlines()
-        data.append('\n')
+        coords = np.zeros((len(self.mangaInput), 2), np.float64)
+        coords[:, 0] = self.mangaInput['ra']
+        coords[:, 1] = self.mangaInput['dec']
 
-        if self._checkAPOGEEInputs(data):
+        return coords
 
-            initialLine = self._findKey(data, 'plateInput3') + 1
+    def getMangaIDs(self):
+        """Returns the mangaids of the targets in this plateInput file."""
 
-            for nn, pInput in enumerate(self):
-                if pInput.meta['targettype'] == 'science':
-                    sciIdx = nn
-                elif pInput.meta['targettype'] == 'standard':
-                    stdIdx = nn
+        mangaids = self.mangaInput['mangaid']
 
-            inputSciFilename = 'manga/{0}/{1}'.format(self.plateRun,
-                                                      self[sciIdx].filename)
-            inputStdFilename = 'manga/{0}/{1}'.format(self.plateRun,
-                                                      self[stdIdx].filename)
+        return [mangaid.strip() for mangaid in mangaids]
 
-            data = self._setValue(
-                data, 'plateInput4', inputSciFilename, initialLine)
-            data = self._setValue(
-                data, 'plateInput5', inputStdFilename, initialLine+1)
-            data = self._setValue(data, 'priority', '1 2 5 3 4', noWarn=True)
-            data = self._setValue(data, 'nInputs', '5', noWarn=True)
+    def _selectTargets(self, catalogue):
+        """Selects targets from a catalogue that are within the FOV."""
 
-            defDict = {}
-            defDict['plateType'] = \
-                config['plateTypes'][self.plateType]['plateType']
-            defDict['plateLead'] = \
-                config['plateTypes'][self.plateType]['plateLead']
-            defDict['platedesignversion'] = \
-                config['plateTypes'][self.plateType]['platedesignversion']
-            defDict['defaultSurveyMode'] = \
-                config['plateTypes'][self.plateType]['defaultSurveyMode']
+        data = table.Table.read(catalogue, format='fits')
+        coords = coo.SkyCoord(data['RA'], data['DEC'], unit='deg')
+        separation = coords.separation(
+            coo.SkyCoord(ra=self.raCen, dec=self.decCen, unit='deg')).deg
 
-            for key in defDict:
-                data = self._setValue(data, key, defDict[key])
+        return data[np.where(separation <= config['decollision']['FOV'])]
 
-            if self._setValue(data, 'plateDesignSkies') is None and \
-                    self._setValue(data, 'skyType') is None:
-                data.append('\n')
-                data.append('# Skies for MaNGA')
-                data.append('plateDesignSkies MANGA_SINGLE')
-                data.append('skyType SDSS')
-                data.append('\n')
+    def _getInfoFromAPOGEE(self):
+        """Reads the APOGEE plateInput files and returns target and design
+        information."""
 
-            return data
+        platelist = readPath(config['platelist'])
+        apogeeInputs = os.path.join(
+            platelist, 'inputs', 'apogee', self.plateRun)
 
-    def _checkAPOGEEInputs(self, data):
+        scienceInput = glob.glob(
+            os.path.join(
+                apogeeInputs,
+                'plateInput_*_SCI_{0:d}.par'.format(self.designid)))
 
-        if 'STA' in self._setValue(data, 'plateInput1') and \
-                'SCI' in self._setValue(data, 'plateInput2') and \
-                'SKY' in self._setValue(data, 'plateInput3'):
-            return True
+        stdInput = glob.glob(
+            os.path.join(
+                apogeeInputs,
+                'plateInput_*_STA_{0:d}.par'.format(self.designid)))
+
+        if len(scienceInput) != 1 and len(stdInput) != 1:
+            raise exceptions.GohanPlateInputError(
+                'no APOGEE plateInput found.')
+
+        sciData = yanny.yanny(scienceInput[0], np=True)
+        stdData = yanny.yanny(stdInput[0], np=True)
+
+        locationid = int(sciData['locationid'])
+        raCen = float(sciData['raCen'])
+        decCen = float(sciData['decCen'])
+
+        sciCoords = sciData['APOGEEINPUT1'][['ra', 'dec']]
+        stdCoords = stdData['APOGEEINPUT2'][['ra', 'dec']]
+
+        apogeeCoords = np.concatenate((sciCoords, stdCoords))
+        apogeeCoords = apogeeCoords.view(np.float).reshape(
+            apogeeCoords.shape + (-1,))
+
+        fieldParts = []
+        fieldSplits = scienceInput[0].split('/')[-1].split('_')
+        fieldParts = [fieldSplits[ii]
+                      for ii in range(1, len(fieldSplits))
+                      if '.par' not in fieldSplits[ii]]
+        self.fieldName = '_'.join(fieldParts[0:-1])
+
+        return raCen, decCen, locationid, apogeeCoords
+
+    def _getAPOGEELeadTargets(self, catalogues, raCen=None, decCen=None,
+                              rejectTargets=[], decollide=True, sort=False,
+                              **kwargs):
+        """Creates an APOGEE led plateInput file."""
+
+        if catalogues is None:
+            if self.targettype == 'science':
+                self.catalogues = readPath(config['catalogues']['stelLib'])
+            elif self.targettype == 'standard':
+                self.catalogues = [readPath(config['catalogues']['standard']),
+                                   readPath(config['catalogues']['APASS'])]
         else:
-            raise GohanError('plateDefinition has not the expected '
-                             'format.')
+            if isinstance(catalogues, basestring):
+                catalogues = [catalogues]
+            self.catalogues = [readPath(cat) for cat in catalogues]
 
-    def _setValue(self, data, key, value=None, idx=-1, noWarn=False):
+        log.debug('catalogue paths are {0}'.format(str(self.catalogues)))
 
-        for nn, line in enumerate(data):
-            if len(line) == 0:
+        assert all(map(os.path.exists, self.catalogues))
+
+        self.raCen, self.decCen, \
+            self.locationid, apogeeCoords = self._getInfoFromAPOGEE()
+
+        log.debug('raCen={0:.4f}, decCen={1:.4f}'.format(
+                  self.raCen, self.decCen))
+        log.debug('locationid={0}'.format(self.locationid))
+
+        if self.targettype == 'science':
+            nBundlesToAllocate = np.sum(config['IFUs'].values())
+        elif self.targettype == 'standard':
+            nBundlesToAllocate = np.sum(config['miniBundles'].values())
+        elif self.targettype == 'sky':
+            nBundlesToAllocate = np.sum(config['skies'].values())
+
+        targetCats = []
+        coords = apogeeCoords
+        nAllocated = 0
+        for catalogue in self.catalogues:
+            targetsInField = self._selectTargets(catalogue)
+            targetsInField = self._rejectTargets(targetsInField, rejectTargets)
+            log.debug('{0} targets selected from catalogue {1}'
+                      .format(len(targetsInField), catalogue))
+
+            if len(targetsInField) == 0:
                 continue
-            if line[0] == '#':
-                continue
-            if (key.lower() + ' ') in line.lower():
-                if value is None:
-                    return line[line.find(' ') + 1:]
-                else:
-                    if not noWarn:
-                        warnings.warn('replacing plateDefinition keyword '
-                                      '{0} to {1}.'
-                                      .format(key, str(value)),
-                                      GohanUserWarning)
-                    data[nn] = line[0:line.find(' ')] + ' ' + str(value)
-                    return data
 
-        if value is None:
-            return None
+            if decollide:
+                targetsInCat = self._decollide(targetsInField, coords=coords,
+                                               **kwargs)
+                log.debug('{0} targets remaining after decollision.'
+                          .format(len(targetsInCat)))
+                targetCats.append(targetsInCat)
 
-        if idx == -1:
-            data.append(key + ' ' + str(value))
+            nAllocated += len(targetsInCat)
+
+            if nAllocated >= nBundlesToAllocate:
+                break
+            else:
+                if len(targetsInCat) > 0:
+                    catCoords = np.zeros((len(targetsInCat), 2), np.float64)
+                    catCoords[:, 0] = targetsInCat['RA']
+                    catCoords[:, 1] = targetsInCat['DEC']
+                    coords = np.concatenate((coords, catCoords), axis=0)
+
+        if nAllocated < nBundlesToAllocate:
+            raise exceptions.GohanPlateInputError(
+                'not enough targets.')
+
+        targets = self._combineTargetCatalogues(targetCats)
+
+        if sort:
+            targetCoords = np.zeros((len(targets), 2), np.float64)
+            targetCoords[:, 0] = targets['RA']
+            targetCoords[:, 1] = targets['DEC']
+            log.debug('sorting targets')
+            newCoords, order = sortTargets(
+                targetCoords, (self.raCen, self.decCen), plot=True,
+                limitTo=nBundlesToAllocate,
+                filename=('sortedTargets_{0:d}_{1}.pdf'
+                          .format(self.designid, self.targettype[0:3].upper()))
+                )
+            targets = targets[order]
         else:
-            data.insert(idx, key + ' ' + str(value))
 
-        return data
+            targets = targets[0:nBundlesToAllocate]
 
-    def _findKey(self, data, key):
-
-        for nn, line in enumerate(data):
-            if len(line) == 0:
-                continue
-            if line[0] == '#':
-                continue
-            if (key.lower() + ' ') in line.lower():
-                return nn
-        return -1
-
-    def getPlatePlans(self):
-        """Returns the platePlans text."""
-
-        plansDic = {}
-
-        plansDic['raCen'] = self[0].pairs['racen']
-        plansDic['decCen'] = self[0].pairs['deccen']
-
-        plansDic['plateID'] = 1000
-        if 'plateID' in self.kwargs:
-            plansDic['plateID'] = self.kwargs['plateID']
-
-        if 'name' in self.kwargs:
-            plansDic['name'] = self.kwargs['name']
-        else:
-            plansDic['name'] = 'MJ{raCen:.5f}{decCen:+.5f}'.format(**plansDic)
-
-        if 'comment' in self.kwargs:
-            plansDic['comment'] = self.kwargs['comment']
-        else:
-            plansDic['comment'] = ' '
-
-        plansDic['locationID'] = self[0].pairs['locationid']
-        plansDic['designID'] = self.designid
-        plansDic['plateRun'] = self.plateRun
-        plansDic['chunk'] = self.plateRun
-
-        if 'epoch' in self.kwargs:
-            plansDic['epoch'] = self.kwargs['epoch']
-        else:
-            plansDic['epoch'] = '2014.07'
-
-        if 'temp' in self.kwargs:
-            plansDic['temp'] = self.kwargs['temp']
-        else:
-            plansDic['temp'] = '5.0'
-
-        plansDic.update(config['plateTypes'][self.plateType])
-
-        platePlans = platePlansTemplate.format(**plansDic)
-        platePlans = platePlans.replace('\n', ' ')
-
-        return platePlans
-
-    def writePlatePlans(self):
-
-        platePlans = self.getPlatePlans()
-
-        filename = 'platePlans-{0}.par'.format(self.designid)
-
-        unitPlatePlans = open(filename, 'w')
-        print >>unitPlatePlans, platePlans
-        unitPlatePlans.close()
-
-        log.info('platePlans file {0} saved.'.format(filename))
-
-        return filename
-
-
-class PlateInputBase(object):
-    """The base plate input class.
-
-    This class is the base to construct ``PlateInput`` instances. Each
-    PlateInputBase object contains the information for one plateInput
-    file.
-
-    This class is not intended to be called directly. Instead, PlateInput
-    should be used.
-
-    """
-
-    def __init__(self, designid, catalogue, pairs={},
-                 reassignFerrules=False, plateRun=None, **kwargs):
-
-        self.designid = designid
-        self.inputCatalogue = catalogue
-        self._reassignFerrules = reassignFerrules
-        self.plateRun = plateRun
-
-        self.filename = None
-
-        self.inputCatalogue.meta.update(pairs)
-        self.inputCatalogue.meta.update({'designid': self.designid})
-
-        log.info('Creating PlateInputBase instance for InputCatalogue for ' +
-                 'designid={0} and targettype={1}'.format(
-                     self.designid, self.meta['targettype']))
-
-        self.checkIFUDesigns()
-
-    def checkIFUDesigns(self, failOnIFUDesignSize=False):
-
-        if self.inputCatalogue.meta['targettype'] == 'science':
-            bundleSizes = config['IFUs'].copy()
-        elif self.inputCatalogue.meta['targettype'] == 'standard':
-            bundleSizes = config['miniBundles'].copy()
-        elif self.inputCatalogue.meta['targettype'] == 'sky':
-            bundleSizes = config['skies'].copy()
-
-        for size in self.inputCatalogue['ifudesignsize']:
-            if size > 0:
-                bundleSizes[size] -= 1
-
-        ifuDesignSizeAssigned = False
-        for target in self.inputCatalogue:
-            if target['ifudesignsize'] < 0:
-                for size in bundleSizes:
-                    if bundleSizes[size] > 0:
-                        target['ifudesignsize'] = size
-                        ifuDesignSizeAssigned = True
-                        bundleSizes[size] -= 1
-                        log.debug(
-                            'mangaid={0} has been automatically '.format(
-                                target['mangaid']) +
-                            'assigned an ifudesignsize={0}'.format(
-                                target['ifudesignsize']))
-                        break
-
-        if ifuDesignSizeAssigned:
-            log.info('some ifudesignsizes have been assigned automatically.')
-
-        # self.inputCatalogue.data.pprint(max_width=1000, max_lines=1000)
-        # Checks if one or more ifuDesigns are missing.
-        missingDesign = False
-        for ifuDesign in self.inputCatalogue['ifudesign']:
-            if ifuDesign < 0.:
-                missingDesign = True
+        for col in targets.colnames:
+            if col.lower() == 'priority':
+                targets[col] = np.arange(len(targets), dtype=int) + 1
                 break
 
-        # If at least one ifuDesign is undefined, reassign ferrules. If
-        # reassignFerrules is True, reassign all the ferrules even if they
-        # are defined in the input catalogue.
-        if missingDesign and not self._reassignFerrules:
-            log.info('one or all ifudesigns are missing. Reassigning IFUs.')
-            self.inputCatalogue.data = self.assignFerrulesAnchorBlock()
-        elif self._reassignFerrules:
-            log.info('Reassigning all IFUs.')
-            self.inputCatalogue.data = self.assignFerrulesAnchorBlock(
-                reassignAll=True)
+        return targets
 
-    def assignFerrulesAnchorBlock(self, reassignAll=False):
+    def _getMaNGALeadTargets(self, catalogues, raCen=None, decCen=None,
+                             rejectTargets=[], decollide=True, sort=False,
+                             **kwargs):
+        """Creates a MaNGA led plateInput file."""
 
-        struct1 = self.inputCatalogue.copy()
-
-        # Gets the targets for which IFUs need to be assigned.
-        if not reassignAll:
-            struct1ToKeep = struct1[struct1['ifudesign'] > 0]
-            struct1ToAssign = struct1[struct1['ifudesign'] <= 0]
+        if catalogues is None:
+            if self.targettype == 'science':
+                self.catalogues = readPath(config['catalogues']['science'])
+            elif self.targettype == 'standard':
+                self.catalogues = readPath(config['catalogues']['standard'])
         else:
-            struct1ToKeep = None
-            struct1ToAssign = struct1.copy()
-            struct1ToAssign['ifudesign'] = -999
+            if isinstance(catalogues, basestring):
+                catalogues = [catalogues]
+            self.catalogues = [readPath(cat) for cat in catalogues]
 
-        assignOrder, blockPositionsCoo = self._getAssignOrder(struct1ToAssign)
+        log.debug('catalogue paths are {0}'.format(str(self.catalogues)))
 
-        # Gets already assigned ifudesigns
-        usedIFUDesigns = []
-        if struct1ToKeep is not None:
-            for row in struct1ToKeep:
-                usedIFUDesigns.append(int(row['ifudesign']))
+        assert all(map(os.path.exists, self.catalogues))
 
-        for idx in assignOrder:
+        log.debug('raCen={0:.4f}, decCen={1:.4f}'.format(
+                  self.raCen, self.decCen))
+        log.debug('locationid={0}'.format(self.locationid))
 
-            row = struct1ToAssign[idx]
+        if self.targettype == 'science':
+            nBundlesToAllocate = np.sum(config['IFUs'].values())
+        elif self.targettype == 'standard':
+            nBundlesToAllocate = np.sum(config['miniBundles'].values())
+        elif self.targettype == 'sky':
+            nBundlesToAllocate = np.sum(config['skies'].values())
 
-            ra = row['ra']
-            dec = row['dec']
-            targetCoo = coo.ICRS(ra=ra, dec=dec, unit=(uu.degree, uu.degree))
+        targetCats = []
+        coords = None
+        nAllocated = 0
+        for catalogue in self.catalogues:
+            targetsInField = self._selectTargets(catalogue)
+            targetsInField = self._rejectTargets(targetsInField, rejectTargets)
+            log.debug('{0} targets selected from catalogue {1}'
+                      .format(len(targetsInField), catalogue))
 
-            ifuSize = row['ifudesignsize']
-            ifuDesign = self._assignFerrule(
-                targetCoo, ifuSize, blockPositionsCoo, usedIFUDesigns)
+            if len(targetsInField) == 0:
+                continue
 
-            usedIFUDesigns.append(ifuDesign)
-            struct1ToAssign[idx]['ifudesign'] = ifuDesign
-            log.debug('mangaid={0} assigned ifudesign={1}'.format(
-                struct1ToAssign[idx]['mangaid'],
-                struct1ToAssign[idx]['ifudesign']))
+            if decollide:
+                targetsInCat = self._decollide(targetsInField, coords=coords,
+                                               **kwargs)
+                log.debug('{0} targets remaining after decollision.'
+                          .format(len(targetsInCat)))
+                targetCats.append(targetsInCat)
 
-        if struct1ToKeep is None:
-            return struct1ToAssign
+            nAllocated += len(targetsInCat)
+
+            if nAllocated >= nBundlesToAllocate:
+                break
+            else:
+                if len(targetsInCat) > 0:
+                    catCoords = np.zeros((len(targetsInCat), 2), np.float64)
+                    catCoords[:, 0] = targetsInCat['RA']
+                    catCoords[:, 1] = targetsInCat['DEC']
+
+                    if coords is None:
+                        coords = catCoords
+                    else:
+                        coords = np.concatenate((coords, catCoords), axis=0)
+
+        targets = self._combineTargetCatalogues(targetCats)
+
+        if nAllocated < nBundlesToAllocate:
+            if self.targettype != 'science':
+                pass
+            else:
+                targets = autocomplete(targets, 'science',
+                                       (self.raCen, self.decCen))
+            if len(targets) < nBundlesToAllocate:
+                raise exceptions.GohanPlateInputError(
+                    'not enough targets.')
+
+        if sort:
+            targetCoords = np.zeros((len(targets), 2), np.float64)
+            targetCoords[:, 0] = targets['RA']
+            targetCoords[:, 1] = targets['DEC']
+            log.debug('sorting targets')
+            newCoords, order = sortTargets(
+                targetCoords, (self.raCen, self.decCen), plot=True,
+                limitTo=nBundlesToAllocate,
+                filename=('sortedTargets_{0:d}_{1}.pdf'
+                          .format(self.designid, self.targettype[0:3].upper()))
+                )
+            targets = targets[order]
         else:
-            return table.vstack((struct1ToKeep, struct1ToAssign))
 
-    def _getAssignOrder(self, struct):
-        """Calculates the distances of the targets to the anchor blocks.
+            targets = targets[0:nBundlesToAllocate]
 
-        Returns the indices of the input structure sorted by distance to
-        the anchor blocks (ordered from farther to closer). The metric used
-        is the square root of the sum of the squares of the distance of the
-        target to each block. The (RA, Dec) position of the blocks is also
-        returned in `time` format.
-
-        """
-
-        if len(struct) == 0:
-            return struct
-
-        raCen = self.pairs['racen']
-        decCen = self.pairs['deccen']
-
-        distances = np.zeros(len(struct), dtype=float)
-
-        blockPositions = self.getRADecAnchorBlocks(raCen, decCen)
-        blockPositionsCoo = coo.ICRS(
-            ra=list(zip(*blockPositions)[0]),
-            dec=list(zip(*blockPositions)[1]),
-            unit=(uu.degree, uu.degree))
-
-        for nn, row in enumerate(struct):
-            ra = row['ra']
-            dec = row['dec']
-
-            targetCoo = coo.ICRS(ra=ra, dec=dec, unit=(uu.degree, uu.degree))
-            separations = targetCoo.separation(blockPositionsCoo)
-
-            distances[nn] = np.sum(separations.degree**2)
-
-        return np.argsort(distances)[::-1], blockPositionsCoo
-
-    def _assignFerrule(self, targetCoo, ifuSize,
-                       blockPositionsCoo, usedIFUDesigns):
-        """
-        Returns the optimum ifuDesign for a target based on the target
-        position, the desired IFU size and the number of available ifuDesigns.
-
-        """
-
-        ifus = config['IFUs'].copy()
-        ifus.update(config['miniBundles'])
-
-        for usedIFUDesign in usedIFUDesigns:
-            usedIFUSize = ifuDesign2Size(usedIFUDesign)
-            ifus[usedIFUSize] -= 1
-
-        if ifus[ifuSize] <= 0:
-            raise ValueError('trying to assign too many '
-                             'IFUs of size {0}.'.format(ifuSize))
-
-        anchorBlockOrder = np.argsort(
-            targetCoo.separation(blockPositionsCoo).degree)
-
-        sortedBlocks = [config['anchorBlocks']['anchors'][anchorIdx]
-                        for anchorIdx in anchorBlockOrder]
-        ifuDesign = 0
-        for anchorName in sortedBlocks:
-            ferrules = config['anchorBlocks'][anchorName]
-            for ferrule in ferrules:
-                cartMapRow = cartmap[cartmap['frlPlug'] == ferrule][0]
-                ferruleSize = cartMapRow['ifusize']
-                ferruleDesign = cartMapRow['ifuDesign']
-                if ferruleDesign not in usedIFUDesigns and \
-                        ferruleSize == ifuSize:
-                    ifuDesign = ferruleDesign
-                    break
-                else:
-                    continue
-            if ifuDesign != 0:
+        for col in targets.colnames:
+            if col.lower() == 'priority':
+                targets[col] = np.arange(len(targets), dtype=int) + 1
                 break
 
-        return ifuDesign
+        return targets
 
     @staticmethod
-    def getRADecAnchorBlocks(ra, dec):
-        """Calculates RA and Dec of the anchor blocks.
+    def _rejectTargets(targets, mangaids):
+        """Rejects targets if they match a list of mangaids."""
 
-        Returns a list of tuples, each tuple containing RA and Dec.
-        The order of blocks in the returned list is [NE, SE, NW, SE]
+        idxToReject = []
+        for ii, target in enumerate(targets):
+            if target['MANGAID'].strip() in mangaids:
+                idxToReject.append(ii)
 
-        """
+        targets.remove_rows(idxToReject)
 
-        raAngToAnchor = 1.5 / 2. / np.cos(dec * np.pi / 180.)
-        decAngToAnchor = 1.5 / 2
+        if len(idxToReject) > 0:
+            log.debug('removed {0} targets from catalogue because they '
+                      'where in a manual rejection list'
+                      .format(len(idxToReject)))
 
-        return [
-            (ra + raAngToAnchor, dec + decAngToAnchor),
-            (ra + raAngToAnchor, dec - decAngToAnchor),
-            (ra - raAngToAnchor, dec + decAngToAnchor),
-            (ra - raAngToAnchor, dec - decAngToAnchor)]
+        return targets
 
-    def plotIFUs(self, filename, struct1=None,
-                 copyToRepo=False, moveToRepo=False):
-        """Plots the position of the IFUs on the plate.
+    def _combineTargetCatalogues(self, targetCats):
+        """Creates a single table from different catalogues with potentially
+        different fields."""
 
-        This method plots the position of the IFUs (and, thus,
-        of the targets) on the plate with information about
-        MaNGAID and IFUDESIGN.
+        if len(targetCats) == 1:
+            return targetCats[0]
 
-        Parameters
-        ----------
-        filename : str
-            The plot filename.
-        struct1 : `Table` or None, optional
-            If specified, uses the data from the structure to
-            determine the MaNGAIDs, RA, Dec and IFUDESIGN. Otherwise,
-            uses the one in the current instance.
-        copyToRepo, moveToRepo : bool, optional
-            If True, copies or moves the plot to the platelist plate run
-            directory. If both are True, copyToRepo supersedes moveToRepo.
+        targets = targetCats[0]
+        for targetCat in targetCats[1:]:
+            targets = table.vstack([targets, targetCat])
 
-        """
+        log.debug('vstacked {0} catalogues'.format(len(targetCats)))
 
-        if struct1 is None:
-            struct1 = self.inputCatalogue.data
+        return targets
 
-        from matplotlib import pyplot as plt
-        from matplotlib.patches import Ellipse
+    def _decollide(self, targets, coords=None, decollidePlateInputs=[],
+                   **kwargs):
+        """Rejects targets that collided either with coords or with targets
+        in `decollidePlateInputs`."""
 
-        plt.cla()
-        plt.clf()
+        nTargets = len(targets)
+        targets = self.internalDecollision(targets, **kwargs)
+        log.debug('{0} targets rejected because internal collisions.'
+                  .format(nTargets-len(targets)))
+        nTargets = len(targets)
 
-        fig, ax = plt.subplots()
-        fig.set_size_inches(8, 8)
-
-        raCen = self.pairs['racen']
-        decCen = self.pairs['deccen']
-
-        plate = Ellipse((raCen, decCen),
-                        height=3.,
-                        width=3/np.cos(decCen*np.pi/180.),
-                        linewidth=2,
-                        edgecolor='k', facecolor='None')
-        ax.add_patch(plate)
-
-        for row in struct1:
-
-            ra = row['ra']
-            dec = row['dec']
-            ifuSize = row['ifudesignsize']
-            ifuDesign = row['ifudesign']
-            mangaID = row['mangaid']
-
-            cartMapInfo = cartmap[cartmap['ifuDesign'] == ifuDesign][0]
-            ferrule = cartMapInfo['frlPlug']
-
-            anchorName = ''
-            for key in config['anchorBlocks']['anchors']:
-                if ferrule in config['anchorBlocks'][key]:
-                    anchorName = key
-                    break
-
-            closestAnchor = self._isClosestAnchor(
-                ra, dec, raCen, decCen, anchorName)
-
-            if closestAnchor:
-                color = 'b'
-            else:
-                color = 'r'
-
-            ax.scatter(ra, dec, s=ifuSize/2, marker='o',
-                       edgecolor=color, facecolor='None')
-
-            ax.text(ra, dec-0.06,
-                    '{0} ({1})'.format(ifuDesign, anchorName),
-                    horizontalalignment='center',
-                    verticalalignment='center',
-                    fontsize=8, color=color)
-
-            ax.text(ra, dec+0.05, r'{0}'.format(mangaID),
-                    horizontalalignment='center',
-                    verticalalignment='center',
-                    fontsize=6, color=color)
-
-        ax.set_xlim(raCen + 1.6/np.cos(decCen*np.pi/180.),
-                    raCen - 1.6/np.cos(decCen*np.pi/180.))
-        ax.set_ylim(decCen - 1.6, decCen + 1.6)
-
-        ax.set_xlabel(r'$\alpha_{2000}$')
-        ax.set_ylabel(r'$\delta_{2000}$')
-
-        plt.savefig(filename)
-
-        plt.close('all')
-
-        log.info('IFU plot for designid={0} saved to {1}'.format(
-            self.designid, filename))
-
-        if copyToRepo:
-            self._toPlateListInputs(filename)
-        elif moveToRepo:
-            self._toPlateListInputs(filename, command=sh.move)
-
-    def _isClosestAnchor(self, ra, dec, raCen, decCen, anchorName):
-        """Returns True if an ifuDesign is from the closest anchor."""
-
-        blockPositions = self.getRADecAnchorBlocks(raCen, decCen)
-        blockPositionsCoo = coo.ICRS(
-            ra=list(zip(*blockPositions)[0]),
-            dec=list(zip(*blockPositions)[1]),
-            unit=(uu.degree, uu.degree))
-
-        targetCoo = coo.ICRS(
-            ra=ra, dec=dec,
-            unit=(uu.degree, uu.degree))
-
-        closestAnchorIdx = np.argmin(
-            targetCoo.separation(blockPositionsCoo).degree)
-        closestAnchor = config['anchorBlocks']['anchors'][closestAnchorIdx]
-
-        if closestAnchor == anchorName:
-            return True
+        if coords is None and len(decollidePlateInputs) == 0:
+            return targets
         else:
-            return False
+            log.debug('Decolliding against other catalogues.')
+            if len(decollidePlateInputs) > 0:
+                plateInputCoords = np.concatenate(
+                    [plate.getTargetCoords()
+                     for plate in decollidePlateInputs], axis=0)
+                targets = self.decollideCoords(targets, plateInputCoords,
+                                               **kwargs)
+            if coords is not None:
+                targets = self.decollideCoords(targets, coords, **kwargs)
+            log.debug('{0} targets rejected from collision with other '
+                      'catalogues.'.format(nTargets-len(targets)))
 
-    def write(self, filename=None, toRepo=False):
+        return targets
 
-        if filename is None:
-            if self.filename is not None:
-                filename = self.filename
+    def internalDecollision(self, targets, **kwargs):
+        """Decollides targets against themselves. `targets` must be an
+        `astropy.table.Table` with `RA` and `DEC` and `MANGAID` fields."""
+
+        silent = kwargs.get('silentOnCollision', False)
+
+        centreAvoid = config['decollision']['centreAvoid']
+        FOV = config['decollision']['FOV']
+        targetAvoid = config['decollision']['targetAvoid']
+
+        centralPost = coo.SkyCoord(self.raCen, self.decCen, unit='deg')
+        coords = coo.SkyCoord(targets['RA'], targets['DEC'], unit='deg')
+
+        separationToPost = centralPost.separation(coords).deg
+
+        centralPostCollisions = np.where(separationToPost < centreAvoid)[0]
+        for ii in centralPostCollisions:
+            self.logCollision(
+                'mangaid={0} '.format(targets[ii]['MANGAID']) +
+                'rejected: collides with central post', silent=silent)
+
+        outOfField = np.where(separationToPost > FOV)[0]
+        for ii in centralPostCollisions:
+            self.logCollision(
+                'mangaid={0} '.format(targets[ii]['MANGAID']) +
+                'rejected: outside FOV', silent=silent)
+        targets.remove_rows(
+            np.concatenate((centralPostCollisions, outOfField)))
+
+        collisions = []
+        coords = coo.SkyCoord(targets['RA'], targets['DEC'], unit='deg')
+
+        for ii in range(len(coords)-1, -1, -1):
+            separations = coords[ii].separation(coords[0:ii]).deg
+            if any((separations < targetAvoid) & (separations > 0.)):
+                collisions.append(ii)
+
+        collisions = np.sort(np.unique(collisions))
+        for jj in collisions:
+            self.logCollision('mangaid={0} rejected: internal collision'
+                              .format(targets[jj]['MANGAID']), silent=silent)
+
+        targets.remove_rows(collisions)
+
+        return targets
+
+    def decollideCoords(self, targets, coords, **kwargs):
+        """Decollides a list of targets against a list of coordinates.
+        `coords` must be a np.ndarray of Nx2 dimensions. `targets` must be an
+        `astropy.table.Table` with `RA` and `DEC` and `MANGAID` fields."""
+
+        silent = kwargs.get('silentOnCollision', False)
+
+        targetAvoid = config['decollision']['targetAvoid']
+
+        skyCoords = coo.SkyCoord(coords, unit='deg')
+        targetCoords = coo.SkyCoord(targets['RA'], targets['DEC'], unit='deg')
+
+        targetsToReject = []
+        for ii in range(len(targetCoords)):
+
+            separations = targetCoords[ii].separation(skyCoords).deg
+
+            if np.any(separations < targetAvoid):
+                targetsToReject.append(ii)
+                collisions = np.where(separations < targetAvoid)[0]
+                self.logCollision(
+                    'mangaid={0} '.format(targets['MANGAID'][ii]) +
+                    'rejected: collides with ' +
+                    'RA={0:.5f}, Dec={0:.5f}'.format(
+                        skyCoords[collisions[0]].ra.deg,
+                        skyCoords[collisions[0]].dec.deg), silent=silent)
+
+        targets.remove_rows(targetsToReject)
+
+        return targets
+
+    def logCollision(self, message, silent=False):
+        """Raises a warning due to collision."""
+        if not silent:
+            warnings.warn(message, exceptions.GohanCollisionWarning)
+        else:
+            log.debug(message)
+
+    def _tidyUpTargets(self, targets):
+        """Makes sure all mandatory columns are present, adds necessary but
+        autofillable columns and tidies up the target list."""
+
+        # Makes column names low case.
+        for colname in targets.colnames:
+            if colname.lower() != colname:
+                targets.rename_column(colname, colname.lower())
+
+        mandatoryColumns = ['ra', 'dec']
+        fillableColumns = ['psfmag', 'sourcetype',
+                           'ifudesign', 'manga_target1', 'manga_target2',
+                           'manga_target3', 'priority']
+
+        if self.targettype in ['science', 'standard']:
+            mandatoryColumns = ['mangaid'] + mandatoryColumns
+
+        if (self.targettype == 'science' and
+                self.surveyMode in ['mangaLead', 'mangaOnly']):
+            mandatoryColumns.append('ifudesignsize')
+        else:
+            fillableColumns.insert(2, 'ifudesignsize')
+
+        for colname in mandatoryColumns:
+            if colname not in targets.colnames:
+                raise exceptions.GohanPlateInputError(
+                    'mandatory column {0} not present'.format(colname))
+
+        for column in fillableColumns:
+            if column in targets.colnames:
+                continue
+
+            elif column == 'psfmag':
+                data = [[0.0, 0.0, 0.0, 0.0, 0.0]
+                        for ii in range(len(targets))]
+
+            elif column == 'sourcetype':
+
+                if self.targettype == 'science':
+                    sourcetype = 'SCI'
+                elif self.targettype == 'standard':
+                    sourcetype = 'STD'
+                else:
+                    sourcetype = 'SKY'
+
+                data = [sourcetype] * len(targets)
+
+            elif column in ['ifudesignsize', 'ifudesign']:
+                data = [-999] * len(targets)
+
+            elif column in ['manga_target1', 'manga_target2', 'manga_target3']:
+                data = [0] * len(targets)
+
+            elif column == 'priority':
+                data = np.arange(len(targets), dtype=int) + 1
+
             else:
-                filename = self.getDefaultFilename()
-                self.filename = filename
+                raise exceptions.GohanPlateInputError(
+                    'failed when trying to autocomplete column ' + column)
+
+            targets.add_column(table.Column(data, column))
+            log.debug('Automatically added column {0}.'.format(column))
+
+        # Makes sure that the ife_ra, ifu_dec, target_ra and target_dec
+        # columns exist.
+        for coordType in ['ifu', 'target']:
+            for col in ['ra', 'dec']:
+                if not '{0}_{1}'.format(coordType, col) in targets.colnames:
+                    targets.add_column(
+                        table.Column(
+                            [-999.] * len(targets),
+                            '{0}_{1}'.format(coordType, col),
+                            dtype=float))
+                    log.debug('Adding {0}_{1} column'.format(coordType, col))
+
+        # Replace ra, dec from ifu_ra, ifu_dec if they are defined.
+        for col in ['ra', 'dec']:
+            for target in targets:
+
+                targetCol = 'target_{0}'.format(col)
+                ifuCol = 'ifu_{0}'.format(col)
+
+                if target[targetCol] < -100:
+                    target[targetCol] = target[col]
+
+                if target[ifuCol] < -100:
+                    target[ifuCol] = target[col]
+                elif target[ifuCol] > -100 and target[ifuCol] != target[col]:
+                    target[col] = target[ifuCol]
+                    log.important('setting {0} from ifu_{0} for target'.format(
+                        col) + ' with mangaid={0}'.format(target['mangaid']))
+
+        return self.reorder(targets, mandatoryColumns + fillableColumns)
+
+    @staticmethod
+    def reorder(tt, orderedColumns):
+        """Reorders a table by putting the columns in `orderedColumns`
+        first."""
+
+        newOrder = []
+        for col in orderedColumns:
+            if col in tt.colnames:
+                newOrder.append(col)
+        for col in tt.colnames:
+            if col not in newOrder:
+                newOrder.append(col)
+        tt = tt[newOrder]
+        log.debug('Column order rearranged')
+
+        return tt
+
+    def write(self, toRepo=False):
+        """Writes the plateInput file to disk or to the repo."""
+
+        filename = self.getDefaultFilename()
 
         if os.path.exists(filename):
             os.remove(filename)
 
-        yanny.write_ndarray_to_yanny(filename, self.inputCatalogue.data,
-                                     structname='MANGAINPUT',
-                                     hdr=self.inputCatalogue.meta)
+        template = yanny.yanny(
+            readPath('+etc/mangaInput_Default.par'), np=True)
+
+        template['locationid'] = self.locationid
+        template['locationid'] = self.locationid
+        template['racen'] = self.raCen
+        template['deccen'] = self.decCen
+        template['designid'] = self.designid
+        template['targettype'] = self.targettype
+        template['manga_tileid'] = self.manga_tileid
+        template['fieldname'] = self.fieldName
+
+        enums = OrderedDict()
+        hdr = OrderedDict()
+        structname = config['plateInputs']['mangaInputStructure']
+
+        template['symbols'] = template.dtype_to_struct(
+            self.mangaInput.dtype,
+            structname=structname,
+            enums=enums)
+
+        template[structname.upper()] = self.mangaInput.filled()
+
+        for key in hdr:
+            template[key] = hdr[key]
+
+        template.write(filename)
 
         log.info('{0} saved.'.format(filename))
 
@@ -835,20 +728,22 @@ class PlateInputBase(object):
 
     def getDefaultFilename(self):
 
-        designName = '{0:04d}'.format(int(self.meta['manga_tileid'])) \
-            if int(self.meta['manga_tileid']) != -1 else self.meta['fieldname']
+        filename = 'manga' + self.targettype.capitalize()
 
-        template = 'manga{type}_{designName:s}_{designid:04d}.par'.format(
-            type=self.inputCatalogue.meta['targettype'].title(),
-            designName=designName, designid=self.designid)
+        if self.surveyMode == 'mangaOnly' or self.surveyMode == 'mangaLead':
+            filename += '_{0:d}_{1:d}.par'.format(self.locationid,
+                                                  self.designid)
+        else:
+            filename += '_{0:s}_{1:d}.par'.format(self.fieldName,
+                                                  self.designid)
 
-        return template
+        return filename
 
     def _toRepo(self, filename):
         """Copies a file to platelist."""
 
         inputPath = os.path.join(
-            os.path.expandvars(config['platelist']), 'inputs/manga',
+            readPath(config['platelist']), 'inputs/manga',
             self.plateRun)
 
         if not os.path.exists(inputPath):
@@ -857,15 +752,3 @@ class PlateInputBase(object):
         sh.copy(filename, inputPath)
 
         log.info(filename + ' copied $PLATELIST/inputs.')
-
-    @property
-    def struct1(self):
-        return self.inputCatalogue.data
-
-    @property
-    def meta(self):
-        return self.inputCatalogue.meta
-
-    @property
-    def pairs(self):
-        return self.inputCatalogue.meta

@@ -18,6 +18,14 @@ import sys
 import glob
 from astropy import table
 import os
+import numpy as np
+
+
+def getLastMaNGAID(stellTable):
+
+    mangaID = [int(mm.split('-')[1]) for mm in stellTable['MANGAID']]
+
+    return np.max(mangaID)
 
 
 def createStellarLibraryCatalogue(catID, outName, files=[]):
@@ -27,9 +35,13 @@ def createStellarLibraryCatalogue(catID, outName, files=[]):
 
     names = ['RA', 'DEC', 'PRIORITYTYPE', 'STDTYPE', 'SUBTYPE', 'PRIORITYSUB',
              'MANGA_TARGET2']
-    stellTable = table.Table(None, names=names,
-                             dtype=[float, float, 'S10', 'S3', 'S1', int,
-                                    int])
+
+    if not os.path.exists(outName):
+        stellTable = table.Table(None, names=names,
+                                 dtype=[float, float, 'S10', 'S3', 'S1', int,
+                                        int])
+    else:
+        stellTable = table.Table.read(outName)
 
     for file in files:
         tmpTable = table.Table.read(file, format='ascii',
@@ -61,12 +73,14 @@ def createStellarLibraryCatalogue(catID, outName, files=[]):
 
         tmpTable.sort(['MANGA_TARGET2', 'SUBTYPE', 'PRIORITYSUB'])
 
+        lastMaNGAID = getLastMaNGAID(stellTable)
+        mangaIDs = ['{0:d}-{1:d}'.format(int(catID), nn)
+                    for nn in np.arange(lastMaNGAID+1,
+                                        lastMaNGAID+1+len(tmpTable))]
+        tmpTable.add_column(table.Column(mangaIDs, name='MANGAID'), 0)
+
         for nn, row in enumerate(tmpTable):
             stellTable.add_row(list(row))
-
-    mangaID = ['{0:d}-{1:d}'.format(int(catID), nn+1)
-               for nn in range(len(stellTable))]
-    stellTable.add_column(table.Column(mangaID, name='MANGAID'), 0)
 
     if os.path.exists(outName):
         os.remove(outName)

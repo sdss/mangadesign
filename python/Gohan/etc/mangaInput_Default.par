@@ -12,21 +12,6 @@ designid         None
 instrument       MANGA
 locationid       None
 targettype       None
-manga_tileid           -1
+manga_tileid     -1
 offset           0
 fieldname        NA
-
-typedef struct {
-    double ra;
-    double dec;
-    char mangaid[10];
-    char sourcetype[10];
-    double psfmag[5];
-    long ifudesign;
-    long ifudesignsize;
-    long manga_target1;
-    long manga_target2;
-    long priority;
-} MANGAINPUT;
-
-MANGAINPUT 15.0 10.0 '12-123' SCI {0.0 0.0 0.0 0.0 0.0} 12701 127 0 0 1

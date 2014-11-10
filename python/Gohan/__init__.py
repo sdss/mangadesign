@@ -31,7 +31,7 @@ warnings.filterwarnings(
     'This figure includes Axes that are not compatible with tight_layout')
 warnings.filterwarnings('ignore', 'Module argparse was already imported')
 
-from .exceptions import GohanWarning
+from Gohan.exceptions import GohanWarning
 warnings.filterwarnings('always', category=GohanWarning)
 
 # from .utils.readPath import readPath
@@ -41,7 +41,7 @@ __DEFAULT_CONFIG_FILE__ = readPath('+defaults.yaml')
 __GOHAN_CONFIG_PATH__ = readPath('~/.gohan/gohan.yaml')
 
 # Reads the configuration file
-from .core.configuration import GohanConfig
+from Gohan.core.configuration import GohanConfig
 config = GohanConfig(__DEFAULT_CONFIG_FILE__)
 
 if os.path.exists(__GOHAN_CONFIG_PATH__):
@@ -49,12 +49,11 @@ if os.path.exists(__GOHAN_CONFIG_PATH__):
     config.update(GohanConfig(__GOHAN_CONFIG_PATH__))
 
 # Creates the custom logging system
-from .core.logger import initLog
+from Gohan.core.logger import initLog
 log = initLog()
 
-from .PlateInput import PlateInput
-# from .PlateMags import PlateMags
-from .InputCatalogue import InputCatalogue
+from Gohan.PlateInput import PlateInput
+from Gohan.PlateMags import PlateMags
+from Gohan.PlateDefinition import PlateDefinition
 
-__all__ = ['PlateInput', 'PlateMags', 'InputCatalogue', 'runAll',
-           'log', 'config']
+__all__ = ['PlateInput', 'PlateMags', 'log', 'config', 'PlateDefinition']

@@ -26,6 +26,11 @@ class GohanNotImplemented(GohanError):
     pass
 
 
+class GohanPlateInputError(GohanError):
+    """A class for error related with PlateInput."""
+    pass
+
+
 class GohanWarning(Warning):
     """Base warning for Gohan."""
 

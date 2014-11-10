@@ -1,7 +1,10 @@
 import pywcsgrid2 as pywcsgrid2
 import colorama
 from getSDSSRun import getSDSSRun
-from .runAll import runAll
+from runAll import runAll
+from sortTargets import sortTargets
+from assignIFUDesigns import assignIFUDesigns
+from autocomplete import autocomplete
 
 try:
     from Staralt import Staralt

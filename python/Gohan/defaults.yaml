@@ -5,18 +5,38 @@ logging:
     logFilePath: '~/.gohan/gohan.log'
     logFileMode: 'w'
 
-files:
-    sciSample: $MANGASAMPLE_DIR/MaNGA_targets_extNSA_all_final_tiled_v0.5.fits
-    stdSample: None
-    skySample: None
+catalogues:
+    science: $MANGASAMPLE_SCIENCE_CATALOGUE
+    standard: $MANGASAMPLE_STANDARD_CATALOGUE
+    stelLib: $MANGASAMPLE_STELLIB_CATALOGUE
+    APASS: $MANGASAMPLE_APASS_CATALOGUE
+    sky: None
+    NSA: $MANGASAMPLE_NSA_CATALOGUE
 
 decollision:
     FOV: 1.49
     centreAvoid: .041666667
     targetAvoid: .033333333
 
+plateInputs:
+    mangaInputStructure: 'MANGAINPUT'
+    cartmap: $MANGACORE_DIR/cartmaps/cartmap-02-56687.par
+
+plateMags:
+    filters : [g, r, i, z]
+    BOSS_SN: +etc/BOSS_SNvsFibMag2.dat
+    simbmap: $MANGACORE_DIR/metrology/fiducial/manga_simbmap_127.par
+    targetSeeing: 2
+    reffField: PETROTH50
+    DPI: 72
+    nPix: 50
+
+plateTargets:
+    neverobserve: +etc/neverobserve.dat
+    templates: +etc/
+
 plateTypes:
-    mangaLeading:
+    mangaLead:
         platedesignversion: v1
         plateLead: MANGA
         plateType: MANGA-APOGEE2
@@ -34,7 +54,7 @@ plateTypes:
         programname: manga
         drillstyle: manga
 
-    apogeeLeading:
+    apogeeLead:
         platedesignversion: v1
         plateLead: APOGEE
         plateType: APOGEE2-MANGA
@@ -47,18 +67,21 @@ nsaImaging:
     baseURL: http://data.sdss3.org/sas/ebosswork/manga/atlas/v1/detect/v1_0/
     username: sdss3
     password: 4-surveys
+    scale: 0.396
+
+sdssImaging:
+    baseURL: http://data.sdss3.org/sas/dr10/boss
+    username: None
+    password: None
+    scale: 0.396
 
 platelist: $PLATELIST_DIR
 mangacore: $MANGACORE_DIR
+preimaging: $PREIMAGING_DIR
 cataloguePath: $MANGASAMPLE_DIR
-preImaging: $PREIMAGING_DIR
-
-plateTargets:
-    neverobserve: +etc/neverobserve.dat
-    templates: +etc/
 
 anchorBlocks:
-    anchors: ['NE', 'SE', 'NW', 'SW']
+    anchors: [NE, SE, NW, SW]
     NE: [30, 31, 57, 58, 59, 32, 33, 34]
     SE: [35, 60, 61, 62, 36, 37]
     NW: [26, 54, 55, 56, 27, 28, 29]
@@ -67,14 +90,3 @@ anchorBlocks:
 IFUs: {19: 2, 37: 4, 61: 4, 91: 2, 127: 5}
 miniBundles: {7: 12}
 skies: {1: 96}
-
-mangaInputStructure: 'MANGAINPUT'
-
-plateMags:
-    filters : ['g', 'r', 'i', 'z']
-    BOSS_SN: +etc/BOSS_SNvsFibMag2.dat
-    simbmap: $MANGACORE_DIR/metrology/fiducial/manga_simbmap_127.par
-    targetSeeing: 2
-
-reffField: 'PETROTH50'
-cartmap: $MANGACORE_DIR/cartmaps/cartmap-02-56687.par

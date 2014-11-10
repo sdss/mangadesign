@@ -6,7 +6,7 @@ perl/plateInputFiber_write.pl -text
 perl/plateInput_write.pl -text
 perl/yanny_sub.pl -text
 pro/mangadesign_version.pro -text
-python/Gohan/InputCatalogue.py -text
+python/Gohan/PlateDefinition.py -text
 python/Gohan/PlateInput.py -text
 python/Gohan/PlateMags.py -text
 python/Gohan/__init__.py -text
@@ -38,6 +38,8 @@ python/Gohan/helpers/runMaNGAPostDesign.py -text
 python/Gohan/helpers/utils.py -text
 python/Gohan/utils/Staralt.py -text
 python/Gohan/utils/__init__.py -text
+python/Gohan/utils/assignIFUDesigns.py -text
+python/Gohan/utils/autocomplete.py -text
 python/Gohan/utils/colorama/__init__.py -text
 python/Gohan/utils/colorama/ansi.py -text
 python/Gohan/utils/colorama/ansitowin32.py -text
@@ -53,3 +55,5 @@ python/Gohan/utils/pywcsgrid2/locator_formatter.py -text
 python/Gohan/utils/pywcsgrid2/wcs_helper.py -text
 python/Gohan/utils/pywcsgrid2/wcs_transforms.py -text
 python/Gohan/utils/runAll.py -text
+python/Gohan/utils/sortTargets.py -text
+python/Gohan/utils/yanny.py -text
