@@ -565,6 +565,9 @@ class PlateMagsIFU(object):
             if None in hdus:
                 return False
 
+        if not os.path.exists(os.path.dirname(imageName)):
+            os.makedirs(os.path.dirname(imageName))
+
         fullHDU = self.concatenateNSAHDUs(hdus)
 
         fullHDU.writeto(imageName, clobber=True)
@@ -742,6 +745,9 @@ class PlateMagsIFU(object):
             image.append(frame)
             image.append(iVar)
             image.append(psf)
+
+        if not os.path.exists(os.path.dirname(imageName)):
+            os.makedirs(os.path.dirname(imageName))
 
         image.writeto(imageName, clobber=True)
 
