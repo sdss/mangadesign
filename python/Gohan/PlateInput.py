@@ -522,7 +522,8 @@ class PlateInput(object):
 
         for ii in range(len(coords)-1, -1, -1):
             separations = coords[ii].separation(coords[0:ii]).deg
-            if any((separations < targetAvoid) & (separations > 0.)):
+
+            if any((separations < targetAvoid)):
                 collisions.append(ii)
 
         collisions = np.sort(np.unique(collisions))
