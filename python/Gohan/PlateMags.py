@@ -282,7 +282,7 @@ class PlateMags(list):
         if os.path.exists(plateMagsPath):
             os.remove(plateMagsPath)
 
-        yanny.write_ndarray_to_yanny(plateMagsPath, self.plateMags.as_array,
+        yanny.write_ndarray_to_yanny(plateMagsPath, self.plateMags._data,
                                      structname='PLATEMAGS')
 
         if self._missingIFUs > 0:
