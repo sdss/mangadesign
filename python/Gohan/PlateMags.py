@@ -266,8 +266,8 @@ class PlateMags(list):
             The filename of the plateMags file. If None, the default is
             ``plateMags-XXXX.par``` with ``XXXX`` the design ID.
         useRepo : bool, optional
-            If True, the plateMags file is create in the appropiate
-            directory in $MANGACORE/plateMags. filename, if defined,
+            If True (the default), the plateMags file is create in the
+            appropiate directory in $MANGACORE/plateMags. filename, if defined,
             is ignored in this case.
         repoPath : str, optional
             The path of the repository. If not defined, the mangacore value
@@ -282,7 +282,7 @@ class PlateMags(list):
         if os.path.exists(plateMagsPath):
             os.remove(plateMagsPath)
 
-        yanny.write_ndarray_to_yanny(plateMagsPath, self.plateMags._data,
+        yanny.write_ndarray_to_yanny(plateMagsPath, self.plateMags.as_array,
                                      structname='PLATEMAGS')
 
         if self._missingIFUs > 0:
