@@ -23,8 +23,8 @@ python/Gohan/etc/neverobserve.dat -text
 python/Gohan/etc/plateTargets-1.template -text
 python/Gohan/etc/plateTargets-12.template -text
 python/Gohan/etc/targets-7443.fits -text svneol=unset#unset
-python/Gohan/examples/generate2014.07.x.apogee2-manga.py -text
 python/Gohan/examples/generate_2014.07.x.manga-apogee2.py -text
+python/Gohan/examples/generate_manga-apogee2.py -text
 python/Gohan/exceptions.py -text
 python/Gohan/helpers/__init__.py -text
 python/Gohan/helpers/catalogueParsers/__init__.py -text
