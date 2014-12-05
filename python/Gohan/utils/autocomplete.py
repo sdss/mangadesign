@@ -18,6 +18,7 @@ from Gohan import log, readPath, config
 from astropy import table
 from astropy import coordinates as coo
 from Gohan.exceptions import GohanUserWarning
+from Gohan.utils.sortTargets import sortTargets
 import warnings
 import numpy as np
 
@@ -54,11 +55,18 @@ def autocomplete(targets, targettype, centre, **kwargs):
     log.info('autocompleting {0} bundles.'.format(nBundlesToAssign))
 
     NSATargets = getNSATargets(targets, centre)
+    NSATargetCoords = np.zeros((len(NSATargets), 2), np.float64)
+    NSATargetCoords[:, 0] = NSATargets['RA']
+    NSATargetCoords[:, 1] = NSATargets['DEC']
+    sortedCoords, order = sortTargets(NSATargetCoords, centre)
+    sortedNSATargets = NSATargets[order]
+
     unassignedBundleSizes = getUnassignedBundleSizes(targets, bundles)
 
     for bundleSize in unassignedBundleSizes:
 
-        target = _getOptimalTarget(targets, NSATargets, bundleSize, centre)
+        target = _getOptimalTarget(targets, sortedNSATargets,
+                                   bundleSize, centre, **kwargs)
 
         if target is not None:
             targets = addTarget(targets, target, bundleSize, centre)
@@ -77,10 +85,11 @@ def autocomplete(targets, targettype, centre, **kwargs):
     return targets
 
 
-def _getOptimalTarget(targets, candidateTargets, bundleSize, centre):
+def _getOptimalTarget(targets, candidateTargets, bundleSize, centre,
+                      useReff=True, **kwargs):
 
     reffField = config['plateMags']['reffField'].upper()
-    if reffField in candidateTargets.colnames:
+    if reffField in candidateTargets.colnames and useReff:
         return _getOptimalTargetSize(targets, candidateTargets, bundleSize,
                                      centre)
     else:

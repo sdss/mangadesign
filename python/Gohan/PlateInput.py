@@ -399,7 +399,7 @@ class PlateInput(object):
                 pass
             else:
                 targets = autocomplete(targets, 'science',
-                                       (self.raCen, self.decCen))
+                                       (self.raCen, self.decCen), **kwargs)
             if len(targets) < nBundlesToAllocate:
                 raise exceptions.GohanPlateInputError(
                     'not enough targets.')

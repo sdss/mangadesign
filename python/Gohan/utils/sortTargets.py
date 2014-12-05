@@ -88,7 +88,7 @@ def plotTargets(targets, centre, plotGrid=None, plotAllTargets=None,
 def calculateSeparation(coord1, coord2):
     """Calculates the separation in the sky between a list of targets. This
     function replaces `astropy.coordinates.SkyCoord.separation`, which is
-    still very slow for large number of points."""
+    still very slow for a large number of points."""
 
     coord1 = np.atleast_2d(coord1)
     coord2 = np.atleast_2d(coord2)
@@ -158,10 +158,11 @@ def sortTargets(targets, centre=None, radius=1.49,
 
     Returns
     -------
-    result : numpy.ndarray
-        The same input `targetList` but reordered according to the sorting
-        algorithm. If `limitTo` is not None, the length of the list is the
-        same as `limitTo`.
+    result : tubple
+        A tuple containing, first, the same input `targetList` but reordered
+        according to the sorting algorithm. If `limitTo` is not None,
+        the length of the list is the same as `limitTo`. The second element is
+        index order referred to the original array.
 
     """
 
