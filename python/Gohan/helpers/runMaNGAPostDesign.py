@@ -72,7 +72,7 @@ def addTargets(plateTargetsPath, newPlateTargetsTable, removeFirst=False,
                                  os.path.basename(plateTargetsPath),
                                  plateid, mangaid))
 
-        plateTargetsTable.add_row(newTarget._data)
+        plateTargetsTable.add_row(newTarget)
         nNewLines += 1
 
     os.remove(plateTargetsPath)
