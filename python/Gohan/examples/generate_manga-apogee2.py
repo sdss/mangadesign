@@ -77,7 +77,10 @@ for field in fields:
     mangaStandard.write(toRepo=toRepo)
 
     plateDefinition = PlateDefinition([mangaScience, mangaStandard])
-    plateDefinition.write(toRepo=toRepo)
+    # toRepo is set to False in plateDefinition because I want to be sure that
+    # I don't overwrite the plate definition when only modifying the plate
+    # inputs (e.g., when APOGEE has already changed the plateDefintion file)
+    plateDefinition.write(toRepo=False)
 
     platePlans = plateDefinition.getPlatePlans(epoch)
     platePlansBlob.write(platePlans + '\n')
