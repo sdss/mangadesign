@@ -246,7 +246,7 @@ def getPointing(plateInputData):
     return {'target_ra': plateInputData['target_ra'],
             'target_dec': plateInputData['target_dec'],
             'ifu_ra': plateInputData['ifu_ra'],
-            'ifu_dec': plateInputData['ifu_ra']}
+            'ifu_dec': plateInputData['ifu_dec']}
 
 
 def getMangaScience(designID):
