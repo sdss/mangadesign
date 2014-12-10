@@ -662,8 +662,17 @@ class PlateMagsIFU(object):
                     'DSOURCE', source, 'The source of the data')
 
             for nn in [imgIdx, varIdx]:
-                newHDU[nn].data = np.array(
-                    newHDU[nn].data[ymin:ymax, xmin:xmax])
+                # Creates a frame for the image for the case its shape < 2*nPix
+                data = newHDU[nn].data.copy()
+                tmpData = np.zeros((data.shape[0]+nPix*2,
+                                    data.shape[1]+nPix*2), np.float)
+                tmpData[nPix:tmpData.shape[0]-nPix,
+                        nPix:tmpData.shape[1]-nPix] = data
+
+                tmpData = tmpData[yy:yy+2*nPix, xx:xx+2*nPix]
+
+                newHDU[nn].data = np.array(tmpData)
+
                 newHDU[nn].header['CRPIX1'] -= xmin
                 newHDU[nn].header['CRPIX2'] -= ymin
 
@@ -1268,9 +1277,17 @@ class PlateMagsIFU(object):
             format='jpg')[::-1, :, :]
 
         nPix = config['plateMags']['nPix']
-        data = data[yy-nPix:yy+nPix, xx-nPix:xx+nPix]
 
-        imsave(imageName, data)
+        # Creates a frame for the image for the case its shape < 2*nPix
+        tmpData = np.zeros((data.shape[0]+nPix*2,
+                            data.shape[1]+nPix*2, 3), np.float)
+
+        tmpData[nPix:tmpData.shape[0]-nPix,
+                nPix:tmpData.shape[1]-nPix, :] = data
+
+        tmpData = tmpData[yy:yy+2*nPix, xx:xx+2*nPix, :]
+
+        imsave(imageName, tmpData)
 
     def _plotFlux(self, ax, scale, band):
         """Displays the flux on each fibre using a greyscale."""
