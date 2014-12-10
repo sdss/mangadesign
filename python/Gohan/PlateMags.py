@@ -148,6 +148,8 @@ class PlateMags(list):
 
     def __init__(self, plateInputFile, designid=None, **kwargs):
 
+        assert os.path.exists(plateInputFile)
+
         self.plateInputFile = plateInputFile
 
         yn = yanny.yanny(self.plateInputFile, np=True)
