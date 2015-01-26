@@ -172,7 +172,7 @@ class PlateMags(list):
     @property
     def preImages(self):
         """Returns a list of preimage filenames for all IFUs."""
-        return [ss.preImage for ss in self if ss.preImage is not None]
+        return [ss.preImagePath for ss in self if ss.preImagePath is not None]
 
     def plot(self, overwrite=False, **kwargs):
         """Plots the bundle position and flux for each target.

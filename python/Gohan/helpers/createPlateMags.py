@@ -37,9 +37,7 @@ def copyPreImaging(designID, preImage):
     return
 
 
-def createPlateMags(input, mode='drillRun',
-                    plot=True, toRepo=False, copyPreimaging=False,
-                    deletePreimaging=False, debug=False):
+def createPlateMags(input, mode='drillRun', plot=False, debug=False):
 
     if mode == 'drillRun':
         designIDs = getPlates(input, column='designid')
@@ -61,15 +59,8 @@ def createPlateMags(input, mode='drillRun',
         mangaScience = getMangaScience(designID)
 
         plateMags = PlateMags(mangaScience)
-        plateMags.write(toRepo=toRepo)
-        plateMags.plot(toRepo=toRepo)
-
-        if copyPreimaging:
-            for plateMagsIFU in plateMags:
-                copyPreImaging(designID, plateMagsIFU.preImage)
-                if deletePreimaging:
-                    os.remove(plateMagsIFU.preImage)
-                    os.remove(plateMagsIFU.preimageIRG)
+        plateMags.write()
+        plateMags.plot()
 
     return
 
@@ -83,18 +74,9 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--designid', dest='designid',
                         action='store_true', default=False,
                         help='if set, the input will be considered a designid')
-    parser.add_argument('-r', '--repo', dest='toRepo', action='store_true',
-                        default=False, help='if set, files will be copied ' +
-                        'to mangacore')
     parser.add_argument('-p', '--plot', dest='plot', action='store_true',
                         default=False, help='if set, a plot of the ' +
                         'preimaging is generated')
-    parser.add_argument('-c', '--copy', dest='copy', action='store_true',
-                        default=False, help='copies the preimaging data to' +
-                        ' config.preImaging')
-    parser.add_argument('-m', '--move', dest='move', action='store_true',
-                        default=False, help='moves the preimaging data to' +
-                        ' config.preImaging')
     parser.add_argument('-b', '--debug', dest='debug', action='store_true',
                         default=False, help='turns on debug mode')
 
@@ -105,15 +87,4 @@ if __name__ == '__main__':
     else:
         mode = 'drillRun'
 
-    if args.copy:
-        copyPreimaging = True
-        deletePreimaging = False
-    if args.move:
-        copyPreimaging = True
-        deletePreimaging = True
-
-    createPlateMags(args.input, mode=mode,
-                    plot=args.plot, toRepo=args.toRepo,
-                    copyPreimaging=copyPreimaging,
-                    deletePreimaging=deletePreimaging,
-                    debug=args.debug)
+    createPlateMags(args.input, mode=mode, plot=args.plot, debug=args.debug)
