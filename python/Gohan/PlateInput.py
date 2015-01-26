@@ -146,12 +146,13 @@ class PlateInput(object):
 
         targets = self._tidyUpTargets(targets)
 
-        log.debug('reassigning IFUs ... ')
-        targets = assignIFUDesigns(targets, (self.raCen, self.decCen),
-                                   targettype=self.targettype,
-                                   plot=plotIFUs,
-                                   filename='ifuPlot_{0}.pdf'.format(
-                                       self.designid))
+        if self.targettype != 'sky':
+            log.debug('reassigning IFUs ... ')
+            targets = assignIFUDesigns(targets, (self.raCen, self.decCen),
+                                       targettype=self.targettype,
+                                       plot=plotIFUs,
+                                       filename='ifuPlot_{0}.pdf'.format(
+                                           self.designid))
 
         self.mangaInput = targets
 
@@ -529,7 +530,8 @@ class PlateInput(object):
         collisions = np.sort(np.unique(collisions))
         for jj in collisions:
             self.logCollision('mangaid={0} rejected: internal collision'
-                              .format(targets[jj]['MANGAID']), silent=silent)
+                              .format(targets[jj]['MANGAID'].strip()),
+                                      silent=silent)
 
         targets.remove_rows(collisions)
 
@@ -582,17 +584,18 @@ class PlateInput(object):
             if colname.lower() != colname:
                 targets.rename_column(colname, colname.lower())
 
-        mandatoryColumns = ['ra', 'dec']
-        fillableColumns = ['psfmag', 'sourcetype',
-                           'ifudesign', 'manga_target1', 'manga_target2',
-                           'manga_target3', 'priority']
+        mandatoryColumns = ['mangaid', 'ra', 'dec']
 
-        if self.targettype in ['science', 'standard']:
-            mandatoryColumns = ['mangaid'] + mandatoryColumns
+        fillableColumns = ['sourcetype', 'manga_target1', 'manga_target2',
+                           'manga_target3', 'priority']
+        if self.targettype != 'sky':
+            fillableColumns = ['psfmag', 'ifudesign'] + fillableColumns
 
         if (self.targettype == 'science' and
                 self.surveyMode in ['mangaLead', 'mangaOnly']):
             mandatoryColumns.append('ifudesignsize')
+        elif self.targettype == 'sky':
+            pass
         else:
             fillableColumns.insert(2, 'ifudesignsize')
 
@@ -635,6 +638,10 @@ class PlateInput(object):
 
             targets.add_column(table.Column(data, column))
             log.debug('Automatically added column {0}.'.format(column))
+
+        if self.targettype == 'sky':
+            # If these are skies, ends here.
+            return self.reorder(targets, mandatoryColumns + fillableColumns)
 
         # Makes sure that the ife_ra, ifu_dec, target_ra and target_dec
         # columns exist.
