@@ -37,6 +37,54 @@ from Gohan.utils import assignIFUDesigns
 from Gohan.utils import autocomplete
 
 
+def reformatAstropyColumn(inputTable, columnName, newFormat):
+    """Changes the format of a column for an `astropy.table.Column`.
+
+    Returns a new table in which the desired column has been cast to a
+    new dtype format.
+
+    Parameters
+    ----------
+    inputTable : `astropy.table.Table`
+        The input table whose column format wants to be changed.
+
+    columnName : string or list of strings
+        The name or names (as a list) of the columns to modify.
+
+    newFormat : dtype or list of dtypes
+        The new dtype format of the column. If a list, it must have the same
+        size as `columnName`.
+
+    Returns
+    -------
+    outputTable : `astropy.table.Table`
+        A new `astropy.table.Table`, identical to `inputTable` but with the
+        desired column(s) cast to a new format.
+
+    Example
+    -------
+      >> table1 = table.Table([[1,2,3],[4,5,6]], names=['columnA', 'columnB'])
+      >> table2 = reformatAstropyColumn(table1, 'columnB', 'S5')
+
+    """
+
+    if isinstance(columnName, (list, tuple, np.ndarray)):
+        assert isinstance(newFormat, (list, tuple, np.ndarray))
+        assert len(columnName) == len(newFormat)
+    else:
+        columnName = [columnName]
+        newFormat = [newFormat]
+
+    dtypes = [inputTable[col].dtype for col in inputTable.colnames]
+    colIndices = [inputTable.colnames.index(colName) for colName in columnName]
+
+    newDtype = dtypes
+    for ii, colIndex in enumerate(colIndices):
+        newDtype[colIndex] = newFormat[ii]
+
+    return table.Table(inputTable, dtype=newDtype)
+
+
 class PlateInput(object):
     """A class to construct plateInput files.
 
@@ -531,7 +579,7 @@ class PlateInput(object):
         for jj in collisions:
             self.logCollision('mangaid={0} rejected: internal collision'
                               .format(targets[jj]['MANGAID'].strip()),
-                                      silent=silent)
+                              silent=silent)
 
         targets.remove_rows(collisions)
 
@@ -671,6 +719,10 @@ class PlateInput(object):
                     target[col] = target[ifuCol]
                     log.important('setting {0} from ifu_{0} for target'.format(
                         col) + ' with mangaid={0}'.format(target['mangaid']))
+
+        targets = reformatAstropyColumn(
+            targets, ['manga_target1', 'manga_target2', 'manga_target3'],
+            [int, int, int])
 
         return self.reorder(targets, mandatoryColumns + fillableColumns)
 
