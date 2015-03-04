@@ -581,7 +581,8 @@ class PlateInput(object):
                               .format(targets[jj]['MANGAID'].strip()),
                               silent=silent)
 
-        targets.remove_rows(collisions)
+        if len(collisions) > 0:
+            targets.remove_rows(collisions)
 
         return targets
 
