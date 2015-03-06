@@ -107,6 +107,25 @@ def parseCatalogID_1(plateMaNGAID, plateTargetsPath):
                     newRow[col.lower()] = nevObs
                     continue
 
+                if qCol == 'ifudesignwrongsize':
+
+                    ifudesignsize = plateInputData['MANGAINPUT'][
+                        'ifudesignsize']
+                    ifutargetsize = plateInputData['MANGAINPUT'][
+                        'ifutargetsize']
+
+                    newRow[col.lower()] = 0
+
+                    if ifutargetsize > 0:
+                        if ifutargetsize > 127:
+                            if ifudesignsize < 127:
+                                newRow[col.lower()] = 1
+                        else:
+                            if ifutargetsize > ifudesignsize:
+                                newRow[col.lower()] = 1
+
+                    continue
+
                 if 'nsa' in col.lower():
                     if qCol == 'inclination':
                         newRow[col.lower()] = np.round(
