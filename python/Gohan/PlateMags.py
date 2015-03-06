@@ -500,9 +500,14 @@ class PlateMagsIFU(object):
             if neededCol not in cols:
                 return None
 
-            if data[cols.index(neededCol)] in [-999, '-999', '-999.', 'NULL']:
+            value = data[cols.index(neededCol)]
+            if value in [-999, '-999', '-999.', 'NULL']:
                 return None
-            returnValues.append(data[cols.index(neededCol)])
+
+            if neededCol == 'pid':
+                value = int(value)
+
+            returnValues.append(value)
 
         return returnValues
 
