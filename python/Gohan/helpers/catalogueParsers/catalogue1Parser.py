@@ -16,12 +16,13 @@ from __future__ import division
 from __future__ import print_function
 from astropy import table
 import fitsio as fits
-from Gohan.exceptions import GohanError
+from Gohan.exceptions import GohanError, GohanUserWarning
 import numpy as np
 from collections import OrderedDict
-from ..runMaNGAPostDesign import log, config, readPath
-from ..utils import getSampleCatalogue, getPlateHolesSortedPath, \
+from Gohan.helpers.runMaNGAPostDesign import log, config, readPath
+from Gohan.helpers.utils import getSampleCatalogue, getPlateHolesSortedPath, \
     getPlateInputData, getPointing, getTargetFix
+import warnings
 from sdss.utilities.yanny import yanny
 
 
@@ -107,25 +108,6 @@ def parseCatalogID_1(plateMaNGAID, plateTargetsPath):
                     newRow[col.lower()] = nevObs
                     continue
 
-                if qCol == 'ifudesignwrongsize':
-
-                    ifudesignsize = plateInputData['MANGAINPUT'][
-                        'ifudesignsize']
-                    ifutargetsize = plateInputData['MANGAINPUT'][
-                        'ifutargetsize']
-
-                    newRow[col.lower()] = 0
-
-                    if ifutargetsize > 0:
-                        if ifutargetsize > 127:
-                            if ifudesignsize < 127:
-                                newRow[col.lower()] = 1
-                        else:
-                            if ifutargetsize > ifudesignsize:
-                                newRow[col.lower()] = 1
-
-                    continue
-
                 if 'nsa' in col.lower():
                     if qCol == 'inclination':
                         newRow[col.lower()] = np.round(
@@ -153,6 +135,31 @@ def parseCatalogID_1(plateMaNGAID, plateTargetsPath):
 
                 elif qCol.lower() in plateInputData.keys():
                     newRow[col.lower()] = plateInputData[qCol.lower()]
+                    continue
+
+                elif qCol.lower() == 'ifudesignwrongsize':
+                    # If ifudesignwrongsize cannot be found, we calculate it
+                    # ourselves but raise a warning
+
+                    warnings.warn('calculating ifudesignwrongsize from ' +
+                                  'ifudesignsize and ifutargetsize.',
+                                  GohanUserWarning)
+
+                    ifudesignsize = plateInputData['MANGAINPUT'][
+                        'ifudesignsize']
+                    ifutargetsize = plateInputData['MANGAINPUT'][
+                        'ifutargetsize']
+
+                    newRow[col.lower()] = 0
+
+                    if ifutargetsize > 0:
+                        if ifutargetsize > 127:
+                            if ifudesignsize < 127:
+                                newRow[col.lower()] = 1
+                        else:
+                            if ifutargetsize > ifudesignsize:
+                                newRow[col.lower()] = 1
+
                     continue
 
                 else:
