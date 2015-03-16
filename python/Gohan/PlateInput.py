@@ -290,7 +290,8 @@ class PlateInput(object):
         separationCentre = catCoords.separation(centre).deg
 
         data = data[np.where(separationCentre <= config['decollision']['FOV'])]
-        catCoords = coo.SkyCoord(data['RA'], data['DEC'], unit='deg')
+        data.sort('NEIGHBOR_DIST')
+        data.reverse()
 
         # Creates a list of skies within the fibre patrol radius of each target
         # in mangaInputs.
@@ -305,14 +306,16 @@ class PlateInput(object):
 
                 ra, dec = targetRADec
 
+                catCoords = coo.SkyCoord(data['RA'], data['DEC'], unit='deg')
                 targetCoords = coo.SkyCoord(ra, dec, unit='deg')
                 sep = catCoords.separation(targetCoords).deg
-                valid = data[np.where(sep <= skyPatrolRadius)]
-                valid = valid[valid['NEIGHBOR_DIST'] > minNeightborDist]
+
+                indices = np.where(
+                    (sep <= skyPatrolRadius) &
+                    (data['NEIGHBOR_DIST'] > minNeightborDist))[0]
+                valid = data[indices]
 
                 # Selects a group of the skies with largest neighbour distance
-                valid.sort('NEIGHBOR_DIST')
-                valid.reverse()
                 maxSkies = len(valid) if len(valid) < maxSkies else maxSkies
                 validSkies.append(valid[0:maxSkies])
 
@@ -321,6 +324,8 @@ class PlateInput(object):
                                   'Try reducing minNeightborDist.'
                                   .format(maxSkies, mangaIDs[ii]),
                                   exceptions.GohanUserWarning)
+
+                data.remove_rows(indices[0:maxSkies])
 
         return table.vstack(validSkies)
 
