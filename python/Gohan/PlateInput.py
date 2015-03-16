@@ -900,6 +900,19 @@ class PlateInput(object):
             targets, ['manga_target1', 'manga_target2', 'manga_target3'],
             [int, int, int])
 
+        # Checks that the proper motions, if present, contain all the needed
+        # columns
+        colNames = target.colnames
+        if (('pm_ra' in colNames and 'pm_dec' not in colNames) or
+                ('pm_dec' in colNames and 'pm_ra' not in colNames)):
+            raise exceptions.GohanPlateInputError(
+                'for proper motions, both pm_ra and pm_dec must be '
+                'present')
+        if ('pm_ra' in colNames and 'pm_dec' in colNames
+                and 'epoch' not in colNames):
+            raise exceptions.GohanPlateInputError(
+                'pm_ra and pm_dec are present but missing epoch column.')
+
         return self.reorder(targets, mandatoryColumns + fillableColumns)
 
     @staticmethod
