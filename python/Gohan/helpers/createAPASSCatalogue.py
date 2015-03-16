@@ -21,10 +21,11 @@ from astropy import table
 import numpy as np
 
 
-def createAPASSCatalogue(catID, outName, cat):
+def createAPASSCatalogue(inputCat, outName):
 
-    catTable = ascii.read(cat, names=['RA', 'DEC', 'G_UNCOR', 'R_UNCOR',
-                                      'I_UNCOR', 'EBV'],
+    catTable = ascii.read(inputCat, names=['MANGAID', 'RA', 'DEC', 'G_UNCOR',
+                                           'R_UNCOR', 'I_UNCOR', 'EBV', 'PMRA',
+                                           'PMDEC'],
                           format='no_header')
 
     psf = []
@@ -35,10 +36,10 @@ def createAPASSCatalogue(catID, outName, cat):
     # catTable.add_column(table.Column(np.arange(1, len(catTable)+1),
     #                                  'PRIORITY'))
 
-    mangaIDs = ['{0}-{1}'.format(catID, ii) for ii in
-                range(1, 1+len(catTable))]
-    catTable.add_column(table.Column(mangaIDs, name='MANGAID', dtype='S10'),
-                        index=0)
+    # mangaIDs = ['{0}-{1}'.format(catID, ii) for ii in
+    #             range(1, 1+len(catTable))]
+    # catTable.add_column(table.Column(mangaIDs, name='MANGAID', dtype='S10'),
+    #                     index=0)
     catTable.add_column(table.Column(len(catTable) * [2**25],
                                      name='MANGA_TARGET2', dtype=int))
 
@@ -54,9 +55,9 @@ def createAPASSCatalogue(catID, outName, cat):
 
     catTable.write(outName)
 
-    print('\nRemember to add\n\n%s %s\n\nto catalog_ids.dat!\n' %
-          (catID, outName))
+    # print('\nRemember to add\n\n%s %s\n\nto catalog_ids.dat!\n' %
+    #       (catID, outName))
 
 
 if __name__ == '__main__':
-    createAPASSCatalogue(sys.argv[1], sys.argv[2], sys.argv[3])
+    createAPASSCatalogue(sys.argv[1], sys.argv[2])
