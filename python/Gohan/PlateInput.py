@@ -25,6 +25,7 @@ import os
 import shutil as sh
 import glob
 import warnings
+import fnmatch
 from collections import OrderedDict
 
 from astropy import coordinates as coo
@@ -35,6 +36,7 @@ from Gohan import exceptions
 from Gohan.utils import yanny, sortTargets
 from Gohan.utils import assignIFUDesigns
 from Gohan.utils import autocomplete
+from Gohan.helpers.utils import getPlateDefinition
 
 
 def reformatAstropyColumn(inputTable, columnName, newFormat):
@@ -378,26 +380,31 @@ class PlateInput(object):
         """Reads the APOGEE plateInput files and returns target and design
         information."""
 
-        platelist = readPath(config['platelist'])
-        apogeeInputs = os.path.join(
-            platelist, 'inputs', 'apogee', self.plateRun)
+        inputsPath = os.path.join(readPath(config['platelist']), 'inputs')
 
-        scienceInput = glob.glob(
-            os.path.join(
-                apogeeInputs,
-                'plateInput_*_SCI_{0:d}.par'.format(self.designid)))
+        plateDefinitionPath = getPlateDefinition(self.designid)
 
-        stdInput = glob.glob(
-            os.path.join(
-                apogeeInputs,
-                'plateInput_*_STA_{0:d}.par'.format(self.designid)))
+        plateDefinition = yanny.yanny(plateDefinitionPath, np=True)
+        nInputs = int(plateDefinition['nInputs'])
 
-        if len(scienceInput) != 1 and len(stdInput) != 1:
-            raise exceptions.GohanPlateInputError(
-                'no APOGEE plateInput found.')
+        scienceInput = None
+        stdInput = None
 
-        sciData = yanny.yanny(scienceInput[0], np=True)
-        stdData = yanny.yanny(stdInput[0], np=True)
+        for nn in range(nInputs):
+            inp = plateDefinition['plateInput{0}'.format(nn+1)]
+            if fnmatch.fnmatch(inp, '*plateInput*_SCI_*.par'):
+                scienceInput = os.path.join(inputsPath, inp)
+            elif fnmatch.fnmatch(inp, '*plateInput*_STA_*.par'):
+                stdInput = os.path.join(inputsPath, inp)
+
+        assert scienceInput is not None and stdInput is not None, \
+            'science or standard input cannot be found in plateDefinition.'
+        assert map(os.path.exists, [scienceInput, stdInput]), \
+            'one or more of the plateInput paths in plateDefinition does ' + \
+            'not exist.'
+
+        sciData = yanny.yanny(scienceInput, np=True)
+        stdData = yanny.yanny(stdInput, np=True)
 
         locationid = int(sciData['locationid'])
         raCen = float(sciData['raCen'])

@@ -265,6 +265,7 @@ def getMangaScience(designID):
 
 
 def getPlateDefinition(designID):
+    """Returns the path of the plateDefinition for a designid."""
 
     path = os.path.join(
         readPath(config['platelist']),
