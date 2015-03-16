@@ -23,7 +23,6 @@ Major revision history:
 import numpy as np
 import os
 import shutil as sh
-import glob
 import warnings
 import fnmatch
 from collections import OrderedDict
@@ -290,6 +289,7 @@ class PlateInput(object):
         separationCentre = catCoords.separation(centre).deg
 
         data = data[np.where(separationCentre <= config['decollision']['FOV'])]
+        data = data[data['NEIGHBOR_DIST'] <= 60]
         data.sort('NEIGHBOR_DIST')
         data.reverse()
 
