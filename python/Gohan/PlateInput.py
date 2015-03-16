@@ -232,12 +232,66 @@ class PlateInput(object):
     def _selectTargets(self, catalogue):
         """Selects targets from a catalogue that are within the FOV."""
 
-        data = table.Table.read(catalogue, format='fits')
+        if isinstance(catalogue, basestring):
+            data = table.Table.read(catalogue, format='fits')
+        elif isinstance(catalogue, table.Table):
+            data = catalogue
+        else:
+            raise exceptions.GohanPlateInputError('catalogue has wrong format')
+
         coords = coo.SkyCoord(data['RA'], data['DEC'], unit='deg')
         separation = coords.separation(
             coo.SkyCoord(ra=self.raCen, dec=self.decCen, unit='deg')).deg
 
         return data[np.where(separation <= config['decollision']['FOV'])]
+
+    def _parseCatalogues(self, catalogues, leadSurvey='manga'):
+        """Returns a list of astropy tables with the catalogues to be used."""
+
+        assert leadSurvey in ['apogee', 'manga'], \
+            'leadSurvey must be apogee or manga'
+
+        if catalogues == []:
+            catalogues = None
+
+        if catalogues is None:
+
+            if self.targettype == 'science':
+                if leadSurvey == 'apogee':
+                    catalogues = [readPath(config['catalogues']['stelLib'])]
+                else:
+                    catalogues = [readPath(config['catalogues']['science'])]
+
+            elif self.targettype == 'standard':
+                if leadSurvey == 'apogee':
+                    catalogues = [readPath(config['catalogues']['standard']),
+                                  readPath(config['catalogues']['APASS'])]
+                else:
+                    catalogues = readPath(config['catalogues']['standard'])
+
+        else:
+            if isinstance(catalogues, (basestring, table.Table)):
+                catalogues = [catalogues]
+            for ii in range(len(catalogues)):
+                if isinstance(catalogues[ii], basestring):
+                    catalogues[ii] = readPath(catalogues[ii])
+
+        cataloguePaths = [cat for cat in catalogues
+                          if isinstance(cat, basestring)]
+        catalogueTables = [cat for cat in catalogues
+                           if isinstance(cat, table.Table)]
+
+        if len(cataloguePaths) > 0:
+            log.debug('catalogue paths are {0}'.format(str(cataloguePaths)))
+        if len(catalogueTables):
+            log.debug('catalogue tables: {0}'.format(len(catalogueTables)))
+
+        for cat in catalogues:
+            if isinstance(cat, basestring):
+                assert os.path.exists(cat), \
+                    'catalogue {0} does not exist'.format(cat)
+
+        return catalogues
 
     def _getInfoFromAPOGEE(self):
         """Reads the APOGEE plateInput files and returns target and design
@@ -289,20 +343,8 @@ class PlateInput(object):
                               **kwargs):
         """Creates an APOGEE led plateInput file."""
 
-        if catalogues is None:
-            if self.targettype == 'science':
-                self.catalogues = readPath(config['catalogues']['stelLib'])
-            elif self.targettype == 'standard':
-                self.catalogues = [readPath(config['catalogues']['standard']),
-                                   readPath(config['catalogues']['APASS'])]
-        else:
-            if isinstance(catalogues, basestring):
-                catalogues = [catalogues]
-            self.catalogues = [readPath(cat) for cat in catalogues]
-
-        log.debug('catalogue paths are {0}'.format(str(self.catalogues)))
-
-        assert all(map(os.path.exists, self.catalogues))
+        self.catalogues = self._parseCatalogues(catalogues,
+                                                leadSurvey='apogee')
 
         self.raCen, self.decCen, \
             self.locationid, apogeeCoords = self._getInfoFromAPOGEE()
@@ -324,8 +366,13 @@ class PlateInput(object):
         for catalogue in self.catalogues:
             targetsInField = self._selectTargets(catalogue)
             targetsInField = self._rejectTargets(targetsInField, rejectTargets)
-            log.debug('{0} targets selected from catalogue {1}'
-                      .format(len(targetsInField), catalogue))
+
+            if isinstance(catalogue, basestring):
+                log.debug('{0} targets selected from catalogue {1}'
+                          .format(len(targetsInField), catalogue))
+            else:
+                log.debug('{0} targets selected from table'
+                          .format(len(targetsInField)))
 
             if len(targetsInField) == 0:
                 continue
@@ -382,19 +429,7 @@ class PlateInput(object):
                              **kwargs):
         """Creates a MaNGA led plateInput file."""
 
-        if catalogues is None:
-            if self.targettype == 'science':
-                self.catalogues = readPath(config['catalogues']['science'])
-            elif self.targettype == 'standard':
-                self.catalogues = readPath(config['catalogues']['standard'])
-        else:
-            if isinstance(catalogues, basestring):
-                catalogues = [catalogues]
-            self.catalogues = [readPath(cat) for cat in catalogues]
-
-        log.debug('catalogue paths are {0}'.format(str(self.catalogues)))
-
-        assert all(map(os.path.exists, self.catalogues))
+        self.catalogues = self._parseCatalogues(catalogues, leadSurvey='manga')
 
         log.debug('raCen={0:.4f}, decCen={1:.4f}'.format(
                   self.raCen, self.decCen))
@@ -413,8 +448,13 @@ class PlateInput(object):
         for catalogue in self.catalogues:
             targetsInField = self._selectTargets(catalogue)
             targetsInField = self._rejectTargets(targetsInField, rejectTargets)
-            log.debug('{0} targets selected from catalogue {1}'
-                      .format(len(targetsInField), catalogue))
+
+            if isinstance(catalogue, basestring):
+                log.debug('{0} targets selected from catalogue {1}'
+                          .format(len(targetsInField), catalogue))
+            else:
+                log.debug('{0} targets selected from table'
+                          .format(len(targetsInField)))
 
             if len(targetsInField) == 0:
                 continue
