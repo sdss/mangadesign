@@ -136,7 +136,7 @@ class PlateDefinition(object):
         return filename
 
     def getPlatePlans(self, epoch, temp=5.0, name=None, comment=' ',
-                      plateid=1000, **kwargs):
+                      plateid=None, plateRun=None, **kwargs):
         """Returns the platePlans text. `epoch` muct be the epoch of the
         observation as a float or a date in the format `'YYYY-MM-DD'`"""
 
@@ -145,7 +145,7 @@ class PlateDefinition(object):
         plansDic['raCen'] = self.plateInputs[0].raCen
         plansDic['decCen'] = self.plateInputs[0].decCen
 
-        plansDic['plateID'] = plateid
+        plansDic['plateID'] = '@plateid' if plateid is None else plateid
         plansDic['comment'] = comment
         plansDic['temp'] = str(temp)
         if name is not None:
@@ -155,8 +155,8 @@ class PlateDefinition(object):
 
         plansDic['locationID'] = self.locationid
         plansDic['designID'] = self.designid
-        plansDic['plateRun'] = self.plateRun
-        plansDic['chunk'] = self.plateRun
+        plansDic['plateRun'] = '@platerun' if plateRun is None else plateRun
+        plansDic['chunk'] = '@platerun' if plateRun is None else plateRun
 
         if isinstance(epoch, Real):
             pass
