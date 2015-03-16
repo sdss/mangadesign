@@ -374,10 +374,12 @@ class PlateInput(object):
         if len(catalogueTables):
             log.debug('catalogue tables: {0}'.format(len(catalogueTables)))
 
-        for cat in catalogues:
-            if isinstance(cat, basestring):
-                assert os.path.exists(cat), \
+        for ii in range(len(catalogues)):
+            if isinstance(catalogues[ii], basestring):
+                assert os.path.exists(catalogues[ii]), \
                     'catalogue {0} does not exist'.format(cat)
+                catalogues[ii] = table.Table.read(catalogues[ii],
+                                                  format='fits')
 
         return catalogues
 
