@@ -132,6 +132,9 @@ class PlateInput(object):
         If True, sorts the targets so that they are evenly distributed on the
         field. Default is False. The number of targets that will be selected to
         be sorted is defined in the `defaults` file.
+    plotSorted : bool, optional
+        If `sort=True` and `plotSorted=True` (default), a plot of the selected
+        sorted targets vs all targets is created.
     rejectTargets : list, optional
         A list of mangaids of targets to be rejected.
     plotIFUs : bool, optional
@@ -509,7 +512,8 @@ class PlateInput(object):
             targetCoords[:, 1] = targets['DEC']
             log.debug('sorting targets')
             newCoords, order = sortTargets(
-                targetCoords, (self.raCen, self.decCen), plot=True,
+                targetCoords, (self.raCen, self.decCen),
+                plot=kwargs.get('plotSorted', True),
                 limitTo=limitTargets,
                 filename=('sortedTargets_{0:d}_{1}.pdf'
                           .format(self.designid, self.targettype[0:3].upper()))
