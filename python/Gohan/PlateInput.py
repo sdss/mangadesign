@@ -418,7 +418,7 @@ class PlateInput(object):
             apogeeCoords.shape + (-1,))
 
         fieldParts = []
-        fieldSplits = scienceInput[0].split('/')[-1].split('_')
+        fieldSplits = scienceInput.split('/')[-1].split('_')
         fieldParts = [fieldSplits[ii]
                       for ii in range(1, len(fieldSplits))
                       if '.par' not in fieldSplits[ii]]
