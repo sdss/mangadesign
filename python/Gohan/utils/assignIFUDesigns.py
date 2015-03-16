@@ -276,6 +276,8 @@ def plotIFUs(structures, centre=None, filename='ifuPlot.pdf', **kwargs):
 
     from Gohan import PlateInput  # To avoid circular import
 
+    skies = []
+
     if isinstance(structures, table.Table):
         if centre is None:
             raise GohanError('centre is required')
@@ -284,12 +286,25 @@ def plotIFUs(structures, centre=None, filename='ifuPlot.pdf', **kwargs):
         if isinstance(structures[0], PlateInput):
             if centre is None:
                 centre = (structures[0].raCen, structures[0].decCen)
-            tables = [ss.mangaInput for ss in structures]
+            tables = []
+            for structure in structures:
+                if structure.targettype == 'sky':
+                    skies.append(structure.mangaInput)
+                else:
+                    tables.append(structure.mangaInput)
+
+    assert len(tables) > 0
 
     struct1 = tables[0]['mangaid', 'ra', 'dec', 'ifudesign', 'ifudesignsize']
     for tt in tables[1:]:
         tmpData = tt['mangaid', 'ra', 'dec', 'ifudesign', 'ifudesignsize']
         struct1 = table.vstack([struct1, tmpData], join_type='exact')
+
+    if len(skies) > 0:
+        skyStruct1 = table.vstack([sky['ra', 'dec'] for sky in skies],
+                                  join_type='exact')
+    else:
+        skyStruct1 = None
 
     plt.cla()
     plt.clf()
@@ -332,18 +347,22 @@ def plotIFUs(structures, centre=None, filename='ifuPlot.pdf', **kwargs):
             color = 'r'
 
         ax.scatter(ra, dec, s=ifuSize/2, marker='o',
-                   edgecolor=color, facecolor='None')
+                   edgecolor=color, facecolor='None', zorder=10)
 
         ax.text(ra, dec-0.06,
                 '{0} ({1})'.format(ifuDesign, anchorName),
                 horizontalalignment='center',
                 verticalalignment='center',
-                fontsize=8, color=color)
+                fontsize=8, color=color, zorder=10)
 
         ax.text(ra, dec+0.05, r'{0}'.format(mangaID),
                 horizontalalignment='center',
                 verticalalignment='center',
-                fontsize=6, color=color)
+                fontsize=6, color=color, zorder=10)
+
+    if skyStruct1 is not None:
+        ax.scatter(skyStruct1['ra'], skyStruct1['dec'], marker='x', s=6,
+                   edgecolor='0.8', zorder=0)
 
     ax.set_xlim(raCen + 1.6/np.cos(decCen*np.pi/180.),
                 raCen - 1.6/np.cos(decCen*np.pi/180.))
