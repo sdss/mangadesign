@@ -96,7 +96,11 @@ class PlateInput(object):
         The designID for the plate.
     targettype : str
         Either `'science'`, `'standard'` or `'sky'` depending on the type of
-        targets the plateInput file will contain.
+        targets the plateInput file will contain. If `targettype='sky'`, a
+        keyword `mangaInputs=` is required and must be equal to a list of all
+        the `PlateInput` objects for the design (normally science and
+        standard). These inputs are used to determine the position of the
+        targets and standards to constrain the sky catalogue.
     plateRun : str, optional
         A string with the plateRun (e.g., '2014.02.x.manga').
     catalogues : file or list of files, optional
@@ -229,8 +233,20 @@ class PlateInput(object):
 
         return [mangaid.strip() for mangaid in mangaids]
 
-    def _selectTargets(self, catalogue):
+    def _selectTargets(self, data):
         """Selects targets from a catalogue that are within the FOV."""
+
+        coords = coo.SkyCoord(data['RA'], data['DEC'], unit='deg')
+        separation = coords.separation(
+            coo.SkyCoord(ra=self.raCen, dec=self.decCen, unit='deg')).deg
+
+        data = data[np.where(separation <= config['decollision']['FOV'])]
+
+        return data
+
+    def _formatCatalogue(self, catalogue):
+        """Makes sure that the catalogue format is uniform. Reads it if
+        `catalogue` is a path"""
 
         if isinstance(catalogue, basestring):
             data = table.Table.read(catalogue, format='fits')
@@ -239,11 +255,69 @@ class PlateInput(object):
         else:
             raise exceptions.GohanPlateInputError('catalogue has wrong format')
 
-        coords = coo.SkyCoord(data['RA'], data['DEC'], unit='deg')
-        separation = coords.separation(
-            coo.SkyCoord(ra=self.raCen, dec=self.decCen, unit='deg')).deg
+        for col in data.colnames:
+            if col != col.upper():
+                data.rename_column(col, col.upper())
 
-        return data[np.where(separation <= config['decollision']['FOV'])]
+        if 'MANGAID' not in data.colnames and self.targettype == 'sky':
+            mangaidCol = table.Column(['0-{0:d}'.format(targetid)
+                                       for targetid in range(len(data))],
+                                      name='MANGAID', dtype='S20')
+            data.add_column(mangaidCol, 0)
+
+        return data
+
+    def _selectSkies(self, data, skyPatrolRadius=16/60.,
+                     minNeightborDist=4, **kwargs):
+        """Selects skies near the targets defined in the list of `mangaInputs`
+        PlateInput objects."""
+
+        try:
+            mangaInputs = kwargs.get('mangaInputs')
+        except:
+            raise exceptions.GohanPlateInputError(
+                'if targettype=sky, you must call PlateInput with a keyword '
+                'mangaInputs.')
+
+        # Selects only skies within the FOV
+        catCoords = coo.SkyCoord(data['RA'], data['DEC'], unit='deg')
+        centre = coo.SkyCoord(ra=self.raCen, dec=self.decCen, unit='deg')
+        separationCentre = catCoords.separation(centre).deg
+
+        data = data[np.where(separationCentre <= config['decollision']['FOV'])]
+        catCoords = coo.SkyCoord(data['RA'], data['DEC'], unit='deg')
+
+        # Creates a list of skies within the fibre patrol radius of each target
+        # in mangaInputs.
+        validSkies = []
+        maxSkies = config['plateInputs']['maxSkiesPerTarget']
+        for mangaInput in mangaInputs:
+
+            targetsRADec = mangaInput.getTargetCoords()
+            mangaIDs = mangaInput.getMangaIDs()
+
+            for ii, targetRADec in enumerate(targetsRADec):
+
+                ra, dec = targetRADec
+
+                targetCoords = coo.SkyCoord(ra, dec, unit='deg')
+                sep = catCoords.separation(targetCoords).deg
+                valid = data[np.where(sep <= skyPatrolRadius)]
+                valid = valid[valid['NEIGHBOR_DIST'] > minNeightborDist]
+
+                # Selects a group of the skies with largest neighbour distance
+                valid.sort('NEIGHBOR_DIST')
+                valid.reverse()
+                maxSkies = len(valid) if len(valid) < maxSkies else maxSkies
+                validSkies.append(valid[0:maxSkies])
+
+                if maxSkies < 10:
+                    warnings.warn('only {0} skies around target {1}. '
+                                  'Try reducing minNeightborDist.'
+                                  .format(maxSkies, mangaIDs[ii]),
+                                  exceptions.GohanUserWarning)
+
+        return table.vstack(validSkies)
 
     def _parseCatalogues(self, catalogues, leadSurvey='manga'):
         """Returns a list of astropy tables with the catalogues to be used."""
@@ -268,6 +342,10 @@ class PlateInput(object):
                                   readPath(config['catalogues']['APASS'])]
                 else:
                     catalogues = readPath(config['catalogues']['standard'])
+
+            else:
+                raise exceptions.GohanPlateInputError(
+                    'no default catalogue for skies.')
 
         else:
             if isinstance(catalogues, (basestring, table.Table)):
@@ -346,8 +424,8 @@ class PlateInput(object):
         self.catalogues = self._parseCatalogues(catalogues,
                                                 leadSurvey='apogee')
 
-        self.raCen, self.decCen, \
-            self.locationid, apogeeCoords = self._getInfoFromAPOGEE()
+        self.raCen, self.decCen, self.locationid, \
+            apogeeCoords = self._getInfoFromAPOGEE()
 
         log.debug('raCen={0:.4f}, decCen={1:.4f}'.format(
                   self.raCen, self.decCen))
@@ -361,11 +439,22 @@ class PlateInput(object):
             nBundlesToAllocate = np.sum(config['skies'].values())
 
         targetCats = []
+
         coords = apogeeCoords
+
         nAllocated = 0
+
         for catalogue in self.catalogues:
-            targetsInField = self._selectTargets(catalogue)
-            targetsInField = self._rejectTargets(targetsInField, rejectTargets)
+
+            catalogue = self._formatCatalogue(catalogue)
+
+            if self.targettype != 'sky':
+                targetsInField = self._selectTargets(catalogue)
+                targetsInField = self._rejectTargets(targetsInField,
+                                                     rejectTargets)
+            else:
+                # Sky selection is different, so we call a special method.
+                targetsInField = self._selectSkies(catalogue, **kwargs)
 
             if isinstance(catalogue, basestring):
                 log.debug('{0} targets selected from catalogue {1}'
@@ -375,6 +464,14 @@ class PlateInput(object):
                           .format(len(targetsInField)))
 
             if len(targetsInField) == 0:
+                continue
+
+            # We don't decollide for skies
+            if self.targettype == 'sky':
+                warnings.warn('Skipping decollision because this is a sky '
+                              'catalogue.', exceptions.GohanUserWarning)
+                targetCats.append(targetsInField)
+                nAllocated += len(targetsInField)
                 continue
 
             if decollide:
@@ -401,6 +498,11 @@ class PlateInput(object):
 
         targets = self._combineTargetCatalogues(targetCats)
 
+        if self.targettype == 'sky':
+            limitTargets = 1e4  # Maximum number of skies per field
+        else:
+            limitTargets = nBundlesToAllocate
+
         if sort:
             targetCoords = np.zeros((len(targets), 2), np.float64)
             targetCoords[:, 0] = targets['RA']
@@ -408,14 +510,13 @@ class PlateInput(object):
             log.debug('sorting targets')
             newCoords, order = sortTargets(
                 targetCoords, (self.raCen, self.decCen), plot=True,
-                limitTo=nBundlesToAllocate,
+                limitTo=limitTargets,
                 filename=('sortedTargets_{0:d}_{1}.pdf'
                           .format(self.designid, self.targettype[0:3].upper()))
                 )
             targets = targets[order]
         else:
-
-            targets = targets[0:nBundlesToAllocate]
+            targets = targets[0:limitTargets]
 
         for col in targets.colnames:
             if col.lower() == 'priority':
@@ -564,6 +665,17 @@ class PlateInput(object):
             return targets
         else:
             log.debug('Decolliding against other catalogues.')
+
+            if self.targettype == 'sky':
+                # If this is a sky plateInput, we must have defined a
+                # mangaInputs keyword, and those plateInputs are the ones
+                # against which we want to decollide.
+                mangaInputs = kwargs.get('mangaInputs', [])
+                for mangaInput in mangaInputs:
+                    if mangaInput not in decollidePlateInputs:
+                        decollidePlateInputs.append(mangaInput)
+                        log.debug('added mangaInput to decollidePlateInputs')
+
             if len(decollidePlateInputs) > 0:
                 plateInputCoords = np.concatenate(
                     [plate.getTargetCoords()
@@ -694,6 +806,7 @@ class PlateInput(object):
                     'mandatory column {0} not present'.format(colname))
 
         for column in fillableColumns:
+
             if column in targets.colnames:
                 continue
 
@@ -714,6 +827,9 @@ class PlateInput(object):
 
             elif column in ['ifudesignsize', 'ifudesign']:
                 data = [-999] * len(targets)
+
+            elif column == 'manga_target2' and self.targettype == 'sky':
+                data = np.zeros(len(targets), dtype=int) + 2
 
             elif column in ['manga_target1', 'manga_target2', 'manga_target3']:
                 data = [0] * len(targets)

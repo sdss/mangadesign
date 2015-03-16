@@ -21,6 +21,7 @@ decollision:
 plateInputs:
     mangaInputStructure: 'MANGAINPUT'
     cartmap: $MANGACORE_DIR/cartmaps/cartmap-02-56687.par
+    maxSkiesPerTarget: 150
 
 plateMags:
     filters : [g, r, i, z]
