@@ -134,21 +134,25 @@ def parseCatalogID_1(plateMaNGAID, plateTargetsPath):
                     continue
 
                 elif qCol.lower() in plateInputData.keys():
-                    newRow[col.lower()] = plateInputData[qCol.lower()]
+                    newRow[col.lower()] = float(plateInputData[qCol.lower()])
                     continue
 
                 elif qCol.lower() == 'ifudesignwrongsize':
                     # If ifudesignwrongsize cannot be found, we calculate it
                     # ourselves but raise a warning
 
-                    warnings.warn('calculating ifudesignwrongsize from ' +
-                                  'ifudesignsize and ifutargetsize.',
-                                  GohanUserWarning)
+                    if newRow['ifutargetsize'] < 0:
+                        newRow[col.lower()] = 0
+                        continue
 
                     ifudesignsize = plateInputData['MANGAINPUT'][
                         'ifudesignsize']
                     ifutargetsize = plateInputData['MANGAINPUT'][
                         'ifutargetsize']
+
+                    warnings.warn('calculating ifudesignwrongsize from ' +
+                                  'ifudesignsize and ifutargetsize.',
+                                  GohanUserWarning)
 
                     newRow[col.lower()] = 0
 
@@ -161,6 +165,13 @@ def parseCatalogID_1(plateMaNGAID, plateTargetsPath):
                                 newRow[col.lower()] = 1
 
                     continue
+
+                elif qCol.lower() in ['ifutargetsize']:
+
+                    warnings.warn('field {0} not found. Setting it to -999'
+                                  .format(qCol.lower()), GohanUserWarning)
+
+                    newRow[col.lower()] = -999
 
                 else:
 
