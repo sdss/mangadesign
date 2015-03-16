@@ -43,7 +43,7 @@ def ifuDesign2Size(ifudesign):
 
 def assignIFUDesigns(targets, centre, targettype='science',
                      failOnIFUDesignSize=False, reassignAll=False,
-                     plot=False, **kwargs):
+                     plot=False, plotFilename=None, **kwargs):
     """Checks a list of targets and assigns, if needed, ifudesignsizes and
     ifudesigns in an efficient way."""
 
@@ -109,7 +109,7 @@ def assignIFUDesigns(targets, centre, targettype='science',
         log.debug('all ifudesigns are correctly assigned')
 
     if plot:
-        plotIFUs(targets, centre, **kwargs)
+        plotIFUs(targets, centre, filename=plotFilename, **kwargs)
 
     return targets
 

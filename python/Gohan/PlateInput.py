@@ -522,8 +522,9 @@ class PlateInput(object):
                 targetCoords, (self.raCen, self.decCen),
                 plot=kwargs.get('plotSorted', True),
                 limitTo=limitTargets,
-                filename=('sortedTargets_{0:d}_{1}.pdf'
-                          .format(self.designid, self.targettype[0:3].upper()))
+                plotFilename=('sortedTargets_{0:d}_{1}.pdf'
+                              .format(self.designid,
+                                      self.targettype[0:3].upper()))
                 )
             targets = targets[order]
         else:
