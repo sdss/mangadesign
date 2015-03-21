@@ -604,9 +604,7 @@ class PlateInput(object):
         targets = self._combineTargetCatalogues(targetCats)
 
         if nAllocated < nBundlesToAllocate:
-            if self.targettype != 'science':
-                pass
-            else:
+            if self.targettype == 'science':
                 targets = autocomplete(targets, 'science',
                                        (self.raCen, self.decCen), **kwargs)
             if len(targets) < nBundlesToAllocate:

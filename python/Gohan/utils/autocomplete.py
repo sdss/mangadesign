@@ -21,6 +21,7 @@ from Gohan.exceptions import GohanUserWarning
 from Gohan.utils.sortTargets import sortTargets
 import warnings
 import numpy as np
+import os
 
 
 defaultValues = {
@@ -54,19 +55,31 @@ def autocomplete(targets, targettype, centre, **kwargs):
     nBundlesToAssign = nBundles - len(targets)
     log.info('autocompleting {0} bundles.'.format(nBundlesToAssign))
 
+    MaNGATargets = getMaNGATargets(targets, centre)
+
     NSATargets = getNSATargets(targets, centre)
-    NSATargetCoords = np.zeros((len(NSATargets), 2), np.float64)
-    NSATargetCoords[:, 0] = NSATargets['RA']
-    NSATargetCoords[:, 1] = NSATargets['DEC']
-    sortedCoords, order = sortTargets(NSATargetCoords, centre)
-    sortedNSATargets = NSATargets[order]
+    if NSATargets is not None:
+        NSATargetCoords = np.zeros((len(NSATargets), 2), np.float64)
+        NSATargetCoords[:, 0] = NSATargets['RA']
+        NSATargetCoords[:, 1] = NSATargets['DEC']
+        sortedCoords, order = sortTargets(NSATargetCoords, centre)
+        NSATargets = NSATargets[order]
 
     unassignedBundleSizes = getUnassignedBundleSizes(targets, bundles)
 
     for bundleSize in unassignedBundleSizes:
 
-        target = _getOptimalTarget(targets, sortedNSATargets,
-                                   bundleSize, centre, **kwargs)
+        target = None
+
+        # Tries first the MaNGA sample catalogue.
+        if MaNGATargets is not None:
+            target = _getOptimalTarget(targets, MaNGATargets,
+                                       bundleSize, centre, **kwargs)
+
+        if target is None and NSATargets is not None:
+            # If no targets can be found in the MaNGA sample, uses NSA.
+            target = _getOptimalTarget(targets, NSATargets,
+                                       bundleSize, centre, **kwargs)
 
         if target is not None:
             targets = addTarget(targets, target, bundleSize, centre)
@@ -107,31 +120,41 @@ def _getOptimalTargetSize(targets, candidateTargets, bundleSize, centre):
                 [-999] * len(candidateTargets),
                 name='IFUDESIGNSIZE', dtype=int))
 
+    for target in candidateTargets:
+        # First we try to use the IFUDESIGNSIZE column. Not that if all values
+        # in IFUDESIGNSIZE are -999, all targets will be skipped.
+        if (target['IFUDESIGNSIZE'] >= bundleSize and
+                _checkNSATarget(targets, target, centre)):
+            target['IFUDESIGNSIZE'] = bundleSize
+            return target
+
+    # If the previous process fails, we try using reff and a minimum galaxy
+    # size depending on the bundle size.
+
     reffField = config['plateMags']['reffField'].upper()
     candidateTargets.sort(reffField)
     candidateTargets.reverse()
 
     if bundleSize == 19:
-        minSize = 5 * 2.5
+        minSize = 2 * 2.5
     elif bundleSize == 37:
-        minSize = 6 * 2.5
+        minSize = 3 * 2.5
     elif bundleSize == 61:
-        minSize = 6 * 2.5
+        minSize = 4 * 2.5
     elif bundleSize == 91:
-        minSize = 7 * 2.5
+        minSize = 5 * 2.5
     elif bundleSize == 127:
-        minSize = 8 * 2.5
+        minSize = 6 * 2.5
     else:
         minSize = 0.
 
     for target in candidateTargets:
+        if (target[reffField] >= minSize and
+                _checkNSATarget(targets, target, centre)):
+            target['IFUDESIGNSIZE'] = bundleSize
+            return target
 
-        if target[reffField] >= minSize:
-            if _checkNSATarget(targets, target, centre):
-                target['IFUDESIGNSIZE'] = bundleSize
-                return target
-
-    # If it comes to this, it means that there are no target with valid
+    # If it comes down to this, it means that there are no target with valid
     # size. We fall back to use whatever target that does not collide.
     log.info('no target of right size ({0})'.format(bundleSize) +
              ' can be used to autocomplete. '
@@ -160,7 +183,14 @@ def getUnassignedBundleSizes(targets, bundles):
 
 def getNSATargets(targets, centre):
 
-    NSACat = table.Table.read(readPath(config['catalogues']['NSA']))
+    NSAPath = readPath(config['catalogues']['NSA'])
+
+    if not os.path.exists(NSAPath):
+        warnings.warn('NSA catalogue {0} not found'.format(NSAPath),
+                      GohanUserWarning)
+        return None
+
+    NSACat = table.Table.read(NSAPath)
     NSACat.add_column(
         table.Column(np.arange(len(NSACat)), dtype='int', name='CATIND'))
 
@@ -200,6 +230,43 @@ def _getValidNSATargets(targets, NSATargets):
         table.Column(mangaIDs, name='MANGAID', dtype='S20'))
 
     return validNSATargets
+
+
+def getMaNGATargets(targets, centre):
+    """Gets non-selected targets from the general MaNGA sample catalogue."""
+
+    MaNGAPath = readPath(config['catalogues']['science'])
+
+    if not os.path.exists(MaNGAPath):
+        warnings.warn('MaNGA catalogue {0} not found'.format(MaNGAPath),
+                      GohanUserWarning)
+        return None
+
+    MaNGACat = table.Table.read(MaNGAPath)
+
+    raCen, decCen = centre
+
+    coords = coo.SkyCoord(MaNGACat['RA'], MaNGACat['DEC'], unit='deg')
+    separation = coords.separation(
+        coo.SkyCoord(ra=raCen, dec=decCen, unit='deg')).deg
+
+    MaNGATargets = MaNGACat[np.where(separation <=
+                                     config['decollision']['FOV'])]
+
+    MaNGATargets.add_column(table.Column([-999] * len(MaNGATargets),
+                                         name='IFUDESIGN', dtype=int))
+
+    mangaIDs = [target['MANGAID'] for target in targets]
+
+    removeIdx = []
+    for nn in range(len(MaNGATargets)):
+        if MaNGATargets[nn]['MANGAID'] in mangaIDs:
+            removeIdx.append(nn)
+    MaNGATargets.remove_rows(removeIdx)
+
+    MaNGATargets.sort('Z')
+
+    return MaNGATargets
 
 
 def _checkNSATarget(targets, target, centre):
@@ -252,8 +319,9 @@ def addTarget(targets, target, bundleSize, centre):
 
     targets.add_row(newRow)
 
-    log.important('autocomplete: added target with mangaid=' +
-                  target['MANGAID'] + ' (ifudesignsize=' +
-                  str(int(bundleSize)) + ')')
+    log.important('autocomplete: added target with mangaid={0}'
+                  ' (ifudesignsize={1}, manga_target1={2})'
+                  .format(target['MANGAID'], str(int(bundleSize)),
+                          target['MANGA_TARGET1']))
 
     return targets
