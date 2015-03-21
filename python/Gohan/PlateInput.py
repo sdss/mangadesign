@@ -730,7 +730,7 @@ class PlateInput(object):
                 'rejected: collides with central post', silent=silent)
 
         outOfField = np.where(separationToPost > FOV)[0]
-        for ii in centralPostCollisions:
+        for ii in outOfField:
             self.logCollision(
                 'mangaid={0} '.format(targets[ii]['MANGAID']) +
                 'rejected: outside FOV', silent=silent)
