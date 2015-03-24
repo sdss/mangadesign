@@ -29,7 +29,7 @@ from sdss.utilities.yanny import yanny
 def parseCatalogID_1(plateMaNGAID, plateTargetsPath):
 
     plateTargets = table.Table(yanny(plateTargetsPath, np=True)['PLTTRGT'])
-    columns = plateTargets.dtype.names
+    columns = [col.lower() for col in plateTargets.dtype.names]
 
     neverObserve = table.Table.read(
         readPath(config['plateTargets']['neverobserve']),
@@ -61,8 +61,8 @@ def parseCatalogID_1(plateMaNGAID, plateTargetsPath):
         plateHolesSorted = yanny(plateHolesSortedPath, np=True)
         plateHolesSortedStruct = table.Table(
             plateHolesSorted['STRUCT1'],
-            names=[nn.lower()
-                   for nn in plateHolesSorted['STRUCT1'].dtype.names])
+            names=[col.lower()
+                   for col in plateHolesSorted['STRUCT1'].dtype.names])
 
         targetFixPath = getTargetFix(plate)
         targetFix = None if targetFixPath is None else \
@@ -86,14 +86,18 @@ def parseCatalogID_1(plateMaNGAID, plateTargetsPath):
 
             for col in columns:
 
-                if col.lower() in conversions:
-                    qCol = conversions[col.lower()]
-                elif 'nsa_' in col.lower():
-                    qCol = col.lower()[4:]
+                if col == 'nsa_version':
+                    newRow['nsa_version'] = 'v1_0_0'
+                    continue
+
+                if col in conversions:
+                    qCol = conversions[col]
+                elif 'nsa_' in col:
+                    qCol = col[4:]
                 else:
                     qCol = col
 
-                if col.lower() in newRow:
+                if col in newRow:
                     continue
 
                 if qCol == 'mangaid':
@@ -101,48 +105,45 @@ def parseCatalogID_1(plateMaNGAID, plateTargetsPath):
                     continue
 
                 if qCol == 'neverobserve':
-                    if designid in neverObserve['designid']:
-                        nevObs = 1
-                    else:
-                        nevObs = 0
-                    newRow[col.lower()] = nevObs
+                    newRow[col] = 1 if designid in neverObserve['designid'] \
+                        else 0
                     continue
 
-                if 'nsa' in col.lower():
+                if 'nsa' in col:
                     if qCol == 'inclination':
-                        newRow[col.lower()] = np.round(
+                        newRow[col] = np.round(
                             np.rad2deg(np.arccos(catTarget['BA90'])), 4)
                         continue
                     elif qCol == 'vdisp':
-                        newRow[col.lower()] = -999.
+                        newRow[col] = -999.
                         continue
                     else:
-                        newRow[col.lower()] = catTarget[qCol.upper()]
+                        newRow[col] = catTarget[qCol.upper()]
                         continue
 
-                if qCol.lower() in plateHolesSortedTarget.colnames:
-                    newRow[col.lower()] = \
-                        plateHolesSortedTarget[qCol.lower()][0]
+                if qCol in plateHolesSortedTarget.colnames:
+                    newRow[col] = \
+                        plateHolesSortedTarget[qCol][0]
                     continue
 
                 elif qCol in plateHolesSorted.keys():
-                    newRow[col.lower()] = plateHolesSorted[qCol]
+                    newRow[col] = plateHolesSorted[qCol]
 
-                elif qCol.lower() in plateInputData['MANGAINPUT'].colnames:
-                    newRow[col.lower()] = plateInputData[
-                        'MANGAINPUT'][qCol.lower()]
+                elif qCol in plateInputData['MANGAINPUT'].colnames:
+                    newRow[col] = plateInputData[
+                        'MANGAINPUT'][qCol]
                     continue
 
-                elif qCol.lower() in plateInputData.keys():
-                    newRow[col.lower()] = float(plateInputData[qCol.lower()])
+                elif qCol in plateInputData.keys():
+                    newRow[col] = float(plateInputData[qCol])
                     continue
 
-                elif qCol.lower() == 'ifudesignwrongsize':
+                elif qCol == 'ifudesignwrongsize':
                     # If ifudesignwrongsize cannot be found, we calculate it
                     # ourselves but raise a warning
 
                     if newRow['ifutargetsize'] < 0:
-                        newRow[col.lower()] = 0
+                        newRow[col] = 0
                         continue
 
                     ifudesignsize = plateInputData['MANGAINPUT'][
@@ -154,28 +155,27 @@ def parseCatalogID_1(plateMaNGAID, plateTargetsPath):
                                   'ifudesignsize and ifutargetsize.',
                                   GohanUserWarning)
 
-                    newRow[col.lower()] = 0
+                    newRow[col] = 0
 
                     if ifutargetsize > 0:
                         if ifutargetsize > 127:
                             if ifudesignsize < 127:
-                                newRow[col.lower()] = 1
+                                newRow[col] = 1
                         else:
                             if ifutargetsize > ifudesignsize:
-                                newRow[col.lower()] = 1
+                                newRow[col] = 1
 
                     continue
 
-                elif qCol.lower() in ['ifutargetsize']:
+                elif qCol in ['ifutargetsize']:
 
                     warnings.warn('field {0} not found. Setting it to -999'
-                                  .format(qCol.lower()), GohanUserWarning)
+                                  .format(qCol), GohanUserWarning)
 
-                    newRow[col.lower()] = -999
+                    newRow[col] = -999
 
-                elif 'manga_target' in qCol.lower():
-
-                    newRow[col.lower()] = 0
+                elif 'manga_target' in qCol:
+                    newRow[col] = 0
 
                 else:
 

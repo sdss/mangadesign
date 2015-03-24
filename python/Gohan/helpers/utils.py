@@ -152,7 +152,9 @@ def getSampleCatalogue(catID):
         raise GohanError('no catalogID={0} found in catalog_ids.dat'
                          .format(catID))
 
-    catPath = os.path.join(readPath(config['cataloguePath']), catFile[0])
+    catPath = os.path.join(
+        readPath(config['cataloguePath']),
+        '{0}-{1}'.format(catID, catFile[0]))
 
     if os.path.exists(catPath):
         return catPath

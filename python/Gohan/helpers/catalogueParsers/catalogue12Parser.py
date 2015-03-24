@@ -22,23 +22,20 @@ import numpy as np
 from collections import OrderedDict
 from ..runMaNGAPostDesign import log, config, readPath
 from ..utils import getPlateHolesSortedPath, getPlateInputData, getPointing, \
-    getTargetFix
+    getTargetFix, getSampleCatalogue
 from sdss.utilities.yanny import yanny
 
 
 def parseCatalogID_12(plateMaNGAID, plateTargetsPath):
 
     plateTargets = table.Table(yanny(plateTargetsPath, np=True)['PLTTRGT'])
-    columns = plateTargets.dtype.names
+    columns = [col.lower() for col in plateTargets.dtype.names]
 
     neverObserve = table.Table.read(
         readPath(config['plateTargets']['neverobserve']),
         format='ascii.no_header', names=['designid'])
 
-    catalogue = fits.FITS(
-        os.path.join(
-            os.environ['MANGASAMPLE_DIR'],
-            '12-nsa_v1b_0_0_v2.fits.gz'))[1]
+    catalogue = fits.FITS(getSampleCatalogue(12))[1]
 
     conversions = {
         'nsa_redshift': 'z',
@@ -118,14 +115,18 @@ def parseCatalogID_12(plateMaNGAID, plateTargetsPath):
 
             for col in columns:
 
-                if col.lower() in conversions:
-                    qCol = conversions[col.lower()]
-                elif 'nsa_' in col.lower():
-                    qCol = col.lower()[4:]
+                if col == 'nsa_version':
+                    newRow['nsa_version'] = 'v1b_0_0_v2'
+                    continue
+
+                if col in conversions:
+                    qCol = conversions[col]
+                elif 'nsa_' in col:
+                    qCol = col[4:]
                 else:
                     qCol = col
 
-                if col.lower() in newRow:
+                if col in newRow:
                     continue
 
                 if qCol == 'mangaid':
@@ -133,49 +134,49 @@ def parseCatalogID_12(plateMaNGAID, plateTargetsPath):
                     continue
 
                 if qCol == 'neverobserve':
-                    if designid in neverObserve['designid']:
-                        nevObs = 1
-                    else:
-                        nevObs = 0
-                    newRow[col.lower()] = nevObs
+                    newRow[col] = 1 if designid in neverObserve['designid'] \
+                        else 0
                     continue
 
                 if 'nsa' in col:
                     if qCol == 'vdisp' or qCol == 'zdist':
-                        newRow[col.lower()] = -999.
+                        newRow[col] = -999.
                         continue
                     elif qCol == 'inclination':
-                        newRow[col.lower()] = np.round(
-                        np.rad2deg(np.arccos(catTarget['BA90'])), 4)
+                        newRow[col] = np.round(
+                            np.rad2deg(np.arccos(catTarget['BA90'])), 4)
                         continue
                     else:
-                        newRow[col.lower()] = catTarget[qCol.upper()]
+                        newRow[col] = catTarget[qCol.upper()]
                         continue
 
-                if qCol.lower() in plateHolesSortedTarget.colnames:
-                    newRow[col.lower()] = \
-                        plateHolesSortedTarget[qCol.lower()][0]
+                if qCol in plateHolesSortedTarget.colnames:
+                    newRow[col] = \
+                        plateHolesSortedTarget[qCol][0]
                     continue
 
                 elif qCol in plateHolesSorted.keys():
-                    newRow[col.lower()] = plateHolesSorted[qCol]
+                    newRow[col] = plateHolesSorted[qCol]
 
-                elif qCol.lower() in plateInputData['MANGAINPUT'].colnames:
-                    newRow[col.lower()] = plateInputData[
-                        'MANGAINPUT'][qCol.lower()]
+                elif qCol in plateInputData['MANGAINPUT'].colnames:
+                    newRow[col] = plateInputData[
+                        'MANGAINPUT'][qCol]
                     continue
 
-                elif qCol.lower() in plateInputData.keys():
-                    newRow[col.lower()] = plateInputData[qCol.lower()]
+                elif qCol in plateInputData.keys():
+                    newRow[col] = plateInputData[qCol]
                     continue
 
                 elif qCol.upper() in sampleTarget.dtype.names:
-                    newRow[col.lower()] = sampleTarget[qCol.upper()]
+                    newRow[col] = sampleTarget[qCol.upper()]
                     continue
 
-                elif qCol.lower() in ['ifusizetarget', 'ifudesignwrongsize']:
-                    newRow[col.lower()] = -999
+                elif qCol in ['ifusizetarget', 'ifudesignwrongsize']:
+                    newRow[col] = -999
                     continue
+
+                elif 'manga_target' in qCol:
+                    newRow[col] = 0
 
                 else:
                     raise GohanError('field {0} not found for mangaid={1}'
