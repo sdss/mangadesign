@@ -206,7 +206,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(
         description='Performs MaNGA post-design actions.')
-    parser.add_argument('--force', '-f', action='store_true',
+    parser.add_argument('--overwrite', '-o', action='store_true',
                         help='forces overwrite of existing records.')
     parser.add_argument('plateRuns', type=str, nargs='+',
                         help='the plate run to process.')
@@ -215,4 +215,4 @@ if __name__ == '__main__':
 
     for plateRun in args.plateRuns:
         log.info('Plate run: ' + plateRun)
-        runMaNGAPostDesign(plateRun, overwrite=args.force)
+        runMaNGAPostDesign(plateRun, overwrite=args.overwrite)
