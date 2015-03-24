@@ -35,6 +35,10 @@ def parseCatalogID_12(plateMaNGAID, plateTargetsPath):
         readPath(config['plateTargets']['neverobserve']),
         format='ascii.no_header', names=['designid'])
 
+    NSA_v1b_v1 = table.Table.read(
+        readPath('+etc/NSA_v1b_to_v1.dat'),
+        format='ascii.commented_header')
+
     catalogue = fits.FITS(getSampleCatalogue(12))[1]
 
     conversions = {
@@ -42,7 +46,8 @@ def parseCatalogID_12(plateMaNGAID, plateTargetsPath):
         'nsa_mstar': 'mass',
         'nsa_petro_th50': 'petroth50',
         'plateid': 'plateId',
-        'ifutargetsize': 'ifusizetarget'
+        'ifutargetsize': 'ifusizetarget',
+        'nsa_id': 'nsaid'
     }
 
     newTargets = table.Table(
@@ -116,7 +121,18 @@ def parseCatalogID_12(plateMaNGAID, plateTargetsPath):
             for col in columns:
 
                 if col == 'nsa_version':
-                    newRow['nsa_version'] = 'v1b_0_0_v2'
+                    newRow[col] = 'v1b_0_0_v2'
+                    continue
+
+                if col == 'nsa_id100':
+                    nsa100 = NSA_v1b_v1[NSA_v1b_v1['MaNGAID'] ==
+                                        mangaid.strip()]
+                    if len(nsa100) == 0:
+                        newRow[col] = -999
+                    elif len(nsa100) == 1:
+                        newRow[col] = nsa100['NSAID_v1_0_0']
+                    else:
+                        raise GohanError('cannot determine nsa_id100')
                     continue
 
                 if col in conversions:
