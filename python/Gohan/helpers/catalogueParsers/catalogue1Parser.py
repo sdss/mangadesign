@@ -117,6 +117,8 @@ def parseCatalogID_1(plateMaNGAID, plateTargetsPath):
                     elif qCol == 'vdisp':
                         newRow[col] = -999.
                         continue
+                    elif col == 'nsa_id':
+                        newRow[col] = plateInputData['MANGAINPUT']['nsaid']
                     else:
                         newRow[col] = catTarget[qCol.upper()]
                         continue
