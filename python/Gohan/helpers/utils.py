@@ -18,9 +18,8 @@ import os
 from Gohan import readPath, config, log
 import glob
 from sdss.utilities.yanny import yanny
-from Gohan.exceptions import GohanUserWarning, GohanError
+from Gohan.exceptions import GohanError
 from numbers import Number
-import warnings
 from collections import OrderedDict
 import numpy as np
 from astropy import table
@@ -44,15 +43,19 @@ def getPlateListDir():
     return plateListDir
 
 
+plateListDir = getPlateListDir()
+platePlansFile = os.path.join(plateListDir, 'platePlans.par')
+
+if os.path.exists(platePlansFile):
+    platePlans = yanny(platePlansFile, np=True)['PLATEPLANS']
+else:
+    platePlans = None
+
+
 def getPlates(plateRun, column='plateid'):
 
-    plateListDir = getPlateListDir()
-    platePlansFile = os.path.join(plateListDir, 'platePlans.par')
-
-    if not os.path.exists(platePlansFile):
-        raise GohanError('platePlans not found in {0}'.format(platePlansFile))
-
-    platePlans = yanny(platePlansFile, np=True)['PLATEPLANS']
+    if platePlans is None:
+        raise GohanError('platePlans file not found')
 
     return sorted(
         platePlans[np.where(platePlans['platerun'] == plateRun)][column])
@@ -289,3 +292,15 @@ def getTargetFix(plateID):
         return None
     else:
         return path
+
+
+def getDesignID(plateid):
+    """Returns the designid for a plateid."""
+
+    if platePlans is None:
+        raise GohanError('platePlans file not found')
+
+    try:
+        return platePlans[platePlans['plateid'] == plateid]['designid'][0]
+    except:
+        raise GohanError('plateid={0} not found'.format(plateid))

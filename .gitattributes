@@ -31,6 +31,7 @@ python/Gohan/helpers/__init__.py -text
 python/Gohan/helpers/catalogueParsers/__init__.py -text
 python/Gohan/helpers/catalogueParsers/catalogue12Parser.py -text
 python/Gohan/helpers/catalogueParsers/catalogue1Parser.py -text
+python/Gohan/helpers/checkPlateTargets.py -text
 python/Gohan/helpers/createAPASSCatalogue.py -text
 python/Gohan/helpers/createPlateMags.py -text
 python/Gohan/helpers/createStandardCatalogue.py -text
