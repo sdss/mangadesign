@@ -119,6 +119,7 @@ def parseCatalogID_1(plateMaNGAID, plateTargetsPath):
                         continue
                     elif col == 'nsa_id':
                         newRow[col] = plateInputData['MANGAINPUT']['nsaid']
+                        newRow['nsa_id100'] = newRow[col]
                     else:
                         newRow[col] = catTarget[qCol.upper()]
                         continue
