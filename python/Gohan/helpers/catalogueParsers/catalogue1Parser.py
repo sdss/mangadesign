@@ -173,6 +173,10 @@ def parseCatalogID_1(plateMaNGAID, plateTargetsPath):
 
                     newRow[col.lower()] = -999
 
+                elif 'manga_target' in qCol.lower():
+
+                    newRow[col.lower()] = 0
+
                 else:
 
                     raise GohanError('field {0} not found for mangaid={1}'
