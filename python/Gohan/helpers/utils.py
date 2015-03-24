@@ -74,7 +74,7 @@ def getPlateDir(plateid):
 
     if not os.path.exists(platePath):
         raise GohanError(
-            'not plate path found for plateid {0}'.format(plateid))
+            'no plate path found for plateid {0}'.format(plateid))
 
     return platePath
 
@@ -92,7 +92,7 @@ def getPlateHolesSortedPath(plateid):
 
     if not os.path.exists(plateHolesSortedPath):
         raise GohanError(
-            'not plateHolesSorted found for plate {0}'.format(plateid))
+            'no plateHolesSorted found for plate {0}'.format(plateid))
 
     return plateHolesSortedPath
 
