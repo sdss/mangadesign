@@ -17,8 +17,9 @@ from __future__ import print_function
 from Gohan import log, readPath, config
 from astropy import table
 from astropy import coordinates as coo
-from Gohan.exceptions import GohanUserWarning
+from Gohan.exceptions import GohanUserWarning, GohanError
 from Gohan.utils.sortTargets import sortTargets
+from Gohan.helpers.utils import getMaskBitFromLabel
 import warnings
 import numpy as np
 import os
@@ -27,7 +28,7 @@ import os
 defaultValues = {
     'ifudesign': -999,
     'ifudesignsize': -999,
-    'manga_target1': 0,
+    'manga_target1': 2**getMaskBitFromLabel('MANGA_TARGET1', 'FILLER')[0],
     'manga_target2': 0,
     'manga_target3': 0,
     'psfmag': [0.0, 0.0, 0.0, 0.0, 0.0],
@@ -40,10 +41,8 @@ def autocomplete(targets, targettype, centre, **kwargs):
 
     if targettype == 'science':
         bundles = config['IFUs'].copy()
-    elif targettype == 'standard':
-        bundles = config['miniBundles'].copy()
-    elif targettype == 'sky':
-        bundles = config['skies'].copy()
+    else:
+        raise GohanError('only science targets can be autocompleted')
 
     nBundles = np.sum(bundles.values())
 
@@ -318,10 +317,11 @@ def addTarget(targets, target, bundleSize, centre):
             newRow.append(-999)
 
     targets.add_row(newRow)
+    row = targets[targets['MANGAID'] == target['MANGAID']][0]
 
     log.important('autocomplete: added target with mangaid={0}'
                   ' (ifudesignsize={1}, manga_target1={2})'
                   .format(target['MANGAID'], str(int(bundleSize)),
-                          target['MANGA_TARGET1']))
+                          row['MANGA_TARGET1']))
 
     return targets
