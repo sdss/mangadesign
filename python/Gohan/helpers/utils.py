@@ -24,6 +24,36 @@ from collections import OrderedDict
 import numpy as np
 from astropy import table
 
+try:
+    sdssMaskBitsFile = readPath(config['sdssMaskBits'])
+    sdssMaskBits = table.Table(yanny(sdssMaskBitsFile, np=True)['MASKBITS'])
+except:
+    sdssMaskBits = None
+
+
+def getMaskBitFromLabel(flag, label):
+    """Returns the maskbit and description associated to a label for a
+    certain flag. E.g., getMaskBitFromLabel('MANGA_TARGET1', 'FILLER')."""
+
+    flag = flag.upper()
+    label = label.upper()
+
+    if sdssMaskBits is None:
+        raise GohanError('sdssMaskBits could not be found. Use gohan.yaml '
+                         'to define sdssMaskBits.')
+
+    assert flag in sdssMaskBits['flag'], \
+        'could not find {0} in sdssMaskBits flags'.format(flag)
+
+    flaggedBits = sdssMaskBits[sdssMaskBits['flag'] == flag]
+
+    assert label in flaggedBits['label'], \
+        'could not find {0} in {1} labels'.format(label, flag)
+
+    row = flaggedBits[flaggedBits['label'] == label][0]
+
+    return row['bit'], row['description']
+
 
 def getPlateTargetsPath(catID):
 
