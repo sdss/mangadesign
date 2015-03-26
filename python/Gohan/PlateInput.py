@@ -736,19 +736,24 @@ class PlateInput(object):
             np.concatenate((centralPostCollisions, outOfField)))
 
         collisions = []
+        collided = []
         coords = coo.SkyCoord(targets['RA'], targets['DEC'], unit='deg')
 
         for ii in range(len(coords)-1, -1, -1):
             separations = coords[ii].separation(coords[0:ii]).deg
 
-            if any((separations < targetAvoid)):
+            if any(separations < targetAvoid):
                 collisions.append(ii)
+                collided.append(
+                    (separations < targetAvoid).tolist().index(True))
 
-        collisions = np.sort(np.unique(collisions))
+        # collisions = np.sort(np.unique(collisions))
         for jj in collisions:
-            self.logCollision('mangaid={0} rejected: internal collision'
-                              .format(targets[jj]['MANGAID'].strip()),
-                              silent=silent)
+            self.logCollision(
+                'mangaid={0} rejected: internal collision with {1}'
+                .format(targets[jj]['MANGAID'].strip(),
+                        targets[ii]['MANGAID'].strip(),
+                        silent=silent))
 
         if len(collisions) > 0:
             targets.remove_rows(collisions)
