@@ -19,6 +19,7 @@ python/Gohan/defaults.yaml -text
 python/Gohan/etc/BOSS_SNvsFibMag2.dat -text
 python/Gohan/etc/NSA_v1b_to_v1.dat -text
 python/Gohan/etc/mangaDefinition_Default.par -text
+python/Gohan/etc/mangaInput_Default.par -text
 python/Gohan/etc/neverobserve.dat -text
 python/Gohan/etc/plateTargets-1.template -text
 python/Gohan/etc/plateTargets-12.template -text

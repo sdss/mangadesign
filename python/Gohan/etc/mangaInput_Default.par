@@ -1,0 +1,17 @@
+# MaNGA plate input template
+#
+# Uses SDSS-style Yanny .par formatting
+#
+# This file includes the minimum headers and structure fields that are needed
+# to generate valid plateInput files.
+
+pointing         1
+racen            None
+deccen           None
+designid         None
+instrument       MANGA
+locationid       None
+targettype       None
+manga_tileid     -1
+offset           0
+fieldname        NA
