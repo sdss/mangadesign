@@ -23,6 +23,7 @@ python/Gohan/etc/mangaInput_Default.par -text
 python/Gohan/etc/neverobserve.dat -text
 python/Gohan/etc/plateTargets-1.template -text
 python/Gohan/etc/plateTargets-12.template -text
+python/Gohan/etc/plateTargets-50.template -text
 python/Gohan/etc/targets-7443.fits -text svneol=unset#unset
 python/Gohan/examples/createPlateMags.py -text
 python/Gohan/examples/generate_2014.07.x.manga-apogee2.py -text
@@ -32,6 +33,7 @@ python/Gohan/helpers/__init__.py -text
 python/Gohan/helpers/catalogueParsers/__init__.py -text
 python/Gohan/helpers/catalogueParsers/catalogue12Parser.py -text
 python/Gohan/helpers/catalogueParsers/catalogue1Parser.py -text
+python/Gohan/helpers/catalogueParsers/catalogue50Parser.py -text
 python/Gohan/helpers/checkPlateTargets.py -text
 python/Gohan/helpers/createAPASSCatalogue.py -text
 python/Gohan/helpers/createPlateMags.py -text

@@ -1,0 +1,95 @@
+# MaNGA target information file
+#
+# Uses SDSS-style Yanny .par formatting
+#
+# The purpose of this file is to store information required for DAP
+# analyses of a given galaxy (e.g., redshift, inclination), and to
+# provide the correspondence between the mangaid identifier and the
+# plate-ifudesign identifier.  This file has entries indexed by
+# designid (plate designid) and ifudesign.  Rows are added when new
+# plates are designed.
+#
+# Note that not all information is required here, much information
+# is instead passed from the plate design stage via the plateHoles
+# file.
+#
+# Different files cover different target types.  E.g., '12' was
+# used for commissioning run galaxies.
+#
+# Information from this file about targeting is combined with information
+# from the DRP (slitmap and output headers) about reductions to
+# generate the information in the platelist file for a given DRP tag.
+# This platelist file is the searchable reference for a given set
+# of reductions.
+#
+# The data structure is as follows:
+#
+# Header keywords:
+# typeid: E.g., '12' for the commissioning data
+#
+# Data table entries:
+# ---- These columns are required for ALL typeids ----
+# 1) designid: Design ID of the plate
+# 2) plateid: Plate ID (0 if unknown)
+# 3) manga_tileid: the MaNGA-specific tile (field) identifier
+# 4) ifudesign: The IFU (e.g., 12701) meant to be used
+# 5) mangaid: The XX-XXXX format mangaid
+# 6) neverobserve: if set to 1, this target won't be observed and will be ignored by
+#                  the reduction pipeline.
+# 7) iauname: The accepted IAU name
+# 8) ifu_ra: RA of the IFU center in decimal degrees
+# 9) ifu_dec: DEC of the IFU center in decimal degrees
+# 10) target_ra: RA of the target center (usually same as bundle_ra, unless offset)
+# 11) target_dec: DEC of the target center (usually same as bundle_dec, unless offset)
+# 12) racen: RA of the plate center
+# 13) deccen: DEC of the plate center
+# 14) xfocal: xfocal location of the IFU hole in the plate
+# 15) yfocal: yfocal location of the IFU hole in the plate
+# 16) epoch: Epoch of the coordinates
+# 17) manga_target1: Primary target bitmask. To be used for galaxies.
+# 18) manga_target2: Secondary target bitmask. To be used for stars, standards and sky positions.
+# 19) manga_target3: Tertiary target bitmask. To be used for ancillary programs.
+# 20) ifudesignsize: The size of the IFU assigned to the target.
+# 21) ifutargetsize: The size of the IFU that was meant to be assigned.
+#                    Same as ifudesignsize unless changed during the plate
+#                    design process.
+# 22) ifudesignwrongsize: 1 if the IFU assigned is of the wrong size (for
+#                         instance, if it does not cover 1.5Reff).
+# ---- These columns may vary between typeids ----
+# 23) nsa_version: The version of the NSA catalogue used to select these targets.
+# 24) nsa_id: The NSAID field in the NSA catalogue referenced in nsa_version.
+# 25) nsa_id100: The NSAID of the target in the NSA v1_0_0 catalogue. Here, nsa_id=nsa_id100,
+#                but this column is included for consistency with other plateTargets files.
+
+typeid 50
+
+typedef struct {
+    long designid;
+    long plateid;
+    long manga_tileid;
+    long ifudesign;
+    char mangaid[10];
+    long neverobserve;
+    char iauname[25];
+    double ifu_ra;
+    double ifu_dec;
+    double target_ra;
+    double target_dec;
+    double racen;
+    double deccen;
+    double xfocal;
+    double yfocal;
+    float epoch;
+    long manga_target1;
+    long manga_target2;
+    long manga_target3;
+    int ifudesignsize;
+    int ifutargetsize;
+    int ifudesignwrongsize;
+    char nsa_version[20];
+    long nsa_id;
+    long nsa_id100;
+} PLTTRGT;
+
+PLTTRGT 0000 0000 0000 0000 1-000000 0 J213418.49+111251.6 323.577092837 11.2143239831 323.577092837 11.2143239831 324.49449707 11.5765455462 -195.98829 -78.573101 2014.07 128 0 0 127 127 0 -999 -999 -999
+

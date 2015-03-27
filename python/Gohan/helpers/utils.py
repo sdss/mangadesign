@@ -160,6 +160,9 @@ def getParsingFunction(catID):
     elif catID == 12:
         from .catalogueParsers import parseCatalogID_12
         return parseCatalogID_12
+    elif catID == 50:
+        from .catalogueParsers import parseCatalogID_50
+        return parseCatalogID_50
     else:
         return None
 
