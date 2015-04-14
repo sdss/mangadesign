@@ -958,7 +958,10 @@ class PlateInput(object):
         # First checks if the target needs to be filled with extra data
         fill = False
         for col in target.colnames:
-            if np.isscalar(target[col]) and target[col] == -999:
+            if (np.isscalar(target[col]) and
+                    (target[col] == -999 or
+                     (isinstance(target[col], basestring)
+                      and '-999' in target[col]))):
                 fill = True
                 break
             elif np.any(np.array(target[col] == -999)):
@@ -985,8 +988,11 @@ class PlateInput(object):
         for col in target.colnames:
             if col not in catalogueData.colnames:
                 continue
-            if np.isscalar(target[col]) and target[col] == -999:
-                target[col] = catalogueData[col]
+            if (np.isscalar(target[col]) and
+                    (target[col] == -999 or
+                     (isinstance(target[col], basestring)
+                      and '-999' in target[col]))):
+                target[col] = catalogueData[col][0]
             elif np.any(np.array(target[col] == -999)):
                 target[col] = catalogueData[col]
 
