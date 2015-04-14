@@ -36,15 +36,11 @@ defaultValues = {
 }
 
 
-def autocomplete(targets, targettype, centre, **kwargs):
+def autocomplete(targets, centre, **kwargs):
     """Autocompletes a list of targets using the MaNGa sample or the
     NSA catalogue."""
 
-    if targettype == 'science':
-        bundles = config['IFUs'].copy()
-    else:
-        raise GohanError('only science targets can be autocompleted')
-
+    bundles = config['IFUs'].copy()
     nBundles = np.sum(bundles.values())
 
     if len(targets) >= nBundles:
