@@ -33,7 +33,7 @@ from Gohan.exceptions import GohanWarning, GohanError
 from Gohan import log, config, readPath
 from Gohan.utils import pywcsgrid2 as pw2
 from Gohan.utils import getSDSSRun
-from Gohan.utils import yanny
+from Gohan.utils.yanny import yanny, write_ndarray_to_yanny
 
 from astropy import wcs
 from astropy.io import fits
@@ -151,7 +151,7 @@ class PlateMags(list):
 
         self.plateInputFile = plateInputFile
 
-        yn = yanny.yanny(self.plateInputFile, np=True)
+        yn = yanny(self.plateInputFile, np=True)
         self.struct1 = table.Table(
             yn[config['plateInputs']['mangaInputStructure']])
         self.designid = int(yn['designid']) if designid is None else designid
@@ -283,8 +283,8 @@ class PlateMags(list):
         if os.path.exists(plateMagsPath):
             os.remove(plateMagsPath)
 
-        yanny.write_ndarray_to_yanny(plateMagsPath, self.plateMags._data,
-                                     structname='PLATEMAGS')
+        write_ndarray_to_yanny(plateMagsPath, self.plateMags._data,
+                               structname='PLATEMAGS')
 
         if self._missingIFUs > 0:
             warnings.warn('no data for {0} IFUs. '.format(
