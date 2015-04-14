@@ -32,10 +32,13 @@ from astropy import table
 
 from Gohan import config, log, readPath
 from Gohan import exceptions
-from Gohan.utils import yanny, sortTargets
-from Gohan.utils import assignIFUDesigns
-from Gohan.utils import autocomplete
-from Gohan.helpers.utils import getPlateDefinition
+from Gohan.utils import yanny, sortTargets, assignIFUDesigns
+from Gohan.utils import (getPlateDefinition, getMaskBitFromLabel,
+                         getCatalogueRow)
+
+
+fillerBit = 2**getMaskBitFromLabel('MANGA_TARGET1', 'FILLER')[0]
+ancillaryBit = 2**getMaskBitFromLabel('MANGA_TARGET1', 'ANCILLARY')[0]
 
 
 def reformatAstropyColumn(inputTable, columnName, newFormat):
@@ -145,13 +148,17 @@ class PlateInput(object):
     autocomplete : bool, optional
         If True (the deafult) and `targettype='science'`, autocompletes
         unallocated bundles using NSA targets.
-
+    fillFromCatalogue : bool, optional
+        If True (default) and some of the targets contain fields with -999
+        values, tries to replace them with values from the parent catalogue
+        for that target.
     """
 
     def __init__(self, designid, targettype, plateRun=None, catalogues=None,
                  surveyMode='mangaLead', raCen=None, decCen=None,
                  locationid=None, manga_tileid=None, fieldName=None,
-                 rejectTargets=[], plotIFUs=False, **kwargs):
+                 rejectTargets=[], plotIFUs=False,
+                 fillFromCatalogue=True, **kwargs):
 
         assert isinstance(rejectTargets, (list, tuple, np.ndarray))
         assert surveyMode in ['mangaLead', 'apogeeLead', 'mangaOnly']
@@ -200,7 +207,8 @@ class PlateInput(object):
                 catalogues, raCen, decCen,
                 rejectTargets=rejectTargets, **kwargs)
 
-        targets = self._tidyUpTargets(targets)
+        targets = self._tidyUpTargets(targets,
+                                      fillFromCatalogue=fillFromCatalogue)
 
         if self.targettype != 'sky':
             log.debug('reassigning IFUs ... ')
@@ -345,6 +353,8 @@ class PlateInput(object):
                     catalogues = [readPath(config['catalogues']['stelLib'])]
                 else:
                     catalogues = [readPath(config['catalogues']['science'])]
+                    warnings.warn('using parent science catalogue',
+                                  exceptions.GohanUserWarning)
 
             elif self.targettype == 'standard':
                 if leadSurvey == 'apogee':
@@ -352,6 +362,8 @@ class PlateInput(object):
                                   readPath(config['catalogues']['APASS'])]
                 else:
                     catalogues = readPath(config['catalogues']['standard'])
+                    warnings.warn('using parent standard catalogue',
+                                  exceptions.GohanUserWarning)
 
             else:
                 raise exceptions.GohanPlateInputError(
@@ -546,7 +558,7 @@ class PlateInput(object):
 
     def _getMaNGALeadTargets(self, catalogues, raCen=None, decCen=None,
                              rejectTargets=[], decollide=True, sort=False,
-                             **kwargs):
+                             autocomplete=True, **kwargs):
         """Creates a MaNGA led plateInput file."""
 
         self.catalogues = self._parseCatalogues(catalogues, leadSurvey='manga')
@@ -604,7 +616,11 @@ class PlateInput(object):
         targets = self._combineTargetCatalogues(targetCats)
 
         if nAllocated < nBundlesToAllocate:
-            if self.targettype == 'science':
+            if self.targettype == 'science' and autocomplete:
+                # Imports autocomplete here to avoid loading the NSA catalogue
+                # if not needed.
+                from Gohan.utils.autocomplete import autocomplete
+                # Autocompletes targets
                 targets = autocomplete(targets, 'science',
                                        (self.raCen, self.decCen), **kwargs)
             if len(targets) < nBundlesToAllocate:
@@ -798,7 +814,7 @@ class PlateInput(object):
         else:
             log.debug(message)
 
-    def _tidyUpTargets(self, targets):
+    def _tidyUpTargets(self, targets, fillFromCatalogue=True):
         """Makes sure all mandatory columns are present, adds necessary but
         autofillable columns and tidies up the target list."""
 
@@ -903,6 +919,15 @@ class PlateInput(object):
             targets, ['manga_target1', 'manga_target2', 'manga_target3'],
             [int, int, int])
 
+        # Makes sure that the maskbits are correctly defined
+        for target in targets:
+            if target['manga_target1'] == 0 and target['manga_target3'] == 0:
+                # If manga_target1 = manga_target3 = 0, this is a filler target
+                target['manga_target1'] = fillerBit
+            elif target['manga_target1'] == 0 and target['manga_target3'] > 0:
+                # This is an ancillary target
+                target['manga_target1'] = ancillaryBit
+
         # Checks that the proper motions, if present, contain all the needed
         # columns
         colNames = target.colnames
@@ -916,7 +941,56 @@ class PlateInput(object):
             raise exceptions.GohanPlateInputError(
                 'pmra and pmdec are present but missing epoch column.')
 
+        # Checks ancillary targets for incomplete data
+        for target in targets:
+            if target['manga_target3'] > 0:
+                target = self.fillFromCatalogue(target)
+
+        # Returns a reordered table
         return self.reorder(targets, mandatoryColumns + fillableColumns)
+
+    def fillFromCatalogue(self, target):
+        """Checks a target for fields with -999 values and tries to complete
+        them from the parent catalogue."""
+
+        mangaid = target['mangaid']
+
+        # First checks if the target needs to be filled with extra data
+        fill = False
+        for col in target.colnames:
+            if np.isscalar(target[col]) and target[col] == -999:
+                fill = True
+                break
+            elif np.any(np.array(target[col] == -999)):
+                fill = True
+                break
+
+        if not fill:
+            return target
+
+        log.info('filling out incomplete information for mangaid={0}'
+                 .format(mangaid))
+
+        # We assume that this method is called after renaming the columns
+        # to lowercase.
+        catalogueData = table.Table(getCatalogueRow(mangaid))
+
+        # Lowercases the catalogue columns
+        for col in catalogueData.colnames:
+            if col != col.lower():
+                catalogueData.rename_column(col, col.lower())
+
+        # Wherever necessary, replaces the information in the target
+        # with the one in the catalogue
+        for col in target.colnames:
+            if col not in catalogueData.colnames:
+                continue
+            if np.isscalar(target[col]) and target[col] == -999:
+                target[col] = catalogueData[col]
+            elif np.any(np.array(target[col] == -999)):
+                target[col] = catalogueData[col]
+
+        return target
 
     @staticmethod
     def reorder(tt, orderedColumns):
@@ -943,8 +1017,7 @@ class PlateInput(object):
         if os.path.exists(filename):
             os.remove(filename)
 
-        template = yanny.yanny(
-            readPath('+etc/mangaInput_Default.par'), np=True)
+        template = yanny(readPath('+etc/mangaInput_Default.par'), np=True)
 
         template['locationid'] = self.locationid
         template['locationid'] = self.locationid
