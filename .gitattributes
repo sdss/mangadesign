@@ -38,6 +38,7 @@ python/Gohan/plateTargets/__init__.py -text
 python/Gohan/plateTargets/catalogueParsers/__init__.py -text
 python/Gohan/plateTargets/catalogueParsers/catalogue12Parser.py -text
 python/Gohan/plateTargets/catalogueParsers/catalogue1Parser.py -text
+python/Gohan/plateTargets/plateTargets-12.template -text
 python/Gohan/plateTargets/plateTargets-50.template -text
 python/Gohan/plateTargets/plateTargets-Ancillary.template -text
 python/Gohan/utils/Staralt.py -text
