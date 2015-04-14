@@ -1023,7 +1023,8 @@ class PlateInput(object):
         if os.path.exists(filename):
             os.remove(filename)
 
-        template = yanny(readPath('+etc/mangaInput_Default.par'), np=True)
+        template = yanny.yanny(readPath('+etc/mangaInput_Default.par'),
+                               np=True)
 
         template['locationid'] = self.locationid
         template['locationid'] = self.locationid
