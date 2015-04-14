@@ -34,11 +34,11 @@ python/Gohan/examples/createPlateMags.py -text
 python/Gohan/examples/generate_2014.07.x.manga-apogee2.py -text
 python/Gohan/examples/generate_manga-apogee2.py -text
 python/Gohan/exceptions.py -text
-python/Gohan/helpers/__init__.py -text
-python/Gohan/helpers/catalogueParsers/__init__.py -text
-python/Gohan/helpers/catalogueParsers/catalogue12Parser.py -text
-python/Gohan/helpers/catalogueParsers/catalogue1Parser.py -text
 python/Gohan/helpers/catalogueParsers/catalogue50Parser.py -text
+python/Gohan/plateTargets/__init__.py -text
+python/Gohan/plateTargets/catalogueParsers/__init__.py -text
+python/Gohan/plateTargets/catalogueParsers/catalogue12Parser.py -text
+python/Gohan/plateTargets/catalogueParsers/catalogue1Parser.py -text
 python/Gohan/utils/Staralt.py -text
 python/Gohan/utils/__init__.py -text
 python/Gohan/utils/assignIFUDesigns.py -text
