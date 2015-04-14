@@ -26,6 +26,28 @@ from astropy import table
 import warnings
 
 
+__all__ = [
+    'getMaskBitFromLabel',
+    'getPlateTargetsPath',
+    'getPlateListDir',
+    'getPlates',
+    'getPlateDir',
+    'getPlateHolesSortedPath',
+    'getMaNGAIDs',
+    'sortByCatID',
+    'getParsingFunction',
+    'getSampleCatalogue',
+    'getPlateInputData',
+    'getPlateHolesSortedData',
+    'getPointing',
+    'getMangaScience',
+    'getPlateDefinition',
+    'getTargetFix',
+    'getDesignID',
+    'getCatalogueRow'
+]
+
+
 try:
     sdssMaskBitsFile = readPath(config['sdssMaskBits'])
     sdssMaskBits = table.Table(yanny(sdssMaskBitsFile, np=True)['MASKBITS'])
