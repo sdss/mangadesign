@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 """
-runMaNGAPostDesign.py
+mangaPostDesign.py
 
 Created by José Sánchez-Gallego on 18 Jul 2014.
 Licensed under a 3-clause BSD license.
