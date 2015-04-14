@@ -17,12 +17,14 @@ from __future__ import print_function
 import os
 from Gohan import readPath, config, log
 import glob
-from sdss.utilities.yanny import yanny
-from Gohan.exceptions import GohanError
+from Gohan.utils.yanny import yanny
+from Gohan.exceptions import GohanError, GohanUserWarning
 from numbers import Number
 from collections import OrderedDict
 import numpy as np
 from astropy import table
+import warnings
+
 
 try:
     sdssMaskBitsFile = readPath(config['sdssMaskBits'])
@@ -339,3 +341,63 @@ def getDesignID(plateid):
         return platePlans[platePlans['plateid'] == plateid]['designid'][0]
     except:
         raise GohanError('plateid={0} not found'.format(plateid))
+
+
+def getCatalogueRow(mangaid):
+    """Recovers the row in the parent catalogue matching the mangaid."""
+
+    # List of catalogids for catalogues in which the targetid in mangaid is
+    # the index (zero-indexed) in the parent catalogue.
+    indexedCatalogues = [1, 8, 12]
+
+    targetCatID, targetID = mangaid.strip().split('-')
+
+    catalogidsPath = os.path.join(readPath(config['mangacore']),
+                                  'platedesign/catalog_ids.dat')
+    if not os.path.exists(catalogidsPath):
+        warnings.warn('catalog_ids.dat could not be found', GohanUserWarning)
+        return None
+
+    catalogids = open(catalogidsPath, 'r').read().splitlines()
+
+    cataloguePath = None
+    for catalogidRow in catalogids:
+        if catalogidRow.strip().split()[0] == targetCatID:
+            cataloguePath = catalogidRow
+            break
+
+    if cataloguePath is None:
+        warnings.warn('no entry in catalog_ids.dat for catalogid={0}'
+                      .format(targetCatID), GohanUserWarning)
+        return None
+
+    cataloguePath = os.path.join(
+        readPath(config['catalogues']['catalogueDir']),
+        '-'.join(cataloguePath.strip().split()))
+
+    if not os.path.exists(cataloguePath):
+        warnings.warn('no catalogue found in {0}'.format(cataloguePath),
+                      GohanUserWarning)
+        return None
+
+    catalogue = table.Table.read(cataloguePath)
+
+    if int(targetCatID) in indexedCatalogues:
+        return catalogue[int(targetID)]
+    else:
+        # Changes all columns to uppercase
+        for col in catalogue.colnames:
+            if col != col.upper():
+                catalogue.rename_column(col, col.upper())
+
+        if 'MANGAID' not in catalogue.colnames:
+            warnings.warn('MANGAID column not be found', GohanUserWarning)
+            return None
+
+        row = catalogue[catalogue['MANGAID'] == mangaid]
+        if len(row) == 1:
+            return row
+        else:
+            warnings.warn('no row found in catalogue for mangaid={0}'
+                          .format(mangaid), GohanUserWarning)
+            return None
