@@ -36,6 +36,11 @@ class GohanPlateInputError(GohanError):
     pass
 
 
+class GohanPlateTargetsError(Exception):
+    """An exception for PlateTargets."""
+    pass
+
+
 class GohanWarning(Warning):
     """Base warning for Gohan."""
 
@@ -46,6 +51,10 @@ class GohanUserWarning(UserWarning, GohanWarning):
 
 class GohanPostDesignWarning(UserWarning, GohanWarning):
     """Warning for the postdesign process."""
+
+
+class GohanPlateTargetsWarning(UserWarning, GohanWarning):
+    """Warning for PlateTargets."""
 
 
 class GohanCollisionWarning(UserWarning, GohanWarning):
