@@ -29,7 +29,7 @@ import bz2
 import warnings
 from urlparse import urlparse
 
-from Gohan.exceptions import GohanWarning, GohanError
+from Gohan.exceptions import GohanUserWarning, GohanError
 from Gohan import log, config, readPath
 from Gohan.utils import pywcsgrid2 as pw2
 from Gohan.utils import getSDSSRun
@@ -66,7 +66,7 @@ try:
     MANGA_SAMPLE = table.Table.read(readPath(config['catalogues']['science']))
 except:
     MANGA_SAMPLE = None
-    warnings.warn('no MaNGA sample file loaded', GohanWarning)
+    warnings.warn('no MaNGA sample file loaded', GohanUserWarning)
 
 SIMBMAP = table.Table(yanny(readPath(config['plateMags']['simbmap']),
                             np=True)['SIMBMAP'])
@@ -289,7 +289,7 @@ class PlateMags(list):
         if self._missingIFUs > 0:
             warnings.warn('no data for {0} IFUs. '.format(
                 self._missingIFUs) + 'The remaining data has been saved.',
-                GohanWarning)
+                GohanUserWarning)
 
         log.info('plateMags saved as {0}'.format(shortenPath(plateMagsPath)))
 
@@ -530,6 +530,8 @@ class PlateMagsIFU(object):
 
             log.debug('...... {0} not found in NSA.'.format(
                       self.mangaid.strip()))
+            warnings.warn('MANGAID: {0} not found in NSA'.format(
+                          self.mangaid.strip()), GohanUserWarning)
             return False
 
         imageName = os.path.join(preImageDir,
@@ -543,7 +545,7 @@ class PlateMagsIFU(object):
             if output is False:
                 warnings.warn(
                     '{0} has no NSA data.'.format(self.mangaid),
-                    GohanWarning)
+                    GohanUserWarning)
                 return False
 
         else:
@@ -695,7 +697,7 @@ class PlateMagsIFU(object):
         if self.SDSSField is not None:
             run, rerun, camcol, field = self.SDSSField
         else:
-            warnings.warn('galaxy not in SDSS footprint.', GohanWarning)
+            warnings.warn('galaxy not in SDSS footprint.', GohanUserWarning)
             return False
 
         imageName = os.path.join(preImageDir,
