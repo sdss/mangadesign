@@ -9,6 +9,7 @@ pro/mangadesign_version.pro -text
 python/Gohan/PlateDefinition.py -text
 python/Gohan/PlateInput.py -text
 python/Gohan/PlateMags.py -text
+python/Gohan/PlateTargets.py -text
 python/Gohan/__init__.py -text
 python/Gohan/bin/checkPlateTargets.py -text
 python/Gohan/bin/createAPASSCatalogue.py -text
@@ -28,17 +29,17 @@ python/Gohan/etc/mangaInput_Default.par -text
 python/Gohan/etc/neverobserve.dat -text
 python/Gohan/etc/plateTargets-1.template -text
 python/Gohan/etc/plateTargets-12.template -text
-python/Gohan/etc/plateTargets-50.template -text
 python/Gohan/etc/targets-7443.fits -text svneol=unset#unset
 python/Gohan/examples/createPlateMags.py -text
 python/Gohan/examples/generate_2014.07.x.manga-apogee2.py -text
 python/Gohan/examples/generate_manga-apogee2.py -text
 python/Gohan/exceptions.py -text
-python/Gohan/helpers/catalogueParsers/catalogue50Parser.py -text
 python/Gohan/plateTargets/__init__.py -text
 python/Gohan/plateTargets/catalogueParsers/__init__.py -text
 python/Gohan/plateTargets/catalogueParsers/catalogue12Parser.py -text
 python/Gohan/plateTargets/catalogueParsers/catalogue1Parser.py -text
+python/Gohan/plateTargets/plateTargets-50.template -text
+python/Gohan/plateTargets/plateTargets-Ancillary.template -text
 python/Gohan/utils/Staralt.py -text
 python/Gohan/utils/__init__.py -text
 python/Gohan/utils/assignIFUDesigns.py -text

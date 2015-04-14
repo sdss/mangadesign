@@ -17,7 +17,7 @@ from __future__ import print_function
 import os
 from Gohan import readPath, config, log
 import glob
-from Gohan.utils.yanny import yanny
+from Gohan.utils import yanny
 from Gohan.exceptions import GohanError, GohanUserWarning
 from numbers import Number
 from collections import OrderedDict
@@ -26,31 +26,38 @@ from astropy import table
 import warnings
 
 
-__all__ = [
-    'getMaskBitFromLabel',
-    'getPlateTargetsPath',
-    'getPlateListDir',
-    'getPlates',
-    'getPlateDir',
-    'getPlateHolesSortedPath',
-    'getMaNGAIDs',
-    'sortByCatID',
-    'getParsingFunction',
-    'getSampleCatalogue',
-    'getPlateInputData',
-    'getPlateHolesSortedData',
-    'getPointing',
-    'getMangaScience',
-    'getPlateDefinition',
-    'getTargetFix',
-    'getDesignID',
-    'getCatalogueRow'
-]
+# __all__ = [
+#     'getMaskBitFromLabel',
+#     'getPlateTargetsPath',
+#     'getPlateListDir',
+#     'getPlates',
+#     'getPlateDir',
+#     'getPlateHolesSortedPath',
+#     'getMaNGAIDs',
+#     'sortByCatID',
+#     'getParsingFunction',
+#     'getSampleCatalogue',
+#     'getPlateInputData',
+#     'getPlateHolesSortedData',
+#     'getPointing',
+#     'getMangaScience',
+#     'getPlateDefinition',
+#     'getTargetFix',
+#     'getDesignID',
+#     'getCatalogueRow',
+#     'getCataloguePath',
+#     'getPlateTargetsTemplate'
+# ]
+
+
+# Dictionary to cache catalogues after being read
+cachedCatalogues = {}
 
 
 try:
     sdssMaskBitsFile = readPath(config['sdssMaskBits'])
-    sdssMaskBits = table.Table(yanny(sdssMaskBitsFile, np=True)['MASKBITS'])
+    sdssMaskBits = table.Table(
+        yanny.yanny(sdssMaskBitsFile, np=True)['MASKBITS'])
 except:
     sdssMaskBits = None
 
@@ -101,12 +108,14 @@ plateListDir = getPlateListDir()
 platePlansFile = os.path.join(plateListDir, 'platePlans.par')
 
 if os.path.exists(platePlansFile):
-    platePlans = yanny(platePlansFile, np=True)['PLATEPLANS']
+    platePlans = yanny.yanny(platePlansFile, np=True)['PLATEPLANS']
 else:
     platePlans = None
 
 
-def getPlates(plateRun, column='plateid'):
+def getFromPlatePlans(plateRun, column='plateid'):
+    """Returns a column (defaults to plateid) for all the plates in a certain
+    plate run."""
 
     if platePlans is None:
         raise GohanError('platePlans file not found')
@@ -153,7 +162,7 @@ def getPlateHolesSortedPath(plateid):
 
 def getMaNGAIDs(plateid):
 
-    ynPlateHolesSorted = yanny(
+    ynPlateHolesSorted = yanny.yanny(
         getPlateHolesSortedPath(plateid), np=True)['STRUCT1']
 
     return [ynPlateHolesSorted['mangaid'][ii]
@@ -225,8 +234,6 @@ def getSampleCatalogue(catID):
 
 def getPlateInputData(mangaid, plateHolesSorted):
 
-    log.debug('Grabbing plateInput info for mangaid={0}'.format(mangaid))
-
     inputs = []
     for key in plateHolesSorted.keys():
         if 'plateinput' in key:
@@ -237,7 +244,7 @@ def getPlateInputData(mangaid, plateHolesSorted):
         plateInputPath = os.path.join(
             readPath(config['platelist']), 'inputs', input)
 
-        plateInput = yanny(plateInputPath, np=True)
+        plateInput = yanny.yanny(plateInputPath, np=True)
 
         if 'MANGAINPUT' in plateInput.keys():
             structName = 'MANGAINPUT'
@@ -276,20 +283,25 @@ def getPlateInputData(mangaid, plateHolesSorted):
                      'mangaid={0}'.format(mangaid))
 
 
-def getPlateHolesSortedData(mangaid, plateHolesSortedPath):
+def getPlateHolesSortedData(plateid):
+    """Returns a formatted version of the plateHolesSorted data for a
+    plateid."""
 
-    log.info('Grabbing plateHolesSorted info for mangaid={0}'.format(mangaid))
+    plateHolesSortedPath = getPlateHolesSortedPath(plateid)
 
-    plateHolesSorted = yanny(plateHolesSortedPath, np=True)
-    plateHolesSortedStruct = table.Table(plateHolesSorted['STRUCT1'])
+    plateHolesSorted = yanny.yanny(plateHolesSortedPath, np=True)
+    plateHolesSortedStruct = table.Table(plateHolesSorted.pop('STRUCT1'))
 
-    for row in plateHolesSortedStruct:
-        if row['mangaid'] == mangaid:
-            return (plateHolesSorted['plateId'], plateHolesSorted['designid'],
-                    row)
+    for colname in plateHolesSortedStruct.colnames:
+        if colname != colname.lower():
+            plateHolesSortedStruct.rename_column(colname, colname.lower())
 
-    raise GohanError('it has not been possible to find mangaid={0} '
-                     'in {1}'.format(mangaid, plateHolesSortedPath))
+    plateHolesSorted.pop('symbols')
+    for key in plateHolesSorted:
+        if key != key.lower():
+            plateHolesSorted[key.lower()] = plateHolesSorted.pop(key)
+
+    return (plateHolesSortedStruct, plateHolesSorted)
 
 
 def getPointing(plateInputData):
@@ -311,11 +323,17 @@ def getPointing(plateInputData):
             'ifu_dec': plateInputData['ifu_dec']}
 
 
-def getMangaScience(designID):
+def getMangaScience(input, format='designid'):
+    """Returns the path of the mangaScience data for a design or plate."""
+
+    if format == 'plateid':
+        designID = getDesignID(input)
+    else:
+        designID = input
 
     plateDefinition = getPlateDefinition(designID)
 
-    plateDefYanny = yanny(plateDefinition)
+    plateDefYanny = yanny.yanny(plateDefinition)
 
     for key in plateDefYanny.keys():
         if 'plateInput' in key:
@@ -365,53 +383,41 @@ def getDesignID(plateid):
         raise GohanError('plateid={0} not found'.format(plateid))
 
 
-def getCatalogueRow(mangaid):
-    """Recovers the row in the parent catalogue matching the mangaid."""
+def getCatalogueRow(mangaid, catalogue=None):
+    """Recovers the row in the parent catalogue matching the mangaid.
+    An `astropy.table.Table` instance of the catalogue can be passed."""
 
     # List of catalogids for catalogues in which the targetid in mangaid is
     # the index (zero-indexed) in the parent catalogue.
     indexedCatalogues = [1, 8, 12]
 
-    targetCatID, targetID = mangaid.strip().split('-')
+    catalogID, targetID = mangaid.strip().split('-')
 
-    catalogidsPath = os.path.join(readPath(config['mangacore']),
-                                  'platedesign/catalog_ids.dat')
-    if not os.path.exists(catalogidsPath):
-        warnings.warn('catalog_ids.dat could not be found', GohanUserWarning)
-        return None
+    if catalogue is None:
+        if catalogID in cachedCatalogues:
+            # If catalogue is cached
+            catalogue = cachedCatalogues[catalogID]
 
-    catalogids = open(catalogidsPath, 'r').read().splitlines()
+        else:
+            # Reads catalogue and caches is
 
-    cataloguePath = None
-    for catalogidRow in catalogids:
-        if catalogidRow.strip().split()[0] == targetCatID:
-            cataloguePath = catalogidRow
-            break
+            cataloguePath = getCataloguePath(catalogID)
 
-    if cataloguePath is None:
-        warnings.warn('no entry in catalog_ids.dat for catalogid={0}'
-                      .format(targetCatID), GohanUserWarning)
-        return None
+            if cataloguePath is None:
+                return None
 
-    cataloguePath = os.path.join(
-        readPath(config['catalogues']['catalogueDir']),
-        '-'.join(cataloguePath.strip().split()))
+            catalogue = table.Table.read(cataloguePath)
 
-    if not os.path.exists(cataloguePath):
-        warnings.warn('no catalogue found in {0}'.format(cataloguePath),
-                      GohanUserWarning)
-        return None
+            # Changes all columns to lowercase
+            for col in catalogue.colnames:
+                if col != col.lower():
+                    catalogue.rename_column(col, col.lower())
 
-    catalogue = table.Table.read(cataloguePath)
+            cachedCatalogues[catalogID] = catalogue
 
-    if int(targetCatID) in indexedCatalogues:
+    if int(catalogID) in indexedCatalogues:
         return catalogue[int(targetID)]
     else:
-        # Changes all columns to uppercase
-        for col in catalogue.colnames:
-            if col != col.upper():
-                catalogue.rename_column(col, col.upper())
-
         if 'MANGAID' not in catalogue.colnames:
             warnings.warn('MANGAID column not be found', GohanUserWarning)
             return None
@@ -423,3 +429,52 @@ def getCatalogueRow(mangaid):
             warnings.warn('no row found in catalogue for mangaid={0}'
                           .format(mangaid), GohanUserWarning)
             return None
+
+
+def getCataloguePath(catalogid):
+    """Returns the path of a catalogue for a certain catalogid."""
+
+    catalogid = int(catalogid)
+
+    catalogidsPath = os.path.join(readPath(config['mangacore']),
+                                  'platedesign/catalog_ids.dat')
+    if not os.path.exists(catalogidsPath):
+        warnings.warn('catalog_ids.dat could not be found', GohanUserWarning)
+        return None
+
+    catalogids = open(catalogidsPath, 'r').read().splitlines()
+
+    cataloguePath = None
+    for catalogidRow in catalogids:
+        if int(catalogidRow.strip().split()[0]) == catalogid:
+            cataloguePath = catalogidRow
+            break
+
+    if cataloguePath is None:
+        warnings.warn('no entry in catalog_ids.dat for catalogid={0}'
+                      .format(catalogid), GohanUserWarning)
+        return None
+
+    cataloguePath = os.path.join(
+        readPath(config['catalogues']['catalogueDir']),
+        '-'.join(cataloguePath.strip().split()))
+
+    if not os.path.exists(cataloguePath):
+        warnings.warn('no catalogue found in {0}'.format(cataloguePath),
+                      GohanUserWarning)
+        return None
+
+    return cataloguePath
+
+
+def getPlateTargetsTemplate(catalogid):
+    """Returns the path to the plateTargets template for a given catalogid."""
+
+    if catalogid in [1, 12]:
+        return readPath('+plateTargets/plateTargets-1.template')
+    elif catalogid >= 30:
+        return readPath('+plateTargets/plateTargets-Ancillary.template')
+    else:
+        warnings.warn('no template found for catalogid={0}'.format(catalogid),
+                      GohanUserWarning)
+        return None
