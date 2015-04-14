@@ -37,7 +37,8 @@ defaultValues = {
 
 
 def autocomplete(targets, targettype, centre, **kwargs):
-    """Autocompletes a list of targets using NSA to a number of `nTargets`."""
+    """Autocompletes a list of targets using the MaNGa sample or the
+    NSA catalogue."""
 
     if targettype == 'science':
         bundles = config['IFUs'].copy()
