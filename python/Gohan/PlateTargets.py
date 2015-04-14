@@ -116,8 +116,22 @@ class PlateTargets(object):
         return header
 
     def write(self, path=None):
-        """Writes the current instance to a Yanny file. If `path` is None,
-        uses the default path."""
+        """Writes the current instance to a Yanny file.
+
+        Parameters
+        ----------
+        path : string or None, optional
+            The path where the plateTargets file will be written.
+            If `path=None`, the usual path will be used.
+
+        Returns
+        -------
+        result : tuple
+            A tuple containing, in the first element, the path where the
+            file was writen, and in the second element the number of new
+            targets added to the plateTargets file.
+
+        """
 
         if path is None:
             if self.template:
@@ -141,8 +155,9 @@ class PlateTargets(object):
         unit.write(lines)
         unit.close()
 
-        log.debug('plateTargets saved to {0}'.format(path))
-        log.debug('{0} targets appended'.format(self._nAppended))
+        log.debug('plateTargets-{0} saved to {1}'.format(self.catalogid, path))
+        log.debug('{0} targets appended to plateTargets-{1}'
+                  .format(self._nAppended, self.catalogid))
 
         # If this was a template, it stops being it after writing the file
         # to disk.
@@ -153,7 +168,7 @@ class PlateTargets(object):
         nAppended = self._nAppended
         self._nAppended = 0
 
-        return nAppended
+        return (self.path, nAppended)
 
     def addTargets(self, mangaids, plateid=None, mangaInput=None,
                    overwrite=False):
@@ -164,6 +179,10 @@ class PlateTargets(object):
         the mangaInput will be determined from the plateHolesSorted file.
         If only `mangaInput` is defined, the plate-related information will be
         filled. with nulls A warning will be issued.
+
+        It uses a combination of mangaScience, catalogue data and
+        plateHolesSorted (in that order) to obtain all possible information
+        about the target and fill out all the plateTargets fields.
 
         Parameters
         ----------
@@ -210,11 +229,11 @@ class PlateTargets(object):
         designid = int(mangaInputKyw['designid'])
 
         # Reads the plateHolesSorted file
-        # if plateid is not None:
-        #     plateHolesSortedStructure, plateHolesSortedKyw = \
-        #         utils.getPlateHolesSortedData(plateid)
-        # else:
-        #     plateHolesSortedStructure = plateHolesSortedKyw = None
+        if plateid is not None:
+            plateHolesSortedStructure, plateHolesSortedKyw = \
+                utils.getPlateHolesSortedData(plateid)
+        else:
+            plateHolesSortedStructure = plateHolesSortedKyw = None
 
         # Defines the fields to fill out
         # In principle, the fields are the columns of the current instance.
@@ -234,10 +253,6 @@ class PlateTargets(object):
 
         for mangaid in mangaids:
 
-            if mangaid not in mangaInputStructure['mangaid']:
-                raise GohanPlateTargetsError(
-                    'mangaid={0} not found in mangaInput'.format(mangaid))
-
             # Defines if the targets already exists in plateTargets.
             existing = False
 
@@ -253,8 +268,25 @@ class PlateTargets(object):
                     else:
                         continue
 
+            # Selects the row for mangaid from the mangaScience structure
+            if mangaid not in mangaInputStructure['mangaid']:
+                raise GohanPlateTargetsError(
+                    'mangaid={0} not found in mangaInput'.format(mangaid))
+
             mangaInputRow = mangaInputStructure[
                 mangaInputStructure['mangaid'] == mangaid][0]
+
+            # Selects the row for mangaid from the plateHolesSorted structure
+            # if plateHolesSorted is defined.
+            if plateHolesSortedStructure is not None:
+
+                if mangaid not in plateHolesSortedStructure['mangaid']:
+                    raise GohanPlateTargetsError(
+                        'mangaid={0} not found in plateHolesSorted'
+                        .format(mangaid))
+
+                plateHolesSortedRow = plateHolesSortedStructure[
+                    plateHolesSortedStructure['mangaid'] == mangaid][0]
 
             catalogueRow = utils.getCatalogueRow(mangaid)
             if catalogueRow is None:
@@ -276,10 +308,25 @@ class PlateTargets(object):
                     targetData[field] = self._getNSAVersion()
                     continue
 
-                searchField = None
+                # Some particular NSA cases
+                if 'nsa' in field:
+
+                    if (field == 'nsa_inclination' and
+                            catalogueRow is not None and
+                            'ba90' in catalogueRow.colnames):
+                        targetData[field] = np.round(
+                            np.rad2deg(np.arccos(catalogueRow['ba90'])), 4)
+                        continue
+
+                    elif field == 'nsa_id' or field == 'nsa_id100':
+                        targetData[field] = mangaInputRow['nsaid']
+                        continue
 
                 # Defines the fieldname to search in mangaInput, plateHoles,
                 # and catalogue data.
+
+                searchField = None
+
                 if field in conversions['all']:
                     searchField = conversions['all'][field]
 
@@ -293,43 +340,42 @@ class PlateTargets(object):
                     else:
                         searchField = field
 
-                # Some particular NSA cases
-                if 'nsa' in field:
-
-                    if (searchField == 'inclination' and
-                            catalogueRow is not None and
-                            'ba90' in catalogueRow.colnames):
-                        targetData[field] = np.round(
-                            np.rad2deg(np.arccos(catalogueRow['ba90'])), 4)
-
-                    elif field == 'nsa_id' or field == 'nsa_id100':
-                        targetData[field] = mangaInputRow['nsaid']
-
-                    else:
-                        if (catalogueRow is not None and
-                                searchField in catalogueRow.colnames):
-                            targetData[field] = catalogueRow[searchField]
-                    continue
-
-                # Fills remaining values from mangaInput and catalogue
+                # Fills values using the mangaInput structure
                 if searchField in mangaInputRow.colnames:
                     targetData[field] = mangaInputRow[searchField]
                     continue
+
+                # Fills values using the mangaInput keywords
                 if searchField in mangaInputKyw:
                     targetData[field] = mangaInputKyw[searchField]
                     continue
-                if (catalogueRow is not None and
-                        searchField in catalogueRow.colnames):
-                    targetData[field] = catalogueRow[searchField]
-                    continue
+
+                # Fills values using the catalogue row
+                if catalogueRow is not None:
+                    if searchField in catalogueRow.colnames:
+                        targetData[field] = catalogueRow[searchField]
+                        continue
+
+                # Fills values using plateHolesSorted and keywords
+                if plateHolesSortedStructure:
+                    if searchField in plateHolesSortedRow.colnames:
+                        targetData[field] = plateHolesSortedRow[searchField]
+                        continue
+
+                    if searchField in plateHolesSortedKyw:
+                        targetData[field] = plateHolesSortedKyw[searchField]
+                        continue
 
                 # If not found, fills values with -999
                 targetData[field] = -999
 
-                # TODO: add neverobserve, test with plateTargets-12, add
-                # targetfix check.
+                # TODO: test with plateTargets-12
 
+            # Cleans up values
             targetData = self._cleanupTargetData(targetData)
+
+            # Applies target fixes
+            targetData = self._applyTargetFix(targetData)
 
             # Adds the new targets
             if not existing:
@@ -403,5 +449,43 @@ class PlateTargets(object):
         for key in targetData:
             if isinstance(targetData[key], basestring):
                 targetData[key] = targetData[key].strip()
+
+        return targetData
+
+    def _applyTargetFix(self, targetData):
+        """Reads the targetfix file for a target and updates the
+        target data."""
+
+        plateid = targetData['plateid']
+
+        if plateid is None or plateid == -999:
+            return targetData
+
+        targetFixPath = utils.getTargetFix(plateid)
+        if targetFixPath is None:
+            return targetData
+
+        # Reads targetfix and makes sure all mangaids are stripped
+        targetFix = yanny.yanny(targetFixPath, np=True)['OPTARFIX']
+        for row in targetFix:
+            row['mangaid'] = row['mangaid'].strip()
+
+        # Determines the rows in targetfix referring to the mangaid of
+        # targetData
+        mangaid = targetData['mangaid']
+        targetFix_mangaid = targetFix[targetFix['mangaid'] == mangaid]
+
+        # If targetfixes are found for our mangaid, proceeds to update
+        # targetData.
+        if len(targetFix_mangaid) > 0:
+            log.important('Applying target fix to mangaid={0}'.format(mangaid))
+            for row in targetFix_mangaid:
+                keyword = row['keyword']
+                if keyword in targetData:
+                    oldValue = targetData[keyword]
+                    newValue = row['value']
+                    targetData[keyword] = newValue
+                    log.debug('mangaid={0}: {1}={2} -> {3}'.format(
+                              mangaid, keyword, oldValue, newValue))
 
         return targetData

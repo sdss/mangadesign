@@ -36,64 +36,6 @@ import argparse
 nBundles = sum(config['IFUs'].values())
 
 
-# def addTargets(plateTargetsPath, newPlateTargetsTable, removeFirst=False,
-#                overwrite=False):
-
-#     plateTargets = yanny(plateTargetsPath, np=True)
-#     plateTargetsTable = table.Table(plateTargets['PLTTRGT'], copy=True)
-
-#     if removeFirst:
-#         plateTargetsTable.remove_row(0)
-
-#     header = []
-#     for row in plateTargets._contents.split('\n'):
-#         if row.strip() == '':
-#             header.append('')
-#         elif row.strip()[0] == '#':
-#             header.append(row)
-#         else:
-#             break
-
-#     header = '\n'.join(map(str, header)).strip() + '\n\n'  # Strips empty lines
-
-#     nNewLines = 0
-#     for newTarget in newPlateTargetsTable:
-
-#         plateid = newTarget['plateid']
-#         mangaid = newTarget['mangaid']
-
-#         currentRecords = np.where(
-#             (plateTargetsTable['plateid'] == plateid) &
-#             (plateTargetsTable['mangaid'] == mangaid))[0]
-
-#         if len(currentRecords) == 1:
-#             if overwrite:
-#                 plateTargetsTable.remove_row(currentRecords[0])
-#             else:
-#                 log.debug('mangaid={0} in plateid={1} skipped because already'
-#                           ' exists in {2} and overwrite=False'.format(
-#                               os.path.basename(mangaid), plateid,
-#                               plateTargetsPath))
-#                 continue
-
-#         elif len(currentRecords) > 1:
-#             raise GohanPostDesignError(
-#                 '{0} has more than one row with plateid={1} and '
-#                 'mangaid={2}'.format(os.path.basename(plateTargetsPath),
-#                                      plateid, mangaid))
-
-#         plateTargetsTable.add_row(newTarget)
-#         nNewLines += 1
-
-#     os.remove(plateTargetsPath)
-#     plateTargets['PLTTRGT'] = plateTargetsTable
-#     plateTargets.write(plateTargetsPath, comments=header)
-
-#     # plateTargets.append({'PLTTRGT': newPlateTargetsTable})
-#     log.info('Appended {0} targets to {1}'.format(
-#         nNewLines, os.path.basename(plateTargetsPath)))
-
-
 def runMaNGAPostDesign(plateids, overwrite=False):
     """Runs MaNGA post-design procedure.
 
@@ -157,43 +99,24 @@ def runMaNGAPostDesign(plateids, overwrite=False):
 
     returnDict = OrderedDict()
 
-    for catID in catPlateMangaID.keys():
+    for catId in catPlateMangaID:
 
         log.info('Doing catalogid={0} ...'.format(catID))
 
-        # parsingFunction = utils.getParsingFunction(catID)
+        if catId not in returnDict:
+            returnDict[catId] = PlateTargets(catId)
 
-        # if parsingFunction is None:
-        #     nSkipped = np.sum([len(mIDs)
-        #                        for mIDs in catPlateMangaID[catID].values()])
-        #     warnings.warn('no parsing function for catID={0}. '
-        #                   'Skipping {1} mangaids'.format(catID, nSkipped),
-        #                   GohanUserWarning)
-        #     continue
+        plateTargets = returnDict[catId]
 
-        # template = False
-        # plateTargetsPath = utils.getPlateTargetsPath(catID)
+        for plateid in catPlateMangaID[catId]:
+            plateMangaids = catPlateMangaID[catId][plateid]
+            plateTargets.addTargets(plateMangaids, plateid=plateid,
+                                    overwrite=overwrite)
 
-        # if not os.path.exists(plateTargetsPath):
-        #     log.important('no plateTargets-{0}.par found. Using a template.'
-        #                   .format(catID))
-
-        #     templatePath = utils.getPlateTargetsTemplate(catID)
-
-        #     if not os.path.exists(templatePath):
-        #         warnings.warn('template cannot be found. Skipping catalogid.')
-        #         continue
-        #     else:
-        #         shutil.copy(templatePath, plateTargetsPath)
-        #         template = True
-
-        # log.info('{0} plates found for catalogid={1}'.format(
-        #     len(catPlateMangaID[catID]), catID))
-
-        for plate in catPlateMangaID[catID]:
-            plateTargetsTable = PlateTargets(
-                plate, mangaids=catPlateMangaID[catID][plate], catalogid=catID)
-            plateTargets.write()
+        plateTargetsPath, nAppended = plateTargets.write()
+        log.info('plateTargets-{0}.par saved'.format(catId))
+        log.info('Appended {0} targets to {1}'.format(
+            nAppended, plateTargetsPath))
 
     log.info('Copying plateHolesSorted to mangacore ...')
 
