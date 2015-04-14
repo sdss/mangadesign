@@ -40,7 +40,6 @@ python/Gohan/helpers/createPlateMags.py -text
 python/Gohan/helpers/createStandardCatalogue.py -text
 python/Gohan/helpers/createStellarLibraryCatalogue.py -text
 python/Gohan/helpers/runMaNGAPostDesign.py -text
-python/Gohan/helpers/utils.py -text
 python/Gohan/utils/Staralt.py -text
 python/Gohan/utils/__init__.py -text
 python/Gohan/utils/assignIFUDesigns.py -text
@@ -61,4 +60,5 @@ python/Gohan/utils/pywcsgrid2/wcs_helper.py -text
 python/Gohan/utils/pywcsgrid2/wcs_transforms.py -text
 python/Gohan/utils/runAll.py -text
 python/Gohan/utils/sortTargets.py -text
+python/Gohan/utils/utils.py -text
 python/Gohan/utils/yanny.py -text
