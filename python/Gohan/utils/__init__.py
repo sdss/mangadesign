@@ -5,6 +5,7 @@ from runAll import runAll
 from sortTargets import sortTargets
 from assignIFUDesigns import assignIFUDesigns
 from autocomplete import autocomplete
+from utils import *
 
 try:
     from Staralt import Staralt
