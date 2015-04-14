@@ -54,7 +54,6 @@ from matplotlib.backends.backend_pdf import PdfPages
 
 __ALL__ = ['PlateMags']
 
-
 matplotlib.rc('font', size=10)
 matplotlib.rc('text', usetex=True)
 plt.ioff()
@@ -69,8 +68,8 @@ except:
     MANGA_SAMPLE = None
     warnings.warn('no MaNGA sample file loaded', GohanWarning)
 
-SIMBMAP = table.Table(yanny.yanny(readPath(config['plateMags']['simbmap']),
-                                  np=True)['SIMBMAP'])
+SIMBMAP = table.Table(yanny(readPath(config['plateMags']['simbmap']),
+                            np=True)['SIMBMAP'])
 
 BOSS_SN_DATA = table.Table.read(
     readPath(config['plateMags']['BOSS_SN']),
