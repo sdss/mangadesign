@@ -86,7 +86,7 @@ class PlateDefinition(object):
         inputs = OrderedDict(inputs)
         defDict.update(inputs)
 
-        template = yanny.yanny(plateDefinitionTemplate)
+        template = yanny(plateDefinitionTemplate)
 
         for key in defDict:
             template[key] = defDict[key]
