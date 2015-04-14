@@ -17,12 +17,25 @@ from __future__ import print_function
 from Gohan import log, readPath, config
 from astropy import table
 from astropy import coordinates as coo
-from Gohan.exceptions import GohanUserWarning, GohanError
+from Gohan.exceptions import GohanUserWarning
 from Gohan.utils.sortTargets import sortTargets
-from Gohan.helpers.utils import getMaskBitFromLabel
+from Gohan.utils import getMaskBitFromLabel
 import warnings
 import numpy as np
 import os
+
+
+try:
+    NSAPath = readPath(config['catalogues']['NSA'])
+
+    if not os.path.exists(NSAPath):
+        warnings.warn('NSA catalogue {0} not found'.format(NSAPath),
+                      GohanUserWarning)
+        NSACat = None
+    else:
+        NSACat = table.Table.read(NSAPath)
+except:
+    NSACat = None
 
 
 defaultValues = {
@@ -179,14 +192,9 @@ def getUnassignedBundleSizes(targets, bundles):
 
 def getNSATargets(targets, centre):
 
-    NSAPath = readPath(config['catalogues']['NSA'])
-
-    if not os.path.exists(NSAPath):
-        warnings.warn('NSA catalogue {0} not found'.format(NSAPath),
-                      GohanUserWarning)
+    if NSACat is None:
         return None
 
-    NSACat = table.Table.read(NSAPath)
     NSACat.add_column(
         table.Column(np.arange(len(NSACat)), dtype='int', name='CATIND'))
 
