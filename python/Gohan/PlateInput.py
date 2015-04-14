@@ -621,8 +621,8 @@ class PlateInput(object):
                 # if not needed.
                 from Gohan.utils.autocomplete import autocomplete
                 # Autocompletes targets
-                targets = autocomplete(targets, 'science',
-                                       (self.raCen, self.decCen), **kwargs)
+                targets = autocomplete(targets, (self.raCen, self.decCen),
+                                       **kwargs)
             if len(targets) < nBundlesToAllocate:
                 raise exceptions.GohanPlateInputError(
                     'not enough targets.')
