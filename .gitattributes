@@ -44,12 +44,6 @@ python/Gohan/utils/Staralt.py -text
 python/Gohan/utils/__init__.py -text
 python/Gohan/utils/assignIFUDesigns.py -text
 python/Gohan/utils/autocomplete.py -text
-python/Gohan/utils/colorama/__init__.py -text
-python/Gohan/utils/colorama/ansi.py -text
-python/Gohan/utils/colorama/ansitowin32.py -text
-python/Gohan/utils/colorama/initialise.py -text
-python/Gohan/utils/colorama/win32.py -text
-python/Gohan/utils/colorama/winterm.py -text
 python/Gohan/utils/getSDSSRun.py -text
 python/Gohan/utils/pywcsgrid2/__init__.py -text
 python/Gohan/utils/pywcsgrid2/aux_artists.py -text
