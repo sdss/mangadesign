@@ -37,10 +37,6 @@ from Gohan.utils import (getPlateDefinition, getMaskBitFromLabel,
                          getCatalogueRow)
 
 
-fillerBit = 2**getMaskBitFromLabel('MANGA_TARGET1', 'FILLER')[0]
-ancillaryBit = 2**getMaskBitFromLabel('MANGA_TARGET1', 'ANCILLARY')[0]
-
-
 def reformatAstropyColumn(inputTable, columnName, newFormat):
     """Changes the format of a column for an `astropy.table.Column`.
 
@@ -925,9 +921,13 @@ class PlateInput(object):
                     target['manga_target2'] == 0 and
                     target['manga_target3'] == 0):
                 # If manga_target1 = manga_target3 = 0, this is a filler target
+                fillerBit = 2**getMaskBitFromLabel('MANGA_TARGET1',
+                                                   'FILLER')[0]
                 target['manga_target1'] = fillerBit
             elif target['manga_target1'] == 0 and target['manga_target3'] > 0:
                 # This is an ancillary target
+                ancillaryBit = 2**getMaskBitFromLabel('MANGA_TARGET1',
+                                                      'ANCILLARY')[0]
                 target['manga_target1'] = ancillaryBit
 
         # Checks that the proper motions, if present, contain all the needed
