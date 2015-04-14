@@ -657,9 +657,9 @@ class PlateMagsIFU(object):
 
             nPix = config['plateMags']['nPix']
             xmin = int(xx) - nPix
-            xmax = int(xx) + nPix
+            # xmax = int(xx) + nPix
             ymin = int(yy) - nPix
-            ymax = int(yy) + nPix
+            # ymax = int(yy) + nPix
 
             for nn in [imgIdx, varIdx, psfIdx]:
                 newHDU[nn].header.set(
