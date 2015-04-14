@@ -21,6 +21,11 @@ class GohanError(Exception):
     pass
 
 
+class GohanPostDesignError(Exception):
+    """An exception for MaNGA postdesign."""
+    pass
+
+
 class GohanNotImplemented(GohanError):
     """A class for exceptions about functionalities not yet implemented."""
     pass
@@ -37,6 +42,10 @@ class GohanWarning(Warning):
 
 class GohanUserWarning(UserWarning, GohanWarning):
     """The primary warning class."""
+
+
+class GohanPostDesignWarning(UserWarning, GohanWarning):
+    """Warning for the postdesign process."""
 
 
 class GohanCollisionWarning(UserWarning, GohanWarning):
