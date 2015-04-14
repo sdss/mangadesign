@@ -6,6 +6,7 @@ logging:
     logFileMode: 'w'
 
 catalogues:
+    catalogueDir: $MANGA_CATALOGUE_DIR
     science: $MANGASAMPLE_SCIENCE_CATALOGUE
     standard: $MANGASAMPLE_STANDARD_CATALOGUE
     stelLib: $MANGASAMPLE_STELLIB_CATALOGUE
