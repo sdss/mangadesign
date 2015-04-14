@@ -921,7 +921,9 @@ class PlateInput(object):
 
         # Makes sure that the maskbits are correctly defined
         for target in targets:
-            if target['manga_target1'] == 0 and target['manga_target3'] == 0:
+            if (target['manga_target1'] == 0 and
+                    target['manga_target2'] == 0 and
+                    target['manga_target3'] == 0):
                 # If manga_target1 = manga_target3 = 0, this is a filler target
                 target['manga_target1'] = fillerBit
             elif target['manga_target1'] == 0 and target['manga_target3'] > 0:

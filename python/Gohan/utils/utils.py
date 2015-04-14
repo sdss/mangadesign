@@ -301,6 +301,10 @@ def getPlateHolesSortedData(plateid):
         if key != key.lower():
             plateHolesSorted[key.lower()] = plateHolesSorted.pop(key)
 
+    # Strips mangaids
+    for row in plateHolesSortedStruct:
+        row['mangaid'] = row['mangaid'].strip()
+
     return (plateHolesSortedStruct, plateHolesSorted)
 
 

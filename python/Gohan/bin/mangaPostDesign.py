@@ -21,9 +21,6 @@ from Gohan import log, config, readPath
 from Gohan import PlateTargets
 from Gohan.utils import utils
 from Gohan.exceptions import GohanPostDesignError, GohanPostDesignWarning
-from Gohan.utils.yanny import yanny
-
-from astropy import table
 import numpy as np
 
 from collections import OrderedDict
@@ -36,7 +33,7 @@ import argparse
 nBundles = sum(config['IFUs'].values())
 
 
-def runMaNGAPostDesign(plateids, overwrite=False):
+def runMaNGAPostDesign(plateids, overwrite=False, skipPlateHolesSorted=False):
     """Runs MaNGA post-design procedure.
 
     This function accepts a list of plateids and updates the necessary
@@ -54,6 +51,8 @@ def runMaNGAPostDesign(plateids, overwrite=False):
     overwrite : bool, optional
         If True, the routine will overwrite the plateTargets lines for the
         targets and replace the plateHolesSorted files.
+    skipPlateHolesSorted : bool, optional
+        If True, skips copying the plateHolesSorted files to mangacore.
 
     Returns
     -------
@@ -64,12 +63,15 @@ def runMaNGAPostDesign(plateids, overwrite=False):
 
     """
 
-    plateids = np.atleast_1d(plateids, dtype=int)
+    plateids = np.atleast_1d(plateids)
 
     log.info('Identifying mangaids ... ')
 
+    # Gets managids for each plate and creates a dictionary in which the
+    # key is the catalogid and the values are dictionaries of plate-mangaids
+    # values
     catPlateMangaID = OrderedDict()
-    for plate in plates:
+    for plate in plateids:
 
         mangaids = utils.getMaNGAIDs(plate)
 
@@ -91,33 +93,49 @@ def runMaNGAPostDesign(plateids, overwrite=False):
 
             catPlateMangaID[catID][plate].append(mangaid)
 
-    log.info('Sorting mangaids by catalogid ... ')
-
     if len(catPlateMangaID.keys()) == 0:
         log.important('No targets found for that platerun.')
         return OrderedDict()
 
+    # Creates the returned dictionary {catID: plateTargets}
     returnDict = OrderedDict()
 
     for catId in catPlateMangaID:
 
+        addedRows = 0
+
         log.info('Doing catalogid={0} ...'.format(catID))
 
         if catId not in returnDict:
+            # If returnDict does not contain a PlateTargets instance for
+            # catId creates it.
             returnDict[catId] = PlateTargets(catId)
 
         plateTargets = returnDict[catId]
 
+        # Adds the targets with catalogid=catID for each plate
         for plateid in catPlateMangaID[catId]:
+            log.info('Adding targets for plate_id={0}'.format(plateid))
             plateMangaids = catPlateMangaID[catId][plateid]
-            plateTargets.addTargets(plateMangaids, plateid=plateid,
-                                    overwrite=overwrite)
+            newRows = plateTargets.addTargets(plateMangaids, plateid=plateid,
+                                              overwrite=overwrite)
+            addedRows += len(newRows)
 
-        plateTargetsPath, nAppended = plateTargets.write()
-        log.info('plateTargets-{0}.par saved'.format(catId))
-        log.info('Appended {0} targets to {1}'.format(
-            nAppended, plateTargetsPath))
+        # Logs some information
+        if addedRows > 0:
+            plateTargetsPath, nAppended = plateTargets.write()
+            log.info('plateTargets-{0}.par saved'.format(catId))
+            log.info('Appended {0} targets to {1}'.format(
+                nAppended, plateTargetsPath))
+        else:
+            log.info('no targets added to plateTargets-{0}.par'.format(catId))
 
+    if skipPlateHolesSorted:
+        warnings.warn('skipping copying plateHolesSorted files to mangacore',
+                      GohanPostDesignWarning)
+        return returnDict
+
+    # Copies plateHolesSorted to mangacore
     log.info('Copying plateHolesSorted to mangacore ...')
 
     plateHolesDir = os.path.join(readPath(config['mangacore']),
@@ -152,7 +170,7 @@ def runMaNGAPostDesign(plateids, overwrite=False):
         log.info('{0} copied to mangacore'.format(
             os.path.basename(plateHolesSortedPath)))
 
-    return
+    return returnDict
 
 
 if __name__ == '__main__':
@@ -164,6 +182,9 @@ if __name__ == '__main__':
     parser.add_argument('--plateid', '-p', action='store_true',
                         help='if present, the input values will be considered '
                         'plateids instead of plate runs.')
+    parser.add_argument('--noplateholessorted', '-n', action='store_true',
+                        help='skips copying plateHolesSorted files to '
+                        'mangacore.')
     parser.add_argument('plateRuns', metavar='plateRuns/plateids',
                         type=str, nargs='+', help='the plate run or plateids '
                         'to process.')
@@ -177,5 +198,7 @@ if __name__ == '__main__':
         plateRuns = args.plateRuns
         for plateRun in plateRuns:
             log.info('Plate run: ' + plateRun)
-            plates = utils.getFromPlatePlans(plateRun, column='plateid')
-            runMaNGAPostDesign(plates, overwrite=args.overwrite)
+            plates = map(int,
+                         utils.getFromPlatePlans(plateRun, column='plateid'))
+            runMaNGAPostDesign(plates, overwrite=args.overwrite,
+                               skipPlateHolesSorted=args.noplateholessorted)

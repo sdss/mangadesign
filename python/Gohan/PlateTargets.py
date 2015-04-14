@@ -204,7 +204,11 @@ class PlateTargets(object):
 
         """
 
-        mangaids = np.atleast_1d(mangaids)
+        mangaids = [mangaid.strip() for mangaid in np.atleast_1d(mangaids)]
+
+        # A list of the indices in self.structure that contain a newly added
+        # target.
+        _addedIndices = []
 
         if mangaInput is not None:
             assert os.path.exists(mangaInput), ('path {0} does not exist'
@@ -220,7 +224,7 @@ class PlateTargets(object):
                 'either plateid or mangaInput needs to be defined')
 
         if plateid is not None and mangaInput is None:
-            mangaInput = utils.getMangaScience(plateid)
+            mangaInput = utils.getMangaScience(plateid, format='plateid')
 
         # Gets data from mangaInput structure and keywords
         mangaInputStructure, mangaInputKyw = self._readMangaInput(mangaInput)
@@ -257,8 +261,15 @@ class PlateTargets(object):
             existing = False
 
             if plateid is not None:
-                if (mangaid in self.structure['mangaid'] and
-                        plateid in self.structure['plateid']):
+
+                # Checks if the tuple (mangaid, plateid) already exists in
+                # plateTargets.
+                plateTargetRow = self.structure[
+                    (self.structure['mangaid'] == mangaid) &
+                    (self.structure['plateid'] == plateid)]
+
+                if len(plateTargetRow) > 0:
+                    # If it exists, checks if overwrite is True
                     if overwrite:
                         existing = True
                         warnings.warn(
@@ -266,6 +277,9 @@ class PlateTargets(object):
                             .format(mangaid, plateid),
                             GohanPlateTargetsWarning)
                     else:
+                        # If overwrite is False, skips this target.
+                        log.debug('skipping mangaid={0} because it is already '
+                                  'in plateTargets.'.format(mangaid))
                         continue
 
             # Selects the row for mangaid from the mangaScience structure
@@ -380,20 +394,22 @@ class PlateTargets(object):
             # Adds the new targets
             if not existing:
                 self.structure.add_row(targetData)
+                _addedIndices.append(self.structure[-1].index)
             else:
                 # If the target already exists, replaces it values
                 row = self.structure[
-                    self.structure['mangaid'] == mangaid &
-                    self.structure['plateid'] == plateid]
+                    (self.structure['mangaid'] == mangaid) &
+                    (self.structure['plateid'] == plateid)]
                 for field in targetData:
                     row[field] = targetData[field]
+                _addedIndices.append(row.index)
 
             self._nAppended += 1
             log.debug(
                 'mangaid={0} added to plateTargets-{1}'.format(mangaid,
                                                                self.catalogid))
 
-        return self.structure[-len(mangaids):]
+        return self.structure[_addedIndices]
 
     def _readMangaInput(self, mangaInput):
         """Reads a mangaInput file and returns the structure and keywords."""
@@ -420,6 +436,10 @@ class PlateTargets(object):
 
         structure = table.Table(mangaInputData.pop(structName))
         mangaInputData.pop('symbols')
+
+        # Strips mangaids in structure. Important for mangaid comparisons
+        for row in structure:
+            row['mangaid'] = row['mangaid'].strip()
 
         # return the MANGAINPUT structure and all the keywords.
         return (structure, mangaInputData)
@@ -456,7 +476,7 @@ class PlateTargets(object):
         """Reads the targetfix file for a target and updates the
         target data."""
 
-        plateid = targetData['plateid']
+        plateid = int(targetData['plateid'])
 
         if plateid is None or plateid == -999:
             return targetData
