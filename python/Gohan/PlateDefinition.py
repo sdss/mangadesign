@@ -24,7 +24,7 @@ from numbers import Real
 from astropy import time
 
 from Gohan import log, config, readPath
-from Gohan.utils import yanny
+from Gohan.utils.yanny import yanny
 
 
 platePlansTemplate = """PLATEPLANS {plateID} {designID} {locationID} -1
