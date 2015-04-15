@@ -503,7 +503,7 @@ def getPlateTemperature(date):
 
     # Just makes sure the month fraction is between 0 and 12
     month = month % 12.
-    print(month)
+
     # Interpolates min/max temp
     interpMaxTemp = np.interp(month, np.arange(13), maxtemps)
     interpMinTemp = np.interp(month, np.arange(13), mintemps)
