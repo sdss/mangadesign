@@ -473,7 +473,7 @@ def getPlateTemperature(date):
     Parameters
     ----------
     date : float or `astropy.time.Time` instance
-        Either an integer with the month fraction (e.g., 4.5 for May 15th) or
+        Either an integer with the year fraction (e.g., 0.37 for May 15th) or
         an `astropy.time.Time` object with the date at which the plate will be
         observed
 
@@ -484,11 +484,12 @@ def getPlateTemperature(date):
 
     """
 
-    # Max/min reference temperatures for each month in Fahrenheit.
+    # Max/min reference temperatures for each month in Fahrenheit. Last element
+    # is the same as the first one for wrapping.
     maxtempsf = np.array([38.7, 40.3, 46.7, 55.5, 66.3, 74.0, 71.8, 68.9, 65.7,
-                          57.2, 46.7, 40.6])
+                          57.2, 46.7, 40.6, 38.7])
     mintempsf = np.array([21.5, 20.6, 24.6, 31.0, 39.4, 46.9, 50.3, 48.6, 44.9,
-                          36.2, 27.4, 22.7])
+                          36.2, 27.4, 22.7, 21.5])
 
     # Converts to Celsius
     maxtemps = (maxtempsf - 32.) * 5. / 9.
@@ -496,13 +497,16 @@ def getPlateTemperature(date):
 
     # Gets the month fraction.
     if isinstance(date, time.Time):
-        month = 12 * (date.byear - int(date.byear))
+        month = 12. * (date.byear - int(date.byear))
     else:
-        month = date
+        month = 12. * date
 
+    # Just makes sure the month fraction is between 0 and 12
+    month = month % 12.
+    print(month)
     # Interpolates min/max temp
-    interpMaxTemp = np.interp(month, np.arange(12) + 0.5, maxtemps)
-    interpMinTemp = np.interp(month, np.arange(12) + 0.5, mintemps)
+    interpMaxTemp = np.interp(month, np.arange(13), maxtemps)
+    interpMinTemp = np.interp(month, np.arange(13), mintemps)
 
     temperature = (interpMaxTemp - interpMinTemp) / 3. + interpMinTemp
 
