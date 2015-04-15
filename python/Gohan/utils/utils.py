@@ -422,11 +422,11 @@ def getCatalogueRow(mangaid, catalogue=None):
     if int(catalogID) in indexedCatalogues:
         return catalogue[int(targetID)]
     else:
-        if 'MANGAID' not in catalogue.colnames:
-            warnings.warn('MANGAID column not be found', GohanUserWarning)
+        if 'mangaid' not in catalogue.colnames:
+            warnings.warn('mangaid column not be found', GohanUserWarning)
             return None
 
-        row = catalogue[catalogue['MANGAID'] == mangaid]
+        row = catalogue[catalogue['mangaid'] == mangaid]
         if len(row) == 1:
             return row
         else:
