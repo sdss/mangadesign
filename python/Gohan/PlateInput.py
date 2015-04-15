@@ -759,12 +759,14 @@ class PlateInput(object):
                 collided.append(
                     (separations < targetAvoid).tolist().index(True))
 
-        # collisions = np.sort(np.unique(collisions))
-        for jj in collisions:
+        collisionPairs = zip(collisions, collided)
+        for ii, jj in collisionPairs:
             self.logCollision(
-                'mangaid={0} rejected: internal collision with {1}'
-                .format(targets[jj]['MANGAID'].strip(),
-                        targets[ii]['MANGAID'].strip(),
+                'mangaid={0} rejected: internal collision with {1}. '
+                'Separation={2:.2f} arcsec'
+                .format(targets[ii]['MANGAID'].strip(),
+                        targets[jj]['MANGAID'].strip(),
+                        coords[ii].separation(coords[jj]).deg * 3600,
                         silent=silent))
 
         if len(collisions) > 0:
