@@ -66,15 +66,15 @@ plateTypes:
         drillstyle: manga
 
 nsaImaging:
-    baseURL: http://data.sdss3.org/sas/ebosswork/manga/atlas/v1/detect/v1_0/
-    username: sdss3
-    password: 4-surveys
+    baseURL: https://data.mirror.sdss.org/sas/sdsswork/atlas/v1/detect/v1_0/
+    username: sdss
+    password: 2.5-meters
     scale: 0.396
 
 sdssImaging:
-    baseURL: http://data.sdss3.org/sas/dr10/boss
-    username: None
-    password: None
+    baseURL: https://data.mirror.sdss.org/sas/dr10/boss
+    username: sdss
+    password: 2.5-meters
     scale: 0.396
 
 platelist: $PLATELIST_DIR
