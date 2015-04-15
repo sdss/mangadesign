@@ -195,8 +195,11 @@ def getNSATargets(targets, centre):
     if NSACat is None:
         return None
 
-    NSACat.add_column(
-        table.Column(np.arange(len(NSACat)), dtype='int', name='CATIND'))
+    # Adds the CATID column to the NSA catalogue for comparison with MaNGA
+    # targets
+    if 'CATIND' not in NSACat.colnames:
+        NSACat.add_column(
+            table.Column(np.arange(len(NSACat)), dtype='int', name='CATIND'))
 
     raCen, decCen = centre
 
@@ -270,7 +273,10 @@ def getMaNGATargets(targets, centre):
 
     MaNGATargets.sort('Z')
 
-    return MaNGATargets
+    if len(MaNGATargets) > 0:
+        return MaNGATargets
+    else:
+        return None
 
 
 def _checkNSATarget(targets, target, centre):
