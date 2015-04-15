@@ -819,10 +819,14 @@ class PlateInput(object):
             if colname.lower() != colname:
                 targets.rename_column(colname, colname.lower())
 
+        # Defines columns that are mandatory and others that can be filled
+        # automatically
         mandatoryColumns = ['mangaid', 'ra', 'dec']
 
         fillableColumns = ['sourcetype', 'manga_target1', 'manga_target2',
                            'manga_target3', 'priority']
+
+        # Adds some more columns depending on the targettype
         if self.targettype != 'sky':
             fillableColumns = ['psfmag', 'ifudesign'] + fillableColumns
 
@@ -834,11 +838,13 @@ class PlateInput(object):
         else:
             fillableColumns.insert(2, 'ifudesignsize')
 
+        # Checks that all mandatory columns are present
         for colname in mandatoryColumns:
             if colname not in targets.colnames:
                 raise exceptions.GohanPlateInputError(
                     'mandatory column {0} not present'.format(colname))
 
+        # Fills out auto fillable columns
         for column in fillableColumns:
 
             if column in targets.colnames:
@@ -878,8 +884,8 @@ class PlateInput(object):
             targets.add_column(table.Column(data, column))
             log.debug('Automatically added column {0}.'.format(column))
 
+        # If these are skies, ends here.
         if self.targettype == 'sky':
-            # If these are skies, ends here.
             return self.reorder(targets, mandatoryColumns + fillableColumns)
 
         # Makes sure that the ife_ra, ifu_dec, target_ra and target_dec
@@ -911,6 +917,7 @@ class PlateInput(object):
                     log.important('setting {0} from ifu_{0} for target'.format(
                         col) + ' with mangaid={0}'.format(target['mangaid']))
 
+        # Reformats manga_targetX to integer
         targets = reformatAstropyColumn(
             targets, ['manga_target1', 'manga_target2', 'manga_target3'],
             [int, int, int])
