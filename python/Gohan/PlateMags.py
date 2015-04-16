@@ -1127,7 +1127,7 @@ class PlateMagsIFU(object):
             target per page.
 
         """
-        print(self.mangaid)
+
         plt.cla()
         plt.clf()
 
@@ -1191,7 +1191,10 @@ class PlateMagsIFU(object):
                         grid[nn].imshow(imgData, origin='lower')
 
                         if jj == 0:
-                            grid[nn].add_compass(loc=1)
+                            try:
+                                grid[nn].add_compass(loc=1)
+                            except:
+                                pass
                         elif jj == 1:
                             filterIdx = FILTERS.index(filt)
                             self._plotBundle(grid[nn], scale,
@@ -1389,10 +1392,13 @@ class PlateMagsIFU(object):
 
         text = ''
         if sMass is not None:
+            sMass = float(sMass)
             text += r'$\log\,M_{{\rm *}}={0:.3f}$'.format(sMass) + '\n'
         if zz is not None:
+            zz = float(zz)
             text += r'$z={0:.3f}$'.format(zz) + '\n'
         if re is not None:
+            re = float(re)
             text += r'$R_{{\rm e}}={0:.2f}\,{{\rm arcsec}}$'.format(re) + \
                 '\n'
 
