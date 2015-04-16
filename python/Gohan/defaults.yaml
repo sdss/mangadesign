@@ -65,14 +65,8 @@ plateTypes:
         programname: disk2
         drillstyle: manga
 
-nsaImaging:
-    baseURL: https://data.mirror.sdss.org/sas/sdsswork/atlas/v1/detect/v1_0/
-    username: sdss
-    password: 2.5-meters
-    scale: 0.396
-
 sdssImaging:
-    baseURL: https://data.mirror.sdss.org/sas/dr10/boss
+    baseURL: https://data.mirror.sdss.org/sas/
     username: sdss
     password: 2.5-meters
     scale: 0.396

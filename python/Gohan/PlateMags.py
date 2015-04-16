@@ -22,7 +22,6 @@ Revision history:
 import numpy as np
 import tempfile
 import urllib2
-import urllib
 import os
 import cStringIO
 import bz2
@@ -80,10 +79,6 @@ BOSS_SN = interpolate.interp1d(BOSS_SN_DATA['fiber2flux'][::-1],
 
 NIFUS = np.sum(config['IFUs'].values())
 
-NSA_BASE_URL = os.path.join(config['nsaImaging']['baseURL'], '{0}/')
-NSA_BASE_URI = '{uri.scheme}://{uri.netloc}/'.format(
-    uri=urlparse(NSA_BASE_URL))
-
 SDSS_BASE_URL = config['sdssImaging']['baseURL']
 SDSS_BASE_URI = '{uri.scheme}://{uri.netloc}/'.format(
     uri=urlparse(SDSS_BASE_URL))
@@ -91,30 +86,29 @@ SDSS_BASE_URI = '{uri.scheme}://{uri.netloc}/'.format(
 # Creates authentication openers.
 password_mgr = urllib2.HTTPPasswordMgrWithDefaultRealm()
 
-for imagingMode in ['nsaImaging', 'sdssImaging']:
-    if config[imagingMode]['password'] != 'None':
-        uri = NSA_BASE_URI if imagingMode == 'nsaImaging' else SDSS_BASE_URI
-        password_mgr.add_password(realm=None, uri=uri,
-                                  user=config[imagingMode]['username'],
-                                  passwd=config[imagingMode]['password'])
+if config['sdssImaging']['password'].lower() != 'none':
+    password_mgr.add_password(realm=None, uri=SDSS_BASE_URI,
+                              user=config['sdssImaging']['username'],
+                              passwd=config['sdssImaging']['password'])
 
 auth_handler = urllib2.HTTPBasicAuthHandler(password_mgr)
 opener = urllib2.build_opener(auth_handler)
 urllib2.install_opener(opener)
 
+# Defines some SDSS URLs
 SDSS_FRAME = os.path.join(
-    SDSS_BASE_URL,
+    SDSS_BASE_URL, 'dr10/boss',
     'photoObj/frames/{rerun:d}/{run:d}/{camcol:d}/' +
     'frame-{filter}-{run:06d}-{camcol:d}-{field:04d}.fits.bz2')
 SDSS_PSFIELD = os.path.join(
-    SDSS_BASE_URL,
+    SDSS_BASE_URL, 'dr10/boss',
     'photo/redux/{rerun:d}/{run:d}/objcs/{camcol:d}/psField-{run:06d}-' +
     '{camcol:d}-{field:04d}.fit')
 SDSS_PHOTOFIELD = os.path.join(
-    SDSS_BASE_URL,
+    SDSS_BASE_URL, 'dr10/boss',
     'photoObj/{rerun:d}/{run:d}/photoField-{run:06d}-{camcol:d}.fits')
 SDSS_FRAME_IRG = os.path.join(
-    SDSS_BASE_URL,
+    SDSS_BASE_URL, 'dr10/boss',
     'photoObj/frames/{rerun:d}/{run:d}/{camcol:d}/frame-irg-{run:06d}-' +
     '{camcol:d}-{field:04d}.jpg')
 
@@ -558,7 +552,9 @@ class PlateMagsIFU(object):
     def getNSAImage(self, imageName, IAUName, subDir, pID, **kwargs):
         """Downloads NSA imaging and creates the parent FITS file."""
 
-        baseURL = NSA_BASE_URL.format(subDir)
+        baseURL = os.path.join(SDSS_BASE_URL,
+                               'sdsswork/atlas/v1/detect/v1_0/',
+                               '{0}'.format(subDir))
 
         parentURL = baseURL + \
             '/atlases/{0}/{1}-parent-{0}.fits.gz'.format(pID, IAUName)
@@ -737,15 +733,15 @@ class PlateMagsIFU(object):
         for filt in FILTERS:
             fieldDic.update({'filter': filt})
             frameFilename = self._getTmpFilename(dir=preImageDir)
-            urllib.urlretrieve(SDSS_FRAME.format(**fieldDic), frameFilename)
+            self._downloadImage(SDSS_FRAME.format(**fieldDic), frameFilename)
             frameFilenames.append(frameFilename)
 
         psFieldFilename = self._getTmpFilename(dir=preImageDir, suffix='.fit')
-        urllib.urlretrieve(SDSS_PSFIELD.format(**fieldDic), psFieldFilename)
+        self._downloadImage(SDSS_PSFIELD.format(**fieldDic), psFieldFilename)
 
         photoFieldFilename = self._getTmpFilename(dir=preImageDir,
                                                   suffix='.fits')
-        urllib.urlretrieve(
+        self._downloadImage(
             SDSS_PHOTOFIELD.format(**fieldDic), photoFieldFilename)
 
         image = fits.HDUList([fits.PrimaryHDU()])
@@ -776,6 +772,16 @@ class PlateMagsIFU(object):
         image.close()
 
         return True
+
+    def _downloadImage(self, url, file):
+        """Downloads and image to a file."""
+
+        response = urllib2.urlopen(url)
+        unit = open(file, 'w')
+        unit.write(response.read())
+        unit.close()
+
+        return
 
     def _getTmpFilename(self, dir='./', suffix='.fits.bz2'):
         """Creates a temporary file and returns its filename."""
@@ -1263,10 +1269,11 @@ class PlateMagsIFU(object):
         """Downloads and saves to disk the IRG colour image of the target."""
 
         if self.source == 'NSA':
-            baseURL = NSA_BASE_URL.format(self.subDir, self.IAUName)
-            irgURL = baseURL + \
-                '/atlases/{0}/{1}-parent-{0}-irg.jpg'.format(
-                    self.pID, self.IAUName)
+            irgURL = os.path.join(SDSS_BASE_URL,
+                                  'sdsswork/atlas/v1/detect/v1_0/',
+                                  '{0}'.format(self.subDir),
+                                  'atlases/{0}/{1}-parent-{0}-irg.jpg'
+                                  .format(self.pID, self.IAUName))
         elif self.source == 'SDSS':
             run, rerun, camcol, field = self.SDSSField
             fieldDic = {'run': run, 'rerun': rerun,
