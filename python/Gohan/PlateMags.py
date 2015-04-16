@@ -831,8 +831,8 @@ class PlateMagsIFU(object):
         yInterp = tt['YINTERP'][0]
 
         zz = tt['ALLSKY'][0]
-        xx = np.arange(0, zz.shape[0])
-        yy = np.arange(0, zz.shape[1])
+        xx = np.arange(0, zz.shape[1])
+        yy = np.arange(0, zz.shape[0])
         ff = interpolate.interp2d(xx, yy, zz, kind='cubic')
 
         return ff(xInterp, yInterp)
