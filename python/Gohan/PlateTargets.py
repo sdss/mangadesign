@@ -467,8 +467,17 @@ class PlateTargets(object):
         """Does some cleaning on the targetData dictionary."""
 
         for key in targetData:
+
+            # Strips strings
             if isinstance(targetData[key], basestring):
                 targetData[key] = targetData[key].strip()
+
+            # Checks if a value can be converted to float
+            try:
+                float(targetData[key])
+                targetData[key] = float(targetData[key])
+            except:
+                pass
 
         return targetData
 
