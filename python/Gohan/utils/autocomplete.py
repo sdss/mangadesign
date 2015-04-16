@@ -37,6 +37,7 @@ try:
 except:
     NSACat = None
 
+qaWarningIssued = False
 
 defaultValues = {
     'ifudesign': -999,
@@ -281,6 +282,14 @@ def getMaNGATargets(targets, centre):
 
 def _checkNSATarget(targets, target, centre):
 
+    # Gets mangaids with bad photometry
+    badPhotometry = getBadPhotometry()
+
+    if target['MANGAID'] in badPhotometry:
+        log.debug('target {0} rejected because it has bad photometry'
+                  .format(target['MANGAID']))
+        return False
+
     if target['MANGAID'] in targets['MANGAID']:
         return False
 
@@ -305,6 +314,33 @@ def _checkNSATarget(targets, target, centre):
             return False
 
     return True
+
+
+def getBadPhotometry():
+    """If available, reads the QA_adjusted file linked to the science catalogue
+    and returns a list of mangaids with bad photometry."""
+
+    global qaWarningIssued
+
+    scienceCat = readPath(config['catalogues']['science'])
+
+    qaAdjusted = os.path.join(
+        os.path.dirname(scienceCat), 'nsa_v1_0_0_QA_adjusted.dat')
+
+    if not os.path.exists(qaAdjusted):
+        if not qaWarningIssued:
+            # Issues this warning only once
+            warnings.warn('nsa_v1_0_0_QA_adjusted.dat not found',
+                          GohanUserWarning)
+            qaWarningIssued = True
+        return []
+
+    qaTable = table.Table.read(qaAdjusted, format='ascii.commented_header')
+
+    # Adds the catalogid and returns the targets with bad photometry
+    badPhotometry = qaTable[qaTable['bad_phot'] == 1]
+
+    return ['1-{0}'.format(str(catind)) for catind in badPhotometry['catind']]
 
 
 def addTarget(targets, target, bundleSize, centre):
