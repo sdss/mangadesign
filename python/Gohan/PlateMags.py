@@ -909,10 +909,7 @@ class PlateMagsIFU(object):
             img = data[3*ii+1]
             psf = data[3*ii+3]
 
-            if self.source == 'NSA':
-                scale = config['nsaImaging']['scale']
-            elif self.source == 'SDSS':
-                scale = config['sdssImaging']['scale']
+            scale = config['sdssImaging']['scale']
 
             seeingPix = self.getSeeing(psf)
             seeingArcSec = scale * seeingPix
@@ -997,10 +994,7 @@ class PlateMagsIFU(object):
         fibreWorld = self._getFibreCoordinates()
 
         # Pixel scale of the resampled image.
-        if self.source == 'NSA':
-            scale = config['nsaImaging']['scale']
-        elif self.source == 'SDSS':
-            scale = config['sdssImaging']['scale']
+        scale = config['sdssImaging']['scale']
         scaleZoomed = scale / factor
 
         # Radius of one fibre in pixels in the resampled image.
@@ -1133,7 +1127,7 @@ class PlateMagsIFU(object):
             target per page.
 
         """
-
+        print(self.mangaid)
         plt.cla()
         plt.clf()
 
@@ -1144,10 +1138,7 @@ class PlateMagsIFU(object):
         ww.wcs_pix2sky = ww.wcs_pix2world
         ww.wcs_sky2pix = ww.wcs_world2pix
 
-        if self.source == 'NSA':
-            scale = config['nsaImaging']['scale']
-        elif self.source == 'SDSS':
-            scale = config['sdssImaging']['scale']
+        scale = config['sdssImaging']['scale']
 
         fig = plt.figure(figsize=(8.5, 11), tight_layout=True)
         grid_helper = pw2.GridHelper(wcs=ww)
