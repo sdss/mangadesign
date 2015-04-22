@@ -17,16 +17,24 @@ from __future__ import print_function
 import os
 from Gohan import readPath, config, log
 import glob
-from sdss.utilities.yanny import yanny
-from Gohan.exceptions import GohanError
+from Gohan.utils import yanny
+from Gohan.exceptions import GohanError, GohanUserWarning
 from numbers import Number
 from collections import OrderedDict
 import numpy as np
 from astropy import table
+from astropy import time
+import warnings
+
+
+# Dictionary to cache catalogues after being read
+cachedCatalogues = {}
+
 
 try:
     sdssMaskBitsFile = readPath(config['sdssMaskBits'])
-    sdssMaskBits = table.Table(yanny(sdssMaskBitsFile, np=True)['MASKBITS'])
+    sdssMaskBits = table.Table(
+        yanny.yanny(sdssMaskBitsFile, np=True)['MASKBITS'])
 except:
     sdssMaskBits = None
 
@@ -77,12 +85,14 @@ plateListDir = getPlateListDir()
 platePlansFile = os.path.join(plateListDir, 'platePlans.par')
 
 if os.path.exists(platePlansFile):
-    platePlans = yanny(platePlansFile, np=True)['PLATEPLANS']
+    platePlans = yanny.yanny(platePlansFile, np=True)['PLATEPLANS']
 else:
     platePlans = None
 
 
-def getPlates(plateRun, column='plateid'):
+def getFromPlatePlans(plateRun, column='plateid'):
+    """Returns a column (defaults to plateid) for all the plates in a certain
+    plate run."""
 
     if platePlans is None:
         raise GohanError('platePlans file not found')
@@ -129,7 +139,7 @@ def getPlateHolesSortedPath(plateid):
 
 def getMaNGAIDs(plateid):
 
-    ynPlateHolesSorted = yanny(
+    ynPlateHolesSorted = yanny.yanny(
         getPlateHolesSortedPath(plateid), np=True)['STRUCT1']
 
     return [ynPlateHolesSorted['mangaid'][ii]
@@ -201,8 +211,6 @@ def getSampleCatalogue(catID):
 
 def getPlateInputData(mangaid, plateHolesSorted):
 
-    log.debug('Grabbing plateInput info for mangaid={0}'.format(mangaid))
-
     inputs = []
     for key in plateHolesSorted.keys():
         if 'plateinput' in key:
@@ -213,7 +221,7 @@ def getPlateInputData(mangaid, plateHolesSorted):
         plateInputPath = os.path.join(
             readPath(config['platelist']), 'inputs', input)
 
-        plateInput = yanny(plateInputPath, np=True)
+        plateInput = yanny.yanny(plateInputPath, np=True)
 
         if 'MANGAINPUT' in plateInput.keys():
             structName = 'MANGAINPUT'
@@ -252,20 +260,29 @@ def getPlateInputData(mangaid, plateHolesSorted):
                      'mangaid={0}'.format(mangaid))
 
 
-def getPlateHolesSortedData(mangaid, plateHolesSortedPath):
+def getPlateHolesSortedData(plateid):
+    """Returns a formatted version of the plateHolesSorted data for a
+    plateid."""
 
-    log.info('Grabbing plateHolesSorted info for mangaid={0}'.format(mangaid))
+    plateHolesSortedPath = getPlateHolesSortedPath(plateid)
 
-    plateHolesSorted = yanny(plateHolesSortedPath, np=True)
-    plateHolesSortedStruct = table.Table(plateHolesSorted['STRUCT1'])
+    plateHolesSorted = yanny.yanny(plateHolesSortedPath, np=True)
+    plateHolesSortedStruct = table.Table(plateHolesSorted.pop('STRUCT1'))
 
+    for colname in plateHolesSortedStruct.colnames:
+        if colname != colname.lower():
+            plateHolesSortedStruct.rename_column(colname, colname.lower())
+
+    plateHolesSorted.pop('symbols')
+    for key in plateHolesSorted:
+        if key != key.lower():
+            plateHolesSorted[key.lower()] = plateHolesSorted.pop(key)
+
+    # Strips mangaids
     for row in plateHolesSortedStruct:
-        if row['mangaid'] == mangaid:
-            return (plateHolesSorted['plateId'], plateHolesSorted['designid'],
-                    row)
+        row['mangaid'] = row['mangaid'].strip()
 
-    raise GohanError('it has not been possible to find mangaid={0} '
-                     'in {1}'.format(mangaid, plateHolesSortedPath))
+    return (plateHolesSortedStruct, plateHolesSorted)
 
 
 def getPointing(plateInputData):
@@ -287,11 +304,17 @@ def getPointing(plateInputData):
             'ifu_dec': plateInputData['ifu_dec']}
 
 
-def getMangaScience(designID):
+def getMangaScience(input, format='designid'):
+    """Returns the path of the mangaScience data for a design or plate."""
+
+    if format == 'plateid':
+        designID = getDesignID(input)
+    else:
+        designID = input
 
     plateDefinition = getPlateDefinition(designID)
 
-    plateDefYanny = yanny(plateDefinition)
+    plateDefYanny = yanny.yanny(plateDefinition)
 
     for key in plateDefYanny.keys():
         if 'plateInput' in key:
@@ -339,3 +362,152 @@ def getDesignID(plateid):
         return platePlans[platePlans['plateid'] == plateid]['designid'][0]
     except:
         raise GohanError('plateid={0} not found'.format(plateid))
+
+
+def getCatalogueRow(mangaid, catalogue=None):
+    """Recovers the row in the parent catalogue matching the mangaid.
+    An `astropy.table.Table` instance of the catalogue can be passed."""
+
+    # List of catalogids for catalogues in which the targetid in mangaid is
+    # the index (zero-indexed) in the parent catalogue.
+    indexedCatalogues = [1, 8, 12]
+
+    catalogID, targetID = mangaid.strip().split('-')
+
+    if catalogue is None:
+        if catalogID in cachedCatalogues:
+            # If catalogue is cached
+            catalogue = cachedCatalogues[catalogID]
+
+        else:
+            # Reads catalogue and caches is
+
+            cataloguePath = getCataloguePath(catalogID)
+
+            if cataloguePath is None:
+                return None
+
+            catalogue = table.Table.read(cataloguePath)
+
+            # Changes all columns to lowercase
+            for col in catalogue.colnames:
+                if col != col.lower():
+                    catalogue.rename_column(col, col.lower())
+
+            cachedCatalogues[catalogID] = catalogue
+
+    if int(catalogID) in indexedCatalogues:
+        return catalogue[int(targetID)]
+    else:
+        if 'mangaid' not in catalogue.colnames:
+            warnings.warn('mangaid column not be found', GohanUserWarning)
+            return None
+
+        row = catalogue[catalogue['mangaid'] == mangaid]
+        if len(row) == 1:
+            return row
+        else:
+            warnings.warn('no row found in catalogue for mangaid={0}'
+                          .format(mangaid), GohanUserWarning)
+            return None
+
+
+def getCataloguePath(catalogid):
+    """Returns the path of a catalogue for a certain catalogid."""
+
+    catalogid = int(catalogid)
+
+    catalogidsPath = os.path.join(readPath(config['mangacore']),
+                                  'platedesign/catalog_ids.dat')
+    if not os.path.exists(catalogidsPath):
+        warnings.warn('catalog_ids.dat could not be found', GohanUserWarning)
+        return None
+
+    catalogids = open(catalogidsPath, 'r').read().splitlines()
+
+    cataloguePath = None
+    for catalogidRow in catalogids:
+        if int(catalogidRow.strip().split()[0]) == catalogid:
+            cataloguePath = catalogidRow
+            break
+
+    if cataloguePath is None:
+        warnings.warn('no entry in catalog_ids.dat for catalogid={0}'
+                      .format(catalogid), GohanUserWarning)
+        return None
+
+    cataloguePath = os.path.join(
+        readPath(config['catalogues']['catalogueDir']),
+        '-'.join(cataloguePath.strip().split()))
+
+    if not os.path.exists(cataloguePath):
+        warnings.warn('no catalogue found in {0}'.format(cataloguePath),
+                      GohanUserWarning)
+        return None
+
+    return cataloguePath
+
+
+def getPlateTargetsTemplate(catalogid):
+    """Returns the path to the plateTargets template for a given catalogid."""
+
+    if catalogid in [1, 12]:
+        return readPath('+plateTargets/plateTargets-1.template')
+    elif catalogid >= 30:
+        return readPath('+plateTargets/plateTargets-Ancillary.template')
+    else:
+        warnings.warn('no template found for catalogid={0}'.format(catalogid),
+                      GohanUserWarning)
+        return None
+
+
+def getPlateTemperature(date):
+    """Returns the drilling temperature for a plate.
+
+    Calculated the optimal temperature for which a plate must be drilled if it
+    is planned to be observed at a certain date, to minimise the possibility
+    that the scale of the plate falls out of the limits.
+
+    Uses the APOGEE formula from get_drilltemp.pro.
+
+    Parameters
+    ----------
+    date : float or `astropy.time.Time` instance
+        Either an integer with the year fraction (e.g., 0.37 for May 15th) or
+        an `astropy.time.Time` object with the date at which the plate will be
+        observed
+
+    Returns
+    -------
+    temperature : float
+        The optimal temperature for which the plate must be drilled.
+
+    """
+
+    # Max/min reference temperatures for each month in Fahrenheit. Last element
+    # is the same as the first one for wrapping.
+    maxtempsf = np.array([38.7, 40.3, 46.7, 55.5, 66.3, 74.0, 71.8, 68.9, 65.7,
+                          57.2, 46.7, 40.6, 38.7])
+    mintempsf = np.array([21.5, 20.6, 24.6, 31.0, 39.4, 46.9, 50.3, 48.6, 44.9,
+                          36.2, 27.4, 22.7, 21.5])
+
+    # Converts to Celsius
+    maxtemps = (maxtempsf - 32.) * 5. / 9.
+    mintemps = (mintempsf - 32.) * 5. / 9.
+
+    # Gets the month fraction.
+    if isinstance(date, time.Time):
+        month = 12. * (date.byear - int(date.byear))
+    else:
+        month = 12. * date
+
+    # Just makes sure the month fraction is between 0 and 12
+    month = month % 12.
+
+    # Interpolates min/max temp
+    interpMaxTemp = np.interp(month, np.arange(13), maxtemps)
+    interpMinTemp = np.interp(month, np.arange(13), mintemps)
+
+    temperature = (interpMaxTemp - interpMinTemp) / 3. + interpMinTemp
+
+    return temperature

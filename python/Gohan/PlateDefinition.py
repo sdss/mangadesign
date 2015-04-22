@@ -24,7 +24,8 @@ from numbers import Real
 from astropy import time
 
 from Gohan import log, config, readPath
-from Gohan.utils import yanny
+from Gohan.utils.yanny import yanny
+from Gohan.utils import getPlateTemperature
 
 
 platePlansTemplate = """PLATEPLANS {plateID} {designID} {locationID} -1
@@ -86,7 +87,7 @@ class PlateDefinition(object):
         inputs = OrderedDict(inputs)
         defDict.update(inputs)
 
-        template = yanny.yanny(plateDefinitionTemplate)
+        template = yanny(plateDefinitionTemplate)
 
         for key in defDict:
             template[key] = defDict[key]
@@ -135,19 +136,33 @@ class PlateDefinition(object):
 
         return filename
 
-    def getPlatePlans(self, epoch, temp=5.0, name=None, comment=' ',
+    def getPlatePlans(self, epoch, temp=None, name=None, comment=' ',
                       plateid=None, plateRun=None, **kwargs):
         """Returns the platePlans text. `epoch` muct be the epoch of the
         observation as a float or a date in the format `'YYYY-MM-DD'`"""
 
         plansDic = {}
 
+        if isinstance(epoch, Real):
+            pass
+        else:
+            epoch = time.Time(epoch.strip() + ' 00:00:00', format='iso').byear
+            plansDic['epoch'] = str(epoch)
+        plansDic['epoch'] = str(epoch)
+
         plansDic['raCen'] = self.plateInputs[0].raCen
         plansDic['decCen'] = self.plateInputs[0].decCen
 
         plansDic['plateID'] = '@plateid' if plateid is None else plateid
         plansDic['comment'] = comment
-        plansDic['temp'] = str(temp)
+
+        if temp is None:
+            # Calculates year fraction from the epoch.
+            yearFraction = epoch - int(epoch)
+            plansDic['temp'] = getPlateTemperature(yearFraction)
+        else:
+            plansDic['temp'] = temp
+
         if name is not None:
             plansDic['name'] = name
         else:
@@ -157,13 +172,6 @@ class PlateDefinition(object):
         plansDic['designID'] = self.designid
         plansDic['plateRun'] = '@platerun' if plateRun is None else plateRun
         plansDic['chunk'] = '@platerun' if plateRun is None else plateRun
-
-        if isinstance(epoch, Real):
-            pass
-        else:
-            epoch = time.Time(epoch.strip() + ' 00:00:00', format='iso').byear
-            plansDic['epoch'] = str(epoch)
-        plansDic['epoch'] = str(epoch)
 
         plansDic.update(config['plateTypes'][self.surveyMode])
 

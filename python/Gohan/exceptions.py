@@ -21,6 +21,11 @@ class GohanError(Exception):
     pass
 
 
+class GohanPostDesignError(Exception):
+    """An exception for MaNGA postdesign."""
+    pass
+
+
 class GohanNotImplemented(GohanError):
     """A class for exceptions about functionalities not yet implemented."""
     pass
@@ -31,12 +36,25 @@ class GohanPlateInputError(GohanError):
     pass
 
 
+class GohanPlateTargetsError(Exception):
+    """An exception for PlateTargets."""
+    pass
+
+
 class GohanWarning(Warning):
     """Base warning for Gohan."""
 
 
 class GohanUserWarning(UserWarning, GohanWarning):
     """The primary warning class."""
+
+
+class GohanPostDesignWarning(UserWarning, GohanWarning):
+    """Warning for the postdesign process."""
+
+
+class GohanPlateTargetsWarning(UserWarning, GohanWarning):
+    """Warning for PlateTargets."""
 
 
 class GohanCollisionWarning(UserWarning, GohanWarning):

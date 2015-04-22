@@ -22,18 +22,17 @@ Revision history:
 import numpy as np
 import tempfile
 import urllib2
-import urllib
 import os
 import cStringIO
 import bz2
 import warnings
 from urlparse import urlparse
 
-from Gohan.exceptions import GohanWarning, GohanError
+from Gohan.exceptions import GohanUserWarning, GohanError
 from Gohan import log, config, readPath
 from Gohan.utils import pywcsgrid2 as pw2
 from Gohan.utils import getSDSSRun
-from Gohan.utils import yanny
+from Gohan.utils.yanny import yanny, write_ndarray_to_yanny
 
 from astropy import wcs
 from astropy.io import fits
@@ -54,7 +53,6 @@ from matplotlib.backends.backend_pdf import PdfPages
 
 __ALL__ = ['PlateMags']
 
-
 matplotlib.rc('font', size=10)
 matplotlib.rc('text', usetex=True)
 plt.ioff()
@@ -67,10 +65,10 @@ try:
     MANGA_SAMPLE = table.Table.read(readPath(config['catalogues']['science']))
 except:
     MANGA_SAMPLE = None
-    warnings.warn('no MaNGA sample file loaded', GohanWarning)
+    warnings.warn('no MaNGA sample file loaded', GohanUserWarning)
 
-SIMBMAP = table.Table(yanny.yanny(readPath(config['plateMags']['simbmap']),
-                                  np=True)['SIMBMAP'])
+SIMBMAP = table.Table(yanny(readPath(config['plateMags']['simbmap']),
+                            np=True)['SIMBMAP'])
 
 BOSS_SN_DATA = table.Table.read(
     readPath(config['plateMags']['BOSS_SN']),
@@ -81,10 +79,6 @@ BOSS_SN = interpolate.interp1d(BOSS_SN_DATA['fiber2flux'][::-1],
 
 NIFUS = np.sum(config['IFUs'].values())
 
-NSA_BASE_URL = os.path.join(config['nsaImaging']['baseURL'], '{0}/')
-NSA_BASE_URI = '{uri.scheme}://{uri.netloc}/'.format(
-    uri=urlparse(NSA_BASE_URL))
-
 SDSS_BASE_URL = config['sdssImaging']['baseURL']
 SDSS_BASE_URI = '{uri.scheme}://{uri.netloc}/'.format(
     uri=urlparse(SDSS_BASE_URL))
@@ -92,30 +86,29 @@ SDSS_BASE_URI = '{uri.scheme}://{uri.netloc}/'.format(
 # Creates authentication openers.
 password_mgr = urllib2.HTTPPasswordMgrWithDefaultRealm()
 
-for imagingMode in ['nsaImaging', 'sdssImaging']:
-    if config[imagingMode]['password'] != 'None':
-        uri = NSA_BASE_URI if imagingMode == 'nsaImaging' else SDSS_BASE_URI
-        password_mgr.add_password(realm=None, uri=uri,
-                                  user=config[imagingMode]['username'],
-                                  passwd=config[imagingMode]['password'])
+if config['sdssImaging']['password'].lower() != 'none':
+    password_mgr.add_password(realm=None, uri=SDSS_BASE_URI,
+                              user=config['sdssImaging']['username'],
+                              passwd=config['sdssImaging']['password'])
 
 auth_handler = urllib2.HTTPBasicAuthHandler(password_mgr)
 opener = urllib2.build_opener(auth_handler)
 urllib2.install_opener(opener)
 
+# Defines some SDSS URLs
 SDSS_FRAME = os.path.join(
-    SDSS_BASE_URL,
+    SDSS_BASE_URL, 'dr10/boss',
     'photoObj/frames/{rerun:d}/{run:d}/{camcol:d}/' +
     'frame-{filter}-{run:06d}-{camcol:d}-{field:04d}.fits.bz2')
 SDSS_PSFIELD = os.path.join(
-    SDSS_BASE_URL,
+    SDSS_BASE_URL, 'dr10/boss',
     'photo/redux/{rerun:d}/{run:d}/objcs/{camcol:d}/psField-{run:06d}-' +
     '{camcol:d}-{field:04d}.fit')
 SDSS_PHOTOFIELD = os.path.join(
-    SDSS_BASE_URL,
+    SDSS_BASE_URL, 'dr10/boss',
     'photoObj/{rerun:d}/{run:d}/photoField-{run:06d}-{camcol:d}.fits')
 SDSS_FRAME_IRG = os.path.join(
-    SDSS_BASE_URL,
+    SDSS_BASE_URL, 'dr10/boss',
     'photoObj/frames/{rerun:d}/{run:d}/{camcol:d}/frame-irg-{run:06d}-' +
     '{camcol:d}-{field:04d}.jpg')
 
@@ -152,7 +145,7 @@ class PlateMags(list):
 
         self.plateInputFile = plateInputFile
 
-        yn = yanny.yanny(self.plateInputFile, np=True)
+        yn = yanny(self.plateInputFile, np=True)
         self.struct1 = table.Table(
             yn[config['plateInputs']['mangaInputStructure']])
         self.designid = int(yn['designid']) if designid is None else designid
@@ -284,13 +277,13 @@ class PlateMags(list):
         if os.path.exists(plateMagsPath):
             os.remove(plateMagsPath)
 
-        yanny.write_ndarray_to_yanny(plateMagsPath, self.plateMags._data,
-                                     structname='PLATEMAGS')
+        write_ndarray_to_yanny(plateMagsPath, self.plateMags.as_array(),
+                               structname='PLATEMAGS')
 
         if self._missingIFUs > 0:
             warnings.warn('no data for {0} IFUs. '.format(
                 self._missingIFUs) + 'The remaining data has been saved.',
-                GohanWarning)
+                GohanUserWarning)
 
         log.info('plateMags saved as {0}'.format(shortenPath(plateMagsPath)))
 
@@ -531,6 +524,8 @@ class PlateMagsIFU(object):
 
             log.debug('...... {0} not found in NSA.'.format(
                       self.mangaid.strip()))
+            warnings.warn('MANGAID: {0} not found in NSA'.format(
+                          self.mangaid.strip()), GohanUserWarning)
             return False
 
         imageName = os.path.join(preImageDir,
@@ -544,7 +539,7 @@ class PlateMagsIFU(object):
             if output is False:
                 warnings.warn(
                     '{0} has no NSA data.'.format(self.mangaid),
-                    GohanWarning)
+                    GohanUserWarning)
                 return False
 
         else:
@@ -557,7 +552,9 @@ class PlateMagsIFU(object):
     def getNSAImage(self, imageName, IAUName, subDir, pID, **kwargs):
         """Downloads NSA imaging and creates the parent FITS file."""
 
-        baseURL = NSA_BASE_URL.format(subDir)
+        baseURL = os.path.join(SDSS_BASE_URL,
+                               'sdsswork/atlas/v1/detect/v1_0/',
+                               '{0}'.format(subDir))
 
         parentURL = baseURL + \
             '/atlases/{0}/{1}-parent-{0}.fits.gz'.format(pID, IAUName)
@@ -658,9 +655,9 @@ class PlateMagsIFU(object):
 
             nPix = config['plateMags']['nPix']
             xmin = int(xx) - nPix
-            xmax = int(xx) + nPix
+            # xmax = int(xx) + nPix
             ymin = int(yy) - nPix
-            ymax = int(yy) + nPix
+            # ymax = int(yy) + nPix
 
             for nn in [imgIdx, varIdx, psfIdx]:
                 newHDU[nn].header.set(
@@ -696,7 +693,7 @@ class PlateMagsIFU(object):
         if self.SDSSField is not None:
             run, rerun, camcol, field = self.SDSSField
         else:
-            warnings.warn('galaxy not in SDSS footprint.', GohanWarning)
+            warnings.warn('galaxy not in SDSS footprint.', GohanUserWarning)
             return False
 
         imageName = os.path.join(preImageDir,
@@ -736,15 +733,15 @@ class PlateMagsIFU(object):
         for filt in FILTERS:
             fieldDic.update({'filter': filt})
             frameFilename = self._getTmpFilename(dir=preImageDir)
-            urllib.urlretrieve(SDSS_FRAME.format(**fieldDic), frameFilename)
+            self._downloadImage(SDSS_FRAME.format(**fieldDic), frameFilename)
             frameFilenames.append(frameFilename)
 
         psFieldFilename = self._getTmpFilename(dir=preImageDir, suffix='.fit')
-        urllib.urlretrieve(SDSS_PSFIELD.format(**fieldDic), psFieldFilename)
+        self._downloadImage(SDSS_PSFIELD.format(**fieldDic), psFieldFilename)
 
         photoFieldFilename = self._getTmpFilename(dir=preImageDir,
                                                   suffix='.fits')
-        urllib.urlretrieve(
+        self._downloadImage(
             SDSS_PHOTOFIELD.format(**fieldDic), photoFieldFilename)
 
         image = fits.HDUList([fits.PrimaryHDU()])
@@ -775,6 +772,16 @@ class PlateMagsIFU(object):
         image.close()
 
         return True
+
+    def _downloadImage(self, url, file):
+        """Downloads and image to a file."""
+
+        response = urllib2.urlopen(url)
+        unit = open(file, 'w')
+        unit.write(response.read())
+        unit.close()
+
+        return
 
     def _getTmpFilename(self, dir='./', suffix='.fits.bz2'):
         """Creates a temporary file and returns its filename."""
@@ -830,8 +837,8 @@ class PlateMagsIFU(object):
         yInterp = tt['YINTERP'][0]
 
         zz = tt['ALLSKY'][0]
-        xx = np.arange(0, zz.shape[0])
-        yy = np.arange(0, zz.shape[1])
+        xx = np.arange(0, zz.shape[1])
+        yy = np.arange(0, zz.shape[0])
         ff = interpolate.interp2d(xx, yy, zz, kind='cubic')
 
         return ff(xInterp, yInterp)
@@ -902,10 +909,7 @@ class PlateMagsIFU(object):
             img = data[3*ii+1]
             psf = data[3*ii+3]
 
-            if self.source == 'NSA':
-                scale = config['nsaImaging']['scale']
-            elif self.source == 'SDSS':
-                scale = config['sdssImaging']['scale']
+            scale = config['sdssImaging']['scale']
 
             seeingPix = self.getSeeing(psf)
             seeingArcSec = scale * seeingPix
@@ -990,10 +994,7 @@ class PlateMagsIFU(object):
         fibreWorld = self._getFibreCoordinates()
 
         # Pixel scale of the resampled image.
-        if self.source == 'NSA':
-            scale = config['nsaImaging']['scale']
-        elif self.source == 'SDSS':
-            scale = config['sdssImaging']['scale']
+        scale = config['sdssImaging']['scale']
         scaleZoomed = scale / factor
 
         # Radius of one fibre in pixels in the resampled image.
@@ -1137,10 +1138,7 @@ class PlateMagsIFU(object):
         ww.wcs_pix2sky = ww.wcs_pix2world
         ww.wcs_sky2pix = ww.wcs_world2pix
 
-        if self.source == 'NSA':
-            scale = config['nsaImaging']['scale']
-        elif self.source == 'SDSS':
-            scale = config['sdssImaging']['scale']
+        scale = config['sdssImaging']['scale']
 
         fig = plt.figure(figsize=(8.5, 11), tight_layout=True)
         grid_helper = pw2.GridHelper(wcs=ww)
@@ -1193,7 +1191,10 @@ class PlateMagsIFU(object):
                         grid[nn].imshow(imgData, origin='lower')
 
                         if jj == 0:
-                            grid[nn].add_compass(loc=1)
+                            try:
+                                grid[nn].add_compass(loc=1)
+                            except:
+                                pass
                         elif jj == 1:
                             filterIdx = FILTERS.index(filt)
                             self._plotBundle(grid[nn], scale,
@@ -1262,10 +1263,11 @@ class PlateMagsIFU(object):
         """Downloads and saves to disk the IRG colour image of the target."""
 
         if self.source == 'NSA':
-            baseURL = NSA_BASE_URL.format(self.subDir, self.IAUName)
-            irgURL = baseURL + \
-                '/atlases/{0}/{1}-parent-{0}-irg.jpg'.format(
-                    self.pID, self.IAUName)
+            irgURL = os.path.join(SDSS_BASE_URL,
+                                  'sdsswork/atlas/v1/detect/v1_0/',
+                                  '{0}'.format(self.subDir),
+                                  'atlases/{0}/{1}-parent-{0}-irg.jpg'
+                                  .format(self.pID, self.IAUName))
         elif self.source == 'SDSS':
             run, rerun, camcol, field = self.SDSSField
             fieldDic = {'run': run, 'rerun': rerun,
@@ -1390,10 +1392,13 @@ class PlateMagsIFU(object):
 
         text = ''
         if sMass is not None:
+            sMass = float(sMass)
             text += r'$\log\,M_{{\rm *}}={0:.3f}$'.format(sMass) + '\n'
         if zz is not None:
+            zz = float(zz)
             text += r'$z={0:.3f}$'.format(zz) + '\n'
         if re is not None:
+            re = float(re)
             text += r'$R_{{\rm e}}={0:.2f}\,{{\rm arcsec}}$'.format(re) + \
                 '\n'
 

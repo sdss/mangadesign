@@ -1,0 +1,136 @@
+# MaNGA target information file
+#
+# Uses SDSS-style Yanny .par formatting
+#
+# The purpose of this file is to store information required for DAP
+# analyses of a given galaxy (e.g., redshift, inclination), and to
+# provide the correspondence between the mangaid identifier and the
+# plate-ifudesign identifier.  This file has entries indexed by
+# designid (plate designid) and ifudesign.  Rows are added when new
+# plates are designed.
+#
+# Note that not all information is required here, much information
+# is instead passed from the plate design stage via the plateHoles
+# file.
+#
+# Different files cover different target types.  E.g., '12' was
+# used for commissioning run galaxies.
+#
+# Information from this file about targeting is combined with information
+# from the DRP (slitmap and output headers) about reductions to
+# generate the information in the platelist file for a given DRP tag.
+# This platelist file is the searchable reference for a given set
+# of reductions.
+#
+# The data structure is as follows:
+#
+# Header keywords:
+# typeid: E.g., '12' for the commissioning data
+#
+# Data table entries:
+# ---- These columns are required for ALL typeids ----
+# 1) designid: Design ID of the plate
+# 2) plateid: Plate ID (0 if unknown)
+# 3) manga_tileid: the MaNGA-specific tile (field) identifier
+# 4) ifudesign: The IFU (e.g., 12701) meant to be used
+# 5) mangaid: The XX-XXXX format mangaid
+# 6) neverobserve: if set to 1, this target won't be observed and will be ignored by
+#                  the reduction pipeline.
+# 7) iauname: The accepted IAU name
+# 8) ifu_ra: RA of the IFU center in decimal degrees
+# 9) ifu_dec: DEC of the IFU center in decimal degrees
+# 10) target_ra: RA of the target center (usually same as bundle_ra, unless offset)
+# 11) target_dec: DEC of the target center (usually same as bundle_dec, unless offset)
+# 12) racen: RA of the plate center
+# 13) deccen: DEC of the plate center
+# 14) xfocal: xfocal location of the IFU hole in the plate
+# 15) yfocal: yfocal location of the IFU hole in the plate
+# 16) epoch: Epoch of the coordinates
+# 17) manga_target1: Primary target bitmask. To be used for galaxies.
+# 18) manga_target2: Secondary target bitmask. To be used for stars, standards and sky positions.
+# 19) manga_target3: Tertiary target bitmask. To be used for ancillary programs.
+# 20) ifudesignsize: The size of the IFU assigned to the target.
+# 21) ifutargetsize: The size of the IFU that was meant to be assigned.
+#                    Same as ifudesignsize unless changed during the plate
+#                    design process.
+# 22) ifudesignwrongsize: 1 if the IFU assigned is of the wrong size (for
+#                         instance, if it does not cover 1.5Reff).
+# ---- These columns may vary between typeids ----
+# 23) field: The SDSS field covering the target.
+# 24) run: The SDSS run covering the target.
+# 25) nsa_redshift: Heliocentric redshift from NSA.
+# 26) nsa_zdist: Distance estimate using pecular velocity model of
+#                Willick et al. (1997); multiply by c/H0 for Mpc. From NSA.
+# 27) nsa_mstar: Stellar mass from K-correction fit in h-2 solar masses, from NSA.
+# 28) nsa_vdisp: Central stellar velocity dispersion in km/s, from NSA
+# 29) nsa_inclination: Inclination derived using BA90 from NSA.
+# 30) nsa_petro_th50: Petrosian 50% light radius (derived from r band), in arcsec.
+#                     From NSA.
+# 31) nsa_petroflux: Azimuthally-averaged SDSS-style Petrosian flux in
+#                    FNugriz (GALEX-SDSS photometric systems). In nanomaggies.
+#                    Taken from NSA.
+# 32) nsa_petroflux_ivar: Inverse variance of petroflux in nanomaggies-2, from NSA.
+# 33) nsa_sersic_ba: Axis ratio b/a from 2D Sersic fit. From NSA.
+# 34) nsa_sersic_n: 2D Sersic index from fit. From NSA.
+# 35) nsa_sersic_phi: Angle (E of N, degrees) of major axis in 2D Sersic fit,
+#                     from NSA.
+# 36) nsa_sersic_th50: 50% light radius of 2D Sersic fit (along major axis),
+#                      in arcsec. From NSA
+# 37) nsa_sersicflux: 2D Sersic fit flux in FNugriz (GALEX-SDSS photometric systems)
+#                     in nanommagies. From NSA.
+# 38) nsa_sersicflux_ivar: Inverse variance of sersicflux in nanomaggies-2, from NSA.
+# 39) nsa_absmag: Absolute magnitude estimates for FNugriz from K-corrections
+#                 (Ωm=0.3, ΩΛ=0.7, h=1). From NSA.
+# 40) nsa_version: The version of the NSA catalogue used to select these targets.
+# 41) nsa_id: The NSAID field in the NSA catalogue referenced in nsa_version.
+# 42) nsa_id100: The NSAID of the target in the NSA v1_0_0 catalogue. Obtained by
+#                cross-matching the coordinates of the targets in both catalogues.
+
+typeid 12
+
+typedef struct {
+    long designid;
+    long plateid;
+    long manga_tileid;
+    long ifudesign;
+    char mangaid[10];
+    long neverobserve;
+    char iauname[25];
+    double ifu_ra;
+    double ifu_dec;
+    double target_ra;
+    double target_dec;
+    double racen;
+    double deccen;
+    double xfocal;
+    double yfocal;
+    float epoch;
+    long manga_target1;
+    long manga_target2;
+    long manga_target3;
+    int ifudesignsize;
+    int ifutargetsize;
+    int ifudesignwrongsize;
+    long field;
+    long run;
+    float nsa_redshift;
+    float nsa_zdist;
+    float nsa_mstar;
+    float nsa_vdisp;
+    float nsa_inclination;
+    float nsa_petro_th50;
+    float nsa_petroflux[7];
+    float nsa_petroflux_ivar[7];
+    float nsa_sersic_ba;
+    float nsa_sersic_n;
+    float nsa_sersic_phi;
+    float nsa_sersic_th50;
+    float nsa_sersicflux[7];
+    float nsa_sersicflux_ivar[7];
+    float nsa_absmag[7];
+    char nsa_version[20];
+    long nsa_id;
+    long nsa_id100;
+} PLTTRGT;
+
+PLTTRGT 0000 0000 0000 0000 1-000000 0 15h/p40/J152554.88+415435 231.478756028 41.9097725983 231.478756028 41.9097725983 230.99167 42.68736 78.935912 -169.09538 2014.07 2 0 0 37 -999 -999 224 3918 0.0226546 -999.0 6.49071e+08 -999.0 50.4463 2.54327 {18.0174 22.1203 54.5087 128.257 185.835 229.213 255.979} {0.132904 6.57025 0.190638 1.59099 1.04681 0.319301 0.0163769} 0.482523 1.5851 62.1492 3.19605 {21.7792 26.0488 52.4875 132.169 193.079 235.423 259.846} {0.143117 3.81636 1.07508 5.37342 2.69955 1.27748 0.0982024} {-15.2445 -15.4517 -16.228 -17.1187 -17.5194 -17.6736 -17.757} v1b_0_0_v2 102195 12345

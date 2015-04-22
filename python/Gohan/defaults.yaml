@@ -6,6 +6,7 @@ logging:
     logFileMode: 'w'
 
 catalogues:
+    catalogueDir: $MANGA_CATALOGUE_DIR
     science: $MANGASAMPLE_SCIENCE_CATALOGUE
     standard: $MANGASAMPLE_STANDARD_CATALOGUE
     stelLib: $MANGASAMPLE_STELLIB_CATALOGUE
@@ -64,16 +65,10 @@ plateTypes:
         programname: disk2
         drillstyle: manga
 
-nsaImaging:
-    baseURL: http://data.sdss3.org/sas/ebosswork/manga/atlas/v1/detect/v1_0/
-    username: sdss3
-    password: 4-surveys
-    scale: 0.396
-
 sdssImaging:
-    baseURL: http://data.sdss3.org/sas/dr10/boss
-    username: None
-    password: None
+    baseURL: https://data.mirror.sdss.org/sas/
+    username: sdss
+    password: 2.5-meters
     scale: 0.396
 
 platelist: $PLATELIST_DIR

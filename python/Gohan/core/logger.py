@@ -146,9 +146,9 @@ class GohanLogger(Logger):
         # else:
         #     record.message = '{0} [{1:s}]'.format(record.msg, record.origin)
 
-        if len(record.message) > 70:
+        if len(record.message) > 80:
             tw = TextWrapper()
-            tw.width = 70
+            tw.width = 80
             tw.subsequent_indent = ' ' * (len(record.levelname)+2)
             tw.break_on_hyphens = False
             msg = '\n'.join(tw.wrap(record.message))

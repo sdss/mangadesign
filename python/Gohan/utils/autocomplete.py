@@ -17,13 +17,27 @@ from __future__ import print_function
 from Gohan import log, readPath, config
 from astropy import table
 from astropy import coordinates as coo
-from Gohan.exceptions import GohanUserWarning, GohanError
+from Gohan.exceptions import GohanUserWarning
 from Gohan.utils.sortTargets import sortTargets
-from Gohan.helpers.utils import getMaskBitFromLabel
+from Gohan.utils import getMaskBitFromLabel
 import warnings
 import numpy as np
 import os
 
+
+try:
+    NSAPath = readPath(config['catalogues']['NSA'])
+
+    if not os.path.exists(NSAPath):
+        warnings.warn('NSA catalogue {0} not found'.format(NSAPath),
+                      GohanUserWarning)
+        NSACat = None
+    else:
+        NSACat = table.Table.read(NSAPath)
+except:
+    NSACat = None
+
+qaWarningIssued = False
 
 defaultValues = {
     'ifudesign': -999,
@@ -36,14 +50,11 @@ defaultValues = {
 }
 
 
-def autocomplete(targets, targettype, centre, **kwargs):
-    """Autocompletes a list of targets using NSA to a number of `nTargets`."""
+def autocomplete(targets, centre, **kwargs):
+    """Autocompletes a list of targets using the MaNGa sample or the
+    NSA catalogue."""
 
-    if targettype == 'science':
-        bundles = config['IFUs'].copy()
-    else:
-        raise GohanError('only science targets can be autocompleted')
-
+    bundles = config['IFUs'].copy()
     nBundles = np.sum(bundles.values())
 
     if len(targets) >= nBundles:
@@ -182,16 +193,14 @@ def getUnassignedBundleSizes(targets, bundles):
 
 def getNSATargets(targets, centre):
 
-    NSAPath = readPath(config['catalogues']['NSA'])
-
-    if not os.path.exists(NSAPath):
-        warnings.warn('NSA catalogue {0} not found'.format(NSAPath),
-                      GohanUserWarning)
+    if NSACat is None:
         return None
 
-    NSACat = table.Table.read(NSAPath)
-    NSACat.add_column(
-        table.Column(np.arange(len(NSACat)), dtype='int', name='CATIND'))
+    # Adds the CATID column to the NSA catalogue for comparison with MaNGA
+    # targets
+    if 'CATIND' not in NSACat.colnames:
+        NSACat.add_column(
+            table.Column(np.arange(len(NSACat)), dtype='int', name='CATIND'))
 
     raCen, decCen = centre
 
@@ -265,10 +274,21 @@ def getMaNGATargets(targets, centre):
 
     MaNGATargets.sort('Z')
 
-    return MaNGATargets
+    if len(MaNGATargets) > 0:
+        return MaNGATargets
+    else:
+        return None
 
 
 def _checkNSATarget(targets, target, centre):
+
+    # Gets mangaids with bad photometry
+    badPhotometry = getBadPhotometry()
+
+    if target['MANGAID'] in badPhotometry:
+        log.debug('target {0} rejected because it has bad photometry'
+                  .format(target['MANGAID']))
+        return False
 
     if target['MANGAID'] in targets['MANGAID']:
         return False
@@ -294,6 +314,33 @@ def _checkNSATarget(targets, target, centre):
             return False
 
     return True
+
+
+def getBadPhotometry():
+    """If available, reads the QA_adjusted file linked to the science catalogue
+    and returns a list of mangaids with bad photometry."""
+
+    global qaWarningIssued
+
+    scienceCat = readPath(config['catalogues']['science'])
+
+    qaAdjusted = os.path.join(
+        os.path.dirname(scienceCat), 'nsa_v1_0_0_QA_adjusted.dat')
+
+    if not os.path.exists(qaAdjusted):
+        if not qaWarningIssued:
+            # Issues this warning only once
+            warnings.warn('nsa_v1_0_0_QA_adjusted.dat not found',
+                          GohanUserWarning)
+            qaWarningIssued = True
+        return []
+
+    qaTable = table.Table.read(qaAdjusted, format='ascii.commented_header')
+
+    # Adds the catalogid and returns the targets with bad photometry
+    badPhotometry = qaTable[qaTable['bad_phot'] == 1]
+
+    return ['1-{0}'.format(str(catind)) for catind in badPhotometry['catind']]
 
 
 def addTarget(targets, target, bundleSize, centre):

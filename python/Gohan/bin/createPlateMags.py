@@ -15,7 +15,7 @@ Revision history:
 from __future__ import division
 from __future__ import print_function
 import argparse
-from Gohan.helpers.utils import getPlates, getMangaScience
+from Gohan.utils import getFromPlatePlans, getMangaScience
 from Gohan.PlateMags import PlateMags
 from Gohan import config, readPath, log
 import os
@@ -37,10 +37,11 @@ def copyPreImaging(designID, preImage):
     return
 
 
-def createPlateMags(input, mode='drillRun', plot=False, debug=False):
+def createPlateMags(input, mode='drillRun', plot=False, debug=False,
+                    force=False):
 
     if mode == 'drillRun':
-        designIDs = getPlates(input, column='designid')
+        designIDs = getFromPlatePlans(input, column='designid')
     else:
         designIDs = [int(input)]
 
@@ -60,7 +61,7 @@ def createPlateMags(input, mode='drillRun', plot=False, debug=False):
 
         plateMags = PlateMags(mangaScience)
         plateMags.write()
-        plateMags.plot()
+        plateMags.plot(overwrite=force)
 
     return
 
@@ -77,6 +78,8 @@ if __name__ == '__main__':
     parser.add_argument('-p', '--plot', dest='plot', action='store_true',
                         default=False, help='if set, a plot of the ' +
                         'preimaging is generated')
+    parser.add_argument('-f', '--forces', dest='force', action='store_true',
+                        default=False, help='forces overwrite files')
     parser.add_argument('-b', '--debug', dest='debug', action='store_true',
                         default=False, help='turns on debug mode')
 
@@ -87,4 +90,5 @@ if __name__ == '__main__':
     else:
         mode = 'drillRun'
 
-    createPlateMags(args.input, mode=mode, plot=args.plot, debug=args.debug)
+    createPlateMags(args.input, mode=mode, plot=args.plot, debug=args.debug,
+                    force=args.force)
