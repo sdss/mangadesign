@@ -19,8 +19,12 @@ from matplotlib import pyplot as plt
 from matplotlib.patches import Ellipse
 
 
-def simpleMesh(centre, radius, width=0.2, **kwargs):
+def simpleMesh(centre, radius, width=None, **kwargs):
     """Creates a simple mesh for the field. Returns the centres of the cells"""
+
+    if width is None:
+        # If no width is defined, uses an adaptive value based on the radius.
+        width = 0.2 * radius / 1.5
 
     ra0 = centre[0] - radius / np.cos(np.deg2rad(centre[1]))
     ra1 = centre[0] + radius / np.cos(np.deg2rad(centre[1]))
@@ -103,7 +107,7 @@ def calculateSeparation(coord1, coord2):
                    + (coord1[:, 1]-coord2[:, 1])**2)
 
 
-def getTargetIdx(coords, assigned, grid, centre):
+def getTargetIdx(coords, assigned, grid, centre, radius):
     """Returns the index of the target to assign, based on what has already
     been assigned."""
 
@@ -117,9 +121,9 @@ def getTargetIdx(coords, assigned, grid, centre):
     eField += .1 / calculateSeparation(centre, grid)
 
     for alpha in range(0, 360, 10):
-        ra = centre[0] + (1.49 * np.cos(np.deg2rad(alpha)) /
+        ra = centre[0] + (radius * np.cos(np.deg2rad(alpha)) /
                           np.cos(np.deg2rad(centre[1])))
-        dec = centre[1] + 1.49 * np.sin(np.deg2rad(alpha))
+        dec = centre[1] + radius * np.sin(np.deg2rad(alpha))
         eField += .5 / calculateSeparation(np.array([(ra, dec)]), grid)
 
     return np.argmin(eField)
@@ -182,7 +186,7 @@ def sortTargets(targets, centre=None, radius=1.49,
 
     while len(assigned) < limitTo:
 
-        newGridIdx = getTargetIdx(targets, assigned, grid, centre)
+        newGridIdx = getTargetIdx(targets, assigned, grid, centre, radius)
 
         distancesToGrid = calculateSeparation(targets, grid[newGridIdx])
         for ii in np.argsort(distancesToGrid):
