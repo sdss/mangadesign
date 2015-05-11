@@ -479,7 +479,7 @@ class PlateInput(object):
                                                      rejectTargets)
             else:
                 # Sky selection is different, so we call a special method.
-                targetsInField = self._selectSkies(catalogue, **kwargs)
+                targetsInField = catalogue  # self._selectSkies(catalogue, **kwargs)
 
             if isinstance(catalogue, basestring):
                 log.debug('{0} targets selected from catalogue {1}'
@@ -1038,7 +1038,8 @@ class PlateInput(object):
                                np=True)
 
         template['locationid'] = self.locationid
-        template['locationid'] = self.locationid
+        template['instrument'] = 'MANGA' if self.targettype != 'sky' \
+            else 'MANGA_SINGLE'
         template['racen'] = self.raCen
         template['deccen'] = self.decCen
         template['designid'] = self.designid

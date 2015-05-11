@@ -19,8 +19,12 @@ from matplotlib import pyplot as plt
 from matplotlib.patches import Ellipse
 
 
-def simpleMesh(centre, radius, width=0.2, **kwargs):
+def simpleMesh(centre, radius, width=None, **kwargs):
     """Creates a simple mesh for the field. Returns the centres of the cells"""
+
+    if width is None:
+        # If no width is defined, uses an adaptive value based on the radius.
+        width = 0.2 * radius / 1.5
 
     ra0 = centre[0] - radius / np.cos(np.deg2rad(centre[1]))
     ra1 = centre[0] + radius / np.cos(np.deg2rad(centre[1]))
@@ -36,7 +40,7 @@ def simpleMesh(centre, radius, width=0.2, **kwargs):
     return coords[distanceToCentre <= radius]
 
 
-def plotTargets(targets, centre, plotGrid=None, plotAllTargets=None,
+def plotTargets(targets, centre, radius, plotGrid=None, plotAllTargets=None,
                 filename=None, **kwargs):
     """Creates a simple plot with the targets."""
 
@@ -52,8 +56,8 @@ def plotTargets(targets, centre, plotGrid=None, plotAllTargets=None,
     fig.set_size_inches(8, 8)
 
     plate = Ellipse((raCen, decCen),
-                    height=3.,
-                    width=3/np.cos(decCen*np.pi/180.),
+                    height=2*radius,
+                    width=2*radius/np.cos(decCen*np.pi/180.),
                     linewidth=2,
                     edgecolor='k', facecolor='None')
     ax.add_patch(plate)
@@ -71,9 +75,9 @@ def plotTargets(targets, centre, plotGrid=None, plotAllTargets=None,
 
     ax.scatter(targets[:, 0], targets[:, 1], marker='x', s=20, color='r')
 
-    ax.set_xlim(raCen + 1.6/np.cos(decCen*np.pi/180.),
-                raCen - 1.6/np.cos(decCen*np.pi/180.))
-    ax.set_ylim(decCen - 1.6, decCen + 1.6)
+    ax.set_xlim(raCen + 1.05*radius/np.cos(decCen*np.pi/180.),
+                raCen - 1.05*radius/np.cos(decCen*np.pi/180.))
+    ax.set_ylim(decCen - 1.05*radius, decCen + 1.05*radius)
 
     ax.set_xlabel(r'$\alpha_{2000}$')
     ax.set_ylabel(r'$\delta_{2000}$')
@@ -99,11 +103,11 @@ def calculateSeparation(coord1, coord2):
         coord2, coord1 = coord1, coord2
 
     return np.sqrt(((coord1[:, 0] - coord2[:, 0]) *
-                    np.cos(np.deg2rad(coord1[:, 1])))**2
-                   + (coord1[:, 1]-coord2[:, 1])**2)
+                    np.cos(np.deg2rad(coord1[:, 1])))**2 +
+                   (coord1[:, 1]-coord2[:, 1])**2)
 
 
-def getTargetIdx(coords, assigned, grid, centre):
+def getTargetIdx(coords, assigned, grid, centre, radius):
     """Returns the index of the target to assign, based on what has already
     been assigned."""
 
@@ -117,9 +121,9 @@ def getTargetIdx(coords, assigned, grid, centre):
     eField += .1 / calculateSeparation(centre, grid)
 
     for alpha in range(0, 360, 10):
-        ra = centre[0] + (1.49 * np.cos(np.deg2rad(alpha)) /
+        ra = centre[0] + (radius * np.cos(np.deg2rad(alpha)) /
                           np.cos(np.deg2rad(centre[1])))
-        dec = centre[1] + 1.49 * np.sin(np.deg2rad(alpha))
+        dec = centre[1] + radius * np.sin(np.deg2rad(alpha))
         eField += .5 / calculateSeparation(np.array([(ra, dec)]), grid)
 
     return np.argmin(eField)
@@ -182,7 +186,7 @@ def sortTargets(targets, centre=None, radius=1.49,
 
     while len(assigned) < limitTo:
 
-        newGridIdx = getTargetIdx(targets, assigned, grid, centre)
+        newGridIdx = getTargetIdx(targets, assigned, grid, centre, radius)
 
         distancesToGrid = calculateSeparation(targets, grid[newGridIdx])
         for ii in np.argsort(distancesToGrid):
@@ -193,7 +197,7 @@ def sortTargets(targets, centre=None, radius=1.49,
     sortedTargets = np.array([targets[ii] for ii in assigned])
 
     if plot:
-        plotTargets(sortedTargets, centre, plotAllTargets=targets,
+        plotTargets(sortedTargets, centre, radius, plotAllTargets=targets,
                     plotGrid=None, **kwargs)
 
     return sortedTargets, assigned
