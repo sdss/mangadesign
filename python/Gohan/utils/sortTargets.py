@@ -40,7 +40,7 @@ def simpleMesh(centre, radius, width=None, **kwargs):
     return coords[distanceToCentre <= radius]
 
 
-def plotTargets(targets, centre, plotGrid=None, plotAllTargets=None,
+def plotTargets(targets, centre, radius, plotGrid=None, plotAllTargets=None,
                 filename=None, **kwargs):
     """Creates a simple plot with the targets."""
 
@@ -56,8 +56,8 @@ def plotTargets(targets, centre, plotGrid=None, plotAllTargets=None,
     fig.set_size_inches(8, 8)
 
     plate = Ellipse((raCen, decCen),
-                    height=3.,
-                    width=3/np.cos(decCen*np.pi/180.),
+                    height=2*radius,
+                    width=2*radius/np.cos(decCen*np.pi/180.),
                     linewidth=2,
                     edgecolor='k', facecolor='None')
     ax.add_patch(plate)
@@ -75,9 +75,9 @@ def plotTargets(targets, centre, plotGrid=None, plotAllTargets=None,
 
     ax.scatter(targets[:, 0], targets[:, 1], marker='x', s=20, color='r')
 
-    ax.set_xlim(raCen + 1.6/np.cos(decCen*np.pi/180.),
-                raCen - 1.6/np.cos(decCen*np.pi/180.))
-    ax.set_ylim(decCen - 1.6, decCen + 1.6)
+    ax.set_xlim(raCen + 1.05*radius/np.cos(decCen*np.pi/180.),
+                raCen - 1.05*radius/np.cos(decCen*np.pi/180.))
+    ax.set_ylim(decCen - 1.05*radius, decCen + 1.05*radius)
 
     ax.set_xlabel(r'$\alpha_{2000}$')
     ax.set_ylabel(r'$\delta_{2000}$')
@@ -103,8 +103,8 @@ def calculateSeparation(coord1, coord2):
         coord2, coord1 = coord1, coord2
 
     return np.sqrt(((coord1[:, 0] - coord2[:, 0]) *
-                    np.cos(np.deg2rad(coord1[:, 1])))**2
-                   + (coord1[:, 1]-coord2[:, 1])**2)
+                    np.cos(np.deg2rad(coord1[:, 1])))**2 +
+                   (coord1[:, 1]-coord2[:, 1])**2)
 
 
 def getTargetIdx(coords, assigned, grid, centre, radius):
@@ -197,7 +197,7 @@ def sortTargets(targets, centre=None, radius=1.49,
     sortedTargets = np.array([targets[ii] for ii in assigned])
 
     if plot:
-        plotTargets(sortedTargets, centre, plotAllTargets=targets,
+        plotTargets(sortedTargets, centre, radius, plotAllTargets=targets,
                     plotGrid=None, **kwargs)
 
     return sortedTargets, assigned

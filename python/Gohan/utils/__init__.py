@@ -3,6 +3,7 @@ from getSDSSRun import getSDSSRun
 from sortTargets import sortTargets
 from assignIFUDesigns import assignIFUDesigns
 from utils import *
+from selectSkies import selectSkies
 
 try:
     from Staralt import Staralt
