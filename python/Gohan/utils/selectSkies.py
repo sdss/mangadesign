@@ -45,8 +45,7 @@ def getIFUSkies(data, coords, ra, dec, skyPatrolRadius=14/60.,
     ifuSkyCoords[:, 1] = ifuSkies['dec']
 
     validTargets, assigned = sortTargets(ifuSkyCoords, centre=(ra, dec),
-                                         limitTo=40, radius=skyPatrolRadius,
-                                         plot=True)
+                                         limitTo=40, radius=skyPatrolRadius)
 
     return validTargets
 
