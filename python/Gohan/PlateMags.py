@@ -700,6 +700,9 @@ class PlateMagsIFU(object):
                                  'Field_{0}_{1}_{2}_SDSS.fits'.format(
                                      run, camcol, field))
 
+        if not os.path.exists(os.path.dirname(imageName)):
+            os.makedirs(os.path.dirname(imageName))
+
         if os.path.exists(imageName) and not overwrite:
             log.debug('...... {0} already exists.'.format(
                       shortenPath(imageName)))

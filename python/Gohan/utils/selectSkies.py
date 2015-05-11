@@ -122,6 +122,7 @@ def selectSkies(skyCat, designID, fieldName, raCen, decCen):
     """Writes a list of skies for each one of the IFUs in a design."""
 
     allSkies = table.Table.read(skyCat)
+
     skyCoords = SkyCoord(allSkies['ra'], allSkies['dec'], unit='deg')
     plateCentre = SkyCoord(ra=raCen, dec=decCen, unit='deg')
     separationCentre = skyCoords.separation(plateCentre).deg
