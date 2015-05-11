@@ -511,3 +511,56 @@ def getPlateTemperature(date):
     temperature = (interpMaxTemp - interpMinTemp) / 3. + interpMinTemp
 
     return temperature
+
+
+def getStellarLibraryTargets(designid=None):
+    """Returns a plateTargets-like table with all the stellar library targets
+    for a certain list of designids. If designid is None, all the stellar
+    library plates are returned."""
+
+    if designid is None:
+        designid = getStellarLibraryDesigns()
+
+    designid = np.atleast_1d(designid)
+    designid.sort()
+
+    if len(designid) == 1:
+
+        if designid[0] in [7933, 7934, 7935]:
+            return None
+
+        mangaScience = getMangaScience(designid[0])
+        mangaScienceStruct = table.Table(yanny.yanny(mangaScience,
+                                                     np=True)['MANGAINPUT'])
+
+        returnTable = mangaScienceStruct[['mangaid', 'ra', 'dec']]
+        designidCol = table.Column(designid.tolist() * len(returnTable),
+                                   name='designid', dtype=int)
+        returnTable.add_column(designidCol, 0)
+
+        return returnTable
+
+    else:
+
+        tables = [getStellarLibraryTargets(dd) for dd in designid]
+        tables = [tt for tt in tables if tt is not None]
+
+        return table.vstack(tables)
+
+
+def getStellarLibraryDesigns():
+    """Returns, from apodb, all the designids for stellar library plates."""
+
+    from sdss.internal.manga.Totoro import TotoroDBConnection
+
+    db = TotoroDBConnection()
+    session = db.session
+
+    with session.begin():
+        plates = session.query(db.plateDB.Plate).join(
+            db.plateDB.PlateToSurvey, db.plateDB.Survey,
+            db.plateDB.SurveyMode).filter(
+                db.plateDB.Survey.label == 'MaNGA',
+                db.plateDB.SurveyMode.label == 'APOGEE lead').all()
+
+    return [getDesignID(plate.plate_id) for plate in plates]
