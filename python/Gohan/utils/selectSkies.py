@@ -70,8 +70,8 @@ def getInfoFromAPOGEE(designID):
             scienceInput = os.path.join(inputsPath, inp)
         elif fnmatch.fnmatch(inp, '*plateInput*_STA_*.par'):
             stdInput = os.path.join(inputsPath, inp)
-        elif fnmatch.fnmatch(inp, '*plateInput*_SKY_*.par'):
-            skyInput = os.path.join(inputsPath, inp)
+        # elif fnmatch.fnmatch(inp, '*plateInput*_SKY_*.par'):
+        #     skyInput = os.path.join(inputsPath, inp)
 
     assert scienceInput is not None and stdInput is not None, \
         'science or standard input cannot be found in plateDefinition.'
@@ -81,13 +81,13 @@ def getInfoFromAPOGEE(designID):
 
     sciData = yanny(scienceInput, np=True)
     stdData = yanny(stdInput, np=True)
-    skyData = yanny(skyInput, np=True)
+    # skyData = yanny(skyInput, np=True)
 
     sciCoords = sciData['APOGEEINPUT1'][['ra', 'dec']]
     stdCoords = stdData['APOGEEINPUT2'][['ra', 'dec']]
-    skyCoords = skyData['APOGEEINPUT3'][['ra', 'dec']]
+    # skyCoords = skyData['APOGEEINPUT3'][['ra', 'dec']]
 
-    apogeeCoords = np.concatenate((sciCoords, stdCoords, skyCoords))
+    apogeeCoords = np.concatenate((sciCoords, stdCoords))  # , skyCoords))
     apogeeCoords = apogeeCoords.view(np.float).reshape(apogeeCoords.shape +
                                                        (-1,))
 
@@ -127,8 +127,8 @@ def selectSkies(skyCat, designID, fieldName, raCen, decCen):
     separationCentre = skyCoords.separation(plateCentre).deg
 
     validSkies = allSkies[
-        np.where((separationCentre <= config['decollision']['FOV']) &
-                 (separationCentre > .041666667))]
+        np.where((separationCentre < config['decollision']['FOV']) &
+                 (separationCentre > config['decollision']['centreAvoid']))]
     validSkies = validSkies[validSkies['neighbor_dist'] <= 60]
     validSkies.sort('neighbor_dist')
     validSkies.reverse()
@@ -145,8 +145,7 @@ def selectSkies(skyCat, designID, fieldName, raCen, decCen):
     mangaTargets = table.vstack([mangaScience[['ra', 'dec', 'mangaid',
                                                'ifudesign']],
                                  mangaStandard[['ra', 'dec', 'mangaid',
-                                                'ifudesign']]]
-                                )
+                                                'ifudesign']]])
 
     mangaCoords = np.zeros((len(mangaTargets), 2))
     mangaCoords[:, 0] = mangaTargets['ra']
