@@ -304,7 +304,7 @@ def getPointing(plateInputData):
             'ifu_dec': plateInputData['ifu_dec']}
 
 
-def getMangaScience(input, format='designid'):
+def getMangaSciencePath(input, format='designid'):
     """Returns the path of the mangaScience data for a design or plate."""
 
     if format == 'plateid':
@@ -529,7 +529,7 @@ def getStellarLibraryTargets(designid=None):
         if designid[0] in [7933, 7934, 7935]:
             return None
 
-        mangaScience = getMangaScience(designid[0])
+        mangaScience = getMangaSciencePath(designid[0])
         mangaScienceStruct = table.Table(yanny.yanny(mangaScience,
                                                      np=True)['MANGAINPUT'])
 
@@ -564,3 +564,14 @@ def getStellarLibraryDesigns():
                 db.plateDB.SurveyMode.label == 'APOGEE lead').all()
 
     return [getDesignID(plate.plate_id) for plate in plates]
+
+
+def getRequiredPlateTargetsColumns():
+    """Returns a list with the mandatory plateTargets columns."""
+
+    path = os.path.join(os.path.dirname(getPlateTargetsPath(1)),
+                        'requiredColumns.dat')
+
+    assert os.path.exists(path), 'requiredColumns.dat not found in mangacore'
+
+    return open(path, 'r').read().splitlines()
