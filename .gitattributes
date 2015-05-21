@@ -27,8 +27,6 @@ python/Gohan/etc/NSA_v1b_to_v1.dat -text
 python/Gohan/etc/mangaDefinition_Default.par -text
 python/Gohan/etc/mangaInput_Default.par -text
 python/Gohan/etc/neverobserve.dat -text
-python/Gohan/etc/plateTargets-1.template -text
-python/Gohan/etc/plateTargets-12.template -text
 python/Gohan/etc/targets-7443.fits -text svneol=unset#unset
 python/Gohan/examples/createPlateMags.py -text
 python/Gohan/examples/generate_2014.07.x.manga-apogee2.py -text
