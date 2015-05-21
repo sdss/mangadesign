@@ -1,0 +1,48 @@
+designid  ->  mangaScience
+plateid  ->  plateHolesSorted
+manga_tileid  ->  mangaScience
+ifudesign  ->  mangaScience[MANGAINPUT]
+mangaid  ->  mangaScience[MANGAINPUT]
+neverobserve  ->  Gohan
+iauname  ->  mangaScience[MANGAINPUT]
+ifu_ra  ->  mangaScience[MANGAINPUT]
+ifu_dec  ->  mangaScience[MANGAINPUT]
+target_ra  ->  mangaScience[MANGAINPUT]
+target_dec  ->  mangaScience[MANGAINPUT]
+racen  ->  mangaScience
+deccen  ->  mangaScience
+xfocal  ->  plateHolesSorted[STRUCT1]
+yfocal  ->  plateHolesSorted[STRUCT1]
+epoch  ->  plateHolesSorted[STRUCT1]
+manga_target1  ->  mangaScience[MANGAINPUT]
+manga_target2  ->  mangaScience[MANGAINPUT]
+manga_target3  ->  mangaScience[MANGAINPUT]
+ifudesignsize  ->  mangaScience[MANGAINPUT]
+ifutargetsize  ->  mangaScience[MANGAINPUT]
+ifudesignwrongsize  ->  mangaScience[MANGAINPUT]
+field  ->  NSA v1 [FIELD]
+run  ->  NSA v1 [RUN]
+nsa_ba  ->  petro_v1_0_0_a3.fits [ba]
+nsa_phi  ->  petro_v1_0_0_a3.fits [phi]
+nsa_redshift  ->  NSA v1 [Z]
+nsa_zdist  ->  NSA v1 [ZDIST]
+nsa_mstar  ->  NSA v1 [MASS]
+nsa_mstar_el  ->  petro_kcorrect_v1_0_0_a3.fits [MASS]
+nsa_vdisp  ->  ???? (currently is all -999.)
+nsa_petro_th50  ->  NSA v1 [PETROTH50]
+nsa_petro_th50_el  ->  petro_v1_0_0_a3.fits [petroth50_r] ??????
+nsa_petroflux  ->  NSA v1 [PETROFLUX]
+nsa_petroflux_ivar  ->  NSA v1 [PETROFLUX_IVAR]
+nsa_petroflux_el  ->  petro_v1_0_0_a3.fits [petroflux]
+nsa_petroflux_el_ivar  ->  petro_v1_0_0_a3.fits [petroivar]
+nsa_sersic_ba  ->  NSA v1 [SERSIC_BA]
+nsa_sersic_n  ->  NSA v1 [SERSIC_N]
+nsa_sersic_phi  ->  NSA v1 [SERSIC_PHI]
+nsa_sersic_th50  ->  NSA v1 [SERSIC_TH50]
+nsa_sersicflux  ->  NSA v1 [SERSICFLUX]
+nsa_sersicflux_ivar  ->  NSA v1 [SERSICFLUX_IVAR]
+nsa_absmag  ->  NSA v1 [ABSMAG]
+nsa_absmag_el  ->  petro_kcorrect_v1_0_0_a3.fits [ABSMAG]
+nsa_version  ->  "v1_0_0"
+nsa_id  ->  NSA v1 [NSAID]
+nsa_id100  ->  same as nsa_id
