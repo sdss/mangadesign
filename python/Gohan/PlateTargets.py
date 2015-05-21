@@ -26,7 +26,7 @@ import warnings
 import os
 
 
-# Fields to exclude
+# Fields from mangaScience to exclude in ancillary plateTargets.
 excludeFields = ['priority', 'sourcetype', 'manga_tileids']
 
 
@@ -170,94 +170,120 @@ class PlateTargets(object):
 
         return (self.path, nAppended)
 
-    def addTargets(self, mangaids, plateid=None, mangaInput=None,
+    def addTargets(self, mangaids=None, plateid=None, mangaScience=None,
                    overwrite=False):
         """Adds a new target to the current instance.
 
         The method requires a `mangaid` and either a `plateid` or a
-        `mangaInput`. In `plateid` is defined but not `mangaInput`,
-        the mangaInput will be determined from the plateHolesSorted file.
-        If only `mangaInput` is defined, the plate-related information will be
-        filled. with nulls A warning will be issued.
+        `mangaScience`. In `plateid` is defined but not `mangaScience`,
+        the mangaScience will be determined from the plateHolesSorted file.
+        If only `mangaScience` is defined, the plate-related information will
+        be filled with nulls. A warning will be issued.
 
-        It uses a combination of mangaScience, catalogue data and
-        plateHolesSorted (in that order) to obtain all possible information
-        about the target and fill out all the plateTargets fields.
+        This method gathers information from mangaScience, catalogue data and
+        plateHolesSorted. It then calls either the routine for the main sample,
+        or for ancillary targets. The returned values are then processed for
+        targetfixes and added to the main structure.
 
         Parameters
         ----------
-        mangaids : string or list of strings
-            The mangaid or list of mangaids to add.
+        mangaids : string, list of strings or None
+            The mangaid or list of mangaids to add. If None, all the mangaids
+            in the manga
         plateid : integer or None, optional
             The plateid of the plate on which the new target(s) have been
             drilled. If `mangaids` is a list, it is assumed that all the
             targets correspond to the same `plateid`.
-        mangaInput : string or None, optional
-            The path of the mangaInput for the new target. As with `plateid`,
+        mangaScience : string or None, optional
+            The path of the mangaScience for the new target. As with `plateid`,
             it is assumed that all the `mangaids` are included in that
-            mangaInput file.
+            mangaScience file.
 
         Returns
         -------
         result : `astropy.table.Table`
-            The new rows added to the `PlateTargets` instance.
+            The new rows added to the `PlateTargets` instance, as well
+            as returned.
 
         """
 
-        mangaids = [mangaid.strip() for mangaid in np.atleast_1d(mangaids)]
+        addedIndices = []
 
-        # A list of the indices in self.structure that contain a newly added
-        # target.
-        _addedIndices = []
-
-        if mangaInput is not None:
-            assert os.path.exists(mangaInput), ('path {0} does not exist'
-                                                .format(mangaInput))
-
-        if plateid is None:
-            warnings.warn(
-                'no plateid information provided. The plate information will '
-                'be filled out with nulls.', GohanPlateTargetsWarning)
-
-        if plateid is None and mangaInput is None:
+        if plateid is None and mangaScience is None:
             raise GohanPlateTargetsError(
-                'either plateid or mangaInput needs to be defined')
+                'either plateid or mangaScience needs to be defined')
 
-        if plateid is not None and mangaInput is None:
-            mangaInput = utils.getMangaScience(plateid, format='plateid')
+        # If plateid is not defined, issues a warning.
+        if plateid is None:
+            warnings.warn('no plateid information provided. The plate '
+                          'information will be filled out with nulls.',
+                          GohanPlateTargetsWarning)
 
-        # Gets data from mangaInput structure and keywords
-        mangaInputStructure, mangaInputKyw = self._readMangaInput(mangaInput)
-        mangaInputStructure = self._toLowerCase(mangaInputStructure)
+            plateHolesSortedData = plateHolesSortedPairs = None
 
-        designid = int(mangaInputKyw['designid'])
-
-        # Reads the plateHolesSorted file
+        # If plateid is defined we get the plateHolesSorted data.
         if plateid is not None:
-            plateHolesSortedStructure, plateHolesSortedKyw = \
+
+            if mangaScience is None:
+                # If mangaScience is not defined, we use
+                mangaScience = utils.getMangaSciencePath(plateid,
+                                                         format='plateid')
+
+            plateHolesSortedData, plateHolesSortedPairs = \
                 utils.getPlateHolesSortedData(plateid)
+
+        # Checks mangaScience path
+        assert os.path.exists(mangaScience), ('path {0} does not exist'
+                                              .format(mangaScience))
+
+        # Makes sure that all the mangaids have the catalogid of the current
+        # instance of PlateTargets.
+        catalogids = np.array([int(mangaid.split('-')[0])
+                               for mangaid in mangaids])
+
+        assert np.all(catalogids == self.catalogid), \
+            'one or more of the mangaids has catalogid != {0}'.format(
+                self.catalogid)
+
+        # Gets data from mangaScience structure and pairs
+        mangaScienceData, mangaSciencePairs = \
+            self._readMangaScience(mangaScience)
+        mangaScienceData = self._toLowerCase(mangaScienceData)
+
+        # Defines mangaids either from input or from the mangaScience data.
+        if mangaids is not None:
+            mangaids = [mangaid.strip() for mangaid in np.atleast_1d(mangaids)]
         else:
-            plateHolesSortedStructure = plateHolesSortedKyw = None
+            mangaids = [mangaid.strip()
+                        for mangaid in mangaScienceData['mangaid']]
 
-        # Defines the fields to fill out
-        # In principle, the fields are the columns of the current instance.
-        fields = self.structure.colnames
+        # Gets the common fields for all plateTargets.
+        commonData = self._getCommonData(
+            mangaids, mangaScienceData, mangaSciencePairs,
+            plateHolesSortedData, plateHolesSortedPairs)
 
-        # If this is a template of an ancillary catalogue, we add all the
-        # fields from the mangaInput structure.
-        if self.template and self.ancillary:
-            for ii in range(len(mangaInputStructure.columns)):
-                column = mangaInputStructure.columns[ii].copy()
-                colName = column.name
-                if colName not in fields and colName not in excludeFields:
-                    # newColumn = table.Column(None, name=colName,
-                    #                          dtype=column.dtype)
-                    self.structure.add_column(column[0:0])
-                    fields.append(column.name)
+        # Creates a list of specific fields for this plateTargets file
+        specificColumns = [col for col in self.structure.colnames
+                           if col not in utils.getRequiredPlateTargetsColumns()
+                           ]
 
+        # Now we get the specific fields for this catalogid.
+        if self.catalogid == 1:
+            # We call the specific method for the main sample.
+            specificData = self._getMainSampleData(mangaids, specificColumns)
+        else:
+            # Temporary.
+            specificData = {}
+
+        # Finally we add the data target by target.
         for mangaid in mangaids:
 
-            # Defines if the targets already exists in plateTargets.
+            # We combine both dictionaries
+            targetData = commonData[mangaid]
+            if mangaid in specificData:
+                targetData.update(specificData[mangaid])
+
+            # Checks if the targets already exists in plateTargets.
             existing = False
 
             if plateid is not None:
@@ -272,118 +298,15 @@ class PlateTargets(object):
                     # If it exists, checks if overwrite is True
                     if overwrite:
                         existing = True
-                        warnings.warn(
-                            'replacing target mangaid={0} in plateid={1}'
-                            .format(mangaid, plateid),
-                            GohanPlateTargetsWarning)
+                        warnings.warn('replacing target mangaid={0} '
+                                      'in plateid={1}'
+                                      .format(mangaid, plateid),
+                                      GohanPlateTargetsWarning)
                     else:
                         # If overwrite is False, skips this target.
                         log.debug('skipping mangaid={0} because it is already '
                                   'in plateTargets.'.format(mangaid))
                         continue
-
-            # Selects the row for mangaid from the mangaScience structure
-            if mangaid not in mangaInputStructure['mangaid']:
-                raise GohanPlateTargetsError(
-                    'mangaid={0} not found in mangaInput'.format(mangaid))
-
-            mangaInputRow = mangaInputStructure[
-                mangaInputStructure['mangaid'] == mangaid][0]
-
-            # Selects the row for mangaid from the plateHolesSorted structure
-            # if plateHolesSorted is defined.
-            if plateHolesSortedStructure is not None:
-
-                if mangaid not in plateHolesSortedStructure['mangaid']:
-                    raise GohanPlateTargetsError(
-                        'mangaid={0} not found in plateHolesSorted'
-                        .format(mangaid))
-
-                plateHolesSortedRow = plateHolesSortedStructure[
-                    plateHolesSortedStructure['mangaid'] == mangaid][0]
-
-            catalogueRow = utils.getCatalogueRow(mangaid)
-            if catalogueRow is None:
-                warnings.warn('no catalogue data found for mangaid={0}'
-                              .format(mangaid), GohanPlateTargetsWarning)
-
-            targetData = {}
-            for field in fields:
-
-                if field == 'mangaid':
-                    targetData[field] = mangaid
-                    continue
-
-                if field == 'neverobserve':
-                    targetData[field] = 1 if designid in neverobserve else 0
-                    continue
-
-                if field == 'nsa_version':
-                    targetData[field] = self._getNSAVersion()
-                    continue
-
-                # Some particular NSA cases
-                if 'nsa' in field:
-
-                    if (field == 'nsa_inclination' and
-                            catalogueRow is not None and
-                            'ba90' in catalogueRow.colnames):
-                        targetData[field] = np.round(
-                            np.rad2deg(np.arccos(catalogueRow['ba90'])), 4)
-                        continue
-
-                    elif field == 'nsa_id' or field == 'nsa_id100':
-                        targetData[field] = mangaInputRow['nsaid']
-                        continue
-
-                # Defines the fieldname to search in mangaInput, plateHoles,
-                # and catalogue data.
-
-                searchField = None
-
-                if field in conversions['all']:
-                    searchField = conversions['all'][field]
-
-                if self.catalogid in conversions:
-                    if field in conversions[self.catalogid]:
-                        searchField = conversions[self.catalogid][field]
-
-                if searchField is None:
-                    if 'nsa_' in field:
-                        searchField = field[4:]
-                    else:
-                        searchField = field
-
-                # Fills values using the mangaInput structure
-                if searchField in mangaInputRow.colnames:
-                    targetData[field] = mangaInputRow[searchField]
-                    continue
-
-                # Fills values using the mangaInput keywords
-                if searchField in mangaInputKyw:
-                    targetData[field] = mangaInputKyw[searchField]
-                    continue
-
-                # Fills values using the catalogue row
-                if catalogueRow is not None:
-                    if searchField in catalogueRow.colnames:
-                        targetData[field] = catalogueRow[searchField]
-                        continue
-
-                # Fills values using plateHolesSorted and keywords
-                if plateHolesSortedStructure:
-                    if searchField in plateHolesSortedRow.colnames:
-                        targetData[field] = plateHolesSortedRow[searchField]
-                        continue
-
-                    if searchField in plateHolesSortedKyw:
-                        targetData[field] = plateHolesSortedKyw[searchField]
-                        continue
-
-                # If not found, fills values with -999
-                targetData[field] = -999
-
-                # TODO: test with plateTargets-12
 
             # Cleans up values
             targetData = self._cleanupTargetData(targetData)
@@ -394,7 +317,7 @@ class PlateTargets(object):
             # Adds the new targets
             if not existing:
                 self.structure.add_row(targetData)
-                _addedIndices.append(self.structure[-1].index)
+                addedIndices.append(self.structure[-1].index)
             else:
                 # If the target already exists, replaces it values
                 row = self.structure[
@@ -402,47 +325,229 @@ class PlateTargets(object):
                     (self.structure['plateid'] == plateid)]
                 for field in targetData:
                     row[field] = targetData[field]
-                _addedIndices.append(row.index)
+                addedIndices.append(row.index)
 
             self._nAppended += 1
             log.debug(
                 'mangaid={0} added to plateTargets-{1}'.format(mangaid,
                                                                self.catalogid))
 
-        return self.structure[_addedIndices]
+        return self.structure[addedIndices]
 
-    def _readMangaInput(self, mangaInput):
-        """Reads a mangaInput file and returns the structure and keywords."""
+    def _getCommonData(self, mangaids, mangaScienceData, mangaSciencePairs,
+                       plateHolesSortedData, plateHolesSortedPairs):
+        """Returns a dictionary with the required plateTargets columns.
 
-        mangaInputData = yanny.yanny(mangaInput, np=True)
+        Creates a dictionary with keys each one of the `mangaids`. For each
+        element, the value is another dictionary containing the mandatory
+        columns, common to all plateTargets files.
 
-        if 'MANGAINPUT' in mangaInputData.keys():
+        """
+
+        result = {}
+
+        requiredColumns = utils.getRequiredPlateTargetsColumns()
+
+        plateid = (plateHolesSortedPairs['plateid']
+                   if plateHolesSortedPairs is not None else None)
+
+        for mangaid in mangaids:
+            result[mangaid] = {}
+
+            # We get the appropriate row in mangaScience
+            assert mangaid in mangaScienceData['mangaid'], \
+                'mangaid={0} not found in mangaScience file'.format(mangaid)
+            mangaScienceRow = mangaScienceData[
+                mangaScienceData['mangaid'] == mangaid]
+
+            # Idem with plateHolesSorted, if defined
+            if plateHolesSortedData is not None:
+                assert mangaid in plateHolesSortedData['mangaid'], \
+                    'mangaid={0} not found in plateHolesSorted file'.format(
+                        mangaid)
+                plateHolesSortedRow = plateHolesSortedData[
+                    plateHolesSortedData['mangaid'] == mangaid]
+            else:
+                plateHolesSortedRow = None
+
+            for column in requiredColumns:
+
+                # Handles the neverobserve column. Note that if plateid is None
+                # (plateHolesSorted not defined), neverobserve defaults to 0.
+                if column == 'neverobserve':
+                    result[mangaid]['neverobserve'] = \
+                        1 if plateid in neverobserve else 0
+                    continue
+
+                # Now uses mangaScience and plateHolesSorted to complete the
+                # information.
+                if column in mangaSciencePairs:
+                    result[mangaid][column] = mangaSciencePairs[column]
+                elif column in mangaScienceRow.colnames:
+                    result[mangaid][column] = mangaScienceRow[column]
+                elif (plateHolesSortedPairs is not None and
+                        column in plateHolesSortedPairs):
+                    result[mangaid][column] = plateHolesSortedPairs[column]
+                elif (plateHolesSortedRow is not None and
+                        column in plateHolesSortedRow.colnames):
+                    result[mangaid][column] = plateHolesSortedRow[column]
+                else:
+                    # If the column is not in mangaScience or plateHolesSorted,
+                    # handles the specific cases
+                    if column in ['ifu_ra', 'target_ra']:
+                        # If ifu_ra/dec or target_ra/dec are not specifically
+                        # defined in mangaScience, we use ra/dec.
+                        result[mangaid][column] = mangaScienceRow['ra']
+                    elif column in ['ifu_dec', 'target_dec']:
+                        result[mangaid][column] = mangaScienceRow['dec']
+                    elif 'manga_target' in column:
+                        # If manga_targetX is not defined, we set it to 0.
+                        result[mangaid][column] = 0
+                    else:
+                        # If other value is not found, we set it to -999 but
+                        # raise a warning.
+                        warnings.warn('mangaid={0}: no value found for '
+                                      'mandatory field {1}. Setting it to -999'
+                                      .format(mangaid, column),
+                                      GohanPlateTargetsWarning)
+                        result[mangaid][column] = -999
+
+        return result
+
+    def _getMainSampleData(self, mangaids, fields):
+        """Returns the specific columns for the MaNGA main sample.
+
+        Returns a dictionary similar to _getCommonData but with the columns
+        specific to plateTargets-1.par. It also handles plateTargets-12.par.
+
+        """
+
+        # First we open the petrosian catalogues for NSA v1.
+        inputsPath = readPath(config['catalogues']['inputs'])
+
+        petroPath = os.path.join(inputsPath, 'petro_v1_0_0_a3.fits')
+        petroKCorrPath = os.path.join(inputsPath,
+                                      'petro_kcorrect_v1_0_0_a3.fits')
+
+        assert os.path.exists(petroPath)
+        assert os.path.exists(petroKCorrPath)
+
+        petro = table.Table.read(petroPath)
+        petroKCorr = table.Table.read(petroKCorrPath)
+
+        result = {}
+        for mangaid in mangaids:
+
+            result[mangaid] = {}
+            mangaidDict = result[mangaid]
+
+            targetID = int(mangaid.split('-')[1])
+
+            nsaCatPath = utils.getCataloguePath(self.catalogid)
+            nsaRow = utils.getCatalogueRow(mangaid)
+            if nsaRow is None:
+                raise GohanPlateTargetsError(
+                    'mangaid={0} cannot be found in catalogue {1}'
+                    .format(mangaid, nsaCatPath))
+
+            petroRow = petro[targetID]
+            petroKCorrRow = petroKCorr[targetID]
+
+            for field in fields:
+
+                if field == 'field':
+                    mangaidDict[field] = nsaRow[field]
+                elif field == 'run':
+                    mangaidDict[field] = nsaRow[field]
+                elif field == 'nsa_ba':
+                    mangaidDict[field] = petroRow['ba']
+                elif field == 'nsa_phi':
+                    mangaidDict[field] = petroRow['phi']
+                elif field == 'nsa_redshift':
+                    mangaidDict[field] = nsaRow['z']
+                elif field == 'nsa_zdist':
+                    mangaidDict[field] = nsaRow['zdist']
+                elif field == 'nsa_mstar':
+                    mangaidDict[field] = nsaRow['mass']
+                elif field == 'nsa_mstar_el':
+                    mangaidDict[field] = petroKCorrRow['MASS']
+                elif field == 'nsa_vdisp':
+                    mangaidDict[field] = -999.
+                elif field == 'nsa_petro_th50':
+                    mangaidDict[field] = nsaRow['petroth50']
+                elif field == 'nsa_petro_th50_el':
+                    mangaidDict[field] = petroRow['petroth50_r']
+                elif field == 'nsa_petroflux':
+                    mangaidDict[field] = nsaRow['petroflux']
+                elif field == 'nsa_petroflux_ivar':
+                    mangaidDict[field] = nsaRow['petroflux_ivar']
+                elif field == 'nsa_petroflux_el':
+                    mangaidDict[field] = petroRow['petroflux']
+                elif field == 'nsa_petroflux_el_ivar':
+                    mangaidDict[field] = petroRow['petroivar']
+                elif field == 'nsa_sersic_ba':
+                    mangaidDict[field] = nsaRow['sersic_ba']
+                elif field == 'nsa_sersic_n':
+                    mangaidDict[field] = nsaRow['sersic_n']
+                elif field == 'nsa_sersic_phi':
+                    mangaidDict[field] = nsaRow['sersic_phi']
+                elif field == 'nsa_sersic_th50':
+                    mangaidDict[field] = nsaRow['sersic_th50']
+                elif field == 'nsa_sersicflux':
+                    mangaidDict[field] = nsaRow['sersicflux']
+                elif field == 'nsa_sersicflux_ivar':
+                    mangaidDict[field] = nsaRow['sersicflux_ivar']
+                elif field == 'nsa_absmag':
+                    mangaidDict[field] = nsaRow['absmag']
+                elif field == 'nsa_absmag_el':
+                    mangaidDict[field] = petroKCorrRow['ABSMAG']
+                elif field == 'nsa_version':
+                    mangaidDict[field] = self._getNSAVersion()
+                elif field == 'nsa_id':
+                    mangaidDict[field] = nsaRow['nsaid']
+                elif field == 'nsa_id100':
+                    mangaidDict[field] = nsaRow['nsaid']
+                else:
+                    raise GohanPlateTargetsError(
+                        'unexpected field {0} when compiling data for '
+                        'plateTargets-{1}'.format(field, self.catalogid))
+
+        return result
+
+    def _readMangaScience(self, mangaSciencePath):
+        """Reads a mangaScience file and returns the structure and keywords."""
+
+        assert os.path.exists(mangaSciencePath)
+
+        mangaScienceData = yanny.yanny(mangaSciencePath, np=True)
+
+        if 'MANGAINPUT' in mangaScienceData.keys():
             structName = 'MANGAINPUT'
-        elif 'STRUCT1' in mangaInputData.keys():
+        elif 'STRUCT1' in mangaScienceData.keys():
             structName = 'STRUCT1'
         else:
             raise GohanPlateTargetsError(
-                'cannot identify structure name for mangaInput {0}'
-                .format(mangaInput))
+                'cannot identify structure name for mangaScience {0}'
+                .format(mangaSciencePath))
 
-        if 'manga_tileid' in mangaInputData:
+        if 'manga_tileid' in mangaScienceData:
             pass
-        elif 'tileid' in mangaInputData:
-            mangaInputData['manga_tileid'] = mangaInputData.pop('tileid')
+        elif 'tileid' in mangaScienceData:
+            mangaScienceData['manga_tileid'] = mangaScienceData.pop('tileid')
         else:
             raise GohanPlateTargetsError(
-                'no maga_tileid or tileid field found in mangaInput {0}'
-                .format(mangaInput))
+                'no maga_tileid or tileid field found in mangaScience {0}'
+                .format(mangaSciencePath))
 
-        structure = table.Table(mangaInputData.pop(structName))
-        mangaInputData.pop('symbols')
+        structure = table.Table(mangaScienceData.pop(structName))
+        mangaScienceData.pop('symbols')
 
         # Strips mangaids in structure. Important for mangaid comparisons
         for row in structure:
             row['mangaid'] = row['mangaid'].strip()
 
-        # return the MANGAINPUT structure and all the keywords.
-        return (structure, mangaInputData)
+        # return the mangaScience structure and all the keywords.
+        return (structure, mangaScienceData)
 
     def _toLowerCase(self, structure):
         """Renames all the columns in an `astropy.table.Table` to lowercase."""
