@@ -22,6 +22,10 @@ python/Gohan/core/colourPrint.py -text
 python/Gohan/core/configuration.py -text
 python/Gohan/core/logger.py -text
 python/Gohan/defaults.yaml -text
+python/Gohan/docs/Makefile -text
+python/Gohan/docs/conf.py -text
+python/Gohan/docs/index.rst -text
+python/Gohan/docs/make.bat -text
 python/Gohan/etc/BOSS_SNvsFibMag2.dat -text
 python/Gohan/etc/NSA_v1b_to_v1.dat -text
 python/Gohan/etc/mangaDefinition_Default.par -text
