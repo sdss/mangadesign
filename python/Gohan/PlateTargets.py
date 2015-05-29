@@ -348,8 +348,8 @@ class PlateTargets(object):
 
         requiredColumns = utils.getRequiredPlateTargetsColumns()
 
-        plateid = (plateHolesSortedPairs['plateid']
-                   if plateHolesSortedPairs is not None else None)
+        designid = (plateHolesSortedPairs['designid']
+                    if plateHolesSortedPairs is not None else None)
 
         for mangaid in mangaids:
             result[mangaid] = {}
@@ -376,21 +376,22 @@ class PlateTargets(object):
                 # (plateHolesSorted not defined), neverobserve defaults to 0.
                 if column == 'neverobserve':
                     result[mangaid]['neverobserve'] = \
-                        1 if plateid in neverobserve else 0
+                        1 if designid in neverobserve else 0
                     continue
 
                 # Now uses mangaScience and plateHolesSorted to complete the
                 # information.
-                if column in mangaSciencePairs:
-                    result[mangaid][column] = mangaSciencePairs[column]
-                elif column in mangaScienceRow.colnames:
-                    result[mangaid][column] = mangaScienceRow[column]
-                elif (plateHolesSortedPairs is not None and
+                if (plateHolesSortedPairs is not None and
                         column in plateHolesSortedPairs):
                     result[mangaid][column] = plateHolesSortedPairs[column]
                 elif (plateHolesSortedRow is not None and
                         column in plateHolesSortedRow.colnames):
                     result[mangaid][column] = plateHolesSortedRow[column]
+                elif column in mangaSciencePairs:
+                    result[mangaid][column] = mangaSciencePairs[column]
+                elif column in mangaScienceRow.colnames:
+                    result[mangaid][column] = mangaScienceRow[column]
+
                 else:
                     # If the column is not in mangaScience or plateHolesSorted,
                     # handles the specific cases
@@ -539,7 +540,8 @@ class PlateTargets(object):
                 'no maga_tileid or tileid field found in mangaScience {0}'
                 .format(mangaSciencePath))
 
-        structure = table.Table(mangaScienceData.pop(structName))
+        structure = self._toLowerCase(
+            table.Table(mangaScienceData.pop(structName)))
         mangaScienceData.pop('symbols')
 
         # Strips mangaids in structure. Important for mangaid comparisons
@@ -554,7 +556,7 @@ class PlateTargets(object):
 
         for colname in structure.colnames:
             if colname != colname.lower():
-                structure.rename_column(colname, colname.lowercase())
+                structure.rename_column(colname, colname.lower())
 
         return structure
 
@@ -606,7 +608,7 @@ class PlateTargets(object):
 
         # Determines the rows in targetfix referring to the mangaid of
         # targetData
-        mangaid = targetData['mangaid']
+        mangaid = targetData['mangaid'][0]
         targetFix_mangaid = targetFix[targetFix['mangaid'] == mangaid]
 
         # If targetfixes are found for our mangaid, proceeds to update

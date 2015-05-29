@@ -58,21 +58,21 @@
 # ---- These columns may vary between typeids ----
 # 23) field: The SDSS field covering the target.
 # 24) run: The SDSS run covering the target.
-# 25) nsa_ba: ?????
-# 26) nsa_phi: ?????
+# 25) nsa_ba: Axis ratio b/a from the elliptical Petrosian apertures.
+# 26) nsa_phi: Angle (E of N) of major axis from the elliptical Petrosian apertures.
 # 27) nsa_redshift: Heliocentric redshift from NSA.
 # 28) nsa_zdist: Distance estimate using peculiar velocity model of
 #                Willick et al. (1997); multiply by c/H0 for Mpc. From NSA.
 # 29) nsa_mstar: Stellar mass from K-correction fit, in h-2 solar masses. From NSA.
 # 30) nsa_mstar_el: As nsa_mstar, but using the elliptical Petrosian flux.
-# 31) nsa_vdisp: Central stellar velocity dispersion in km/s, from NSA
+# 31) nsa_vdisp: Central stellar velocity dispersion in km/s, from NSA.
 # 32) nsa_petro_th50: Petrosian 50% light radius (derived from r band), in arcsec. From NSA.
 # 33) nsa_petro_th50_el: Elliptical Petrosian 50% light radius, in arcsec.
 # 34) nsa_petroflux: Azimuthally-averaged SDSS-style Petrosian flux in FNugriz
 #                    (GALEX-SDSS photometric systems). In nanomaggies. Taken from NSA.
 # 35) nsa_petroflux_ivar: Inverse variance of petroflux in nanomaggies-2, from NSA.
-# 36) nsa_petroflux_el: As nsa_petroflux but using the elliptical Petrosian radius.
-# 37) nsa_petroflux_el_ivar: As nsa_petroflux_ivar but using the elliptical Petrosian radius.
+# 36) nsa_petroflux_el: As nsa_petroflux but using elliptical Petrosian apertures.
+# 37) nsa_petroflux_el_ivar: As nsa_petroflux_ivar but using the elliptical Petrosian apertures.
 # 38) nsa_sersic_ba: Axis ratio b/a from 2D Sersic fit. From NSA.
 # 39) nsa_sersic_n: 2D Sersic index from fit. From NSA.
 # 40) nsa_sersic_phi: Angle (E of N, degrees) of major axis in 2D Sersic fit. From NSA.
@@ -82,7 +82,7 @@
 # 43) nsa_sersicflux_ivar: Inverse variance of sersicflux in nanomaggies-2, from NSA.
 # 44) nsa_absmag: Absolute magnitude estimates for FNugriz from K-corrections
 #                 (Ωm=0.3, ΩΛ=0.7, h=1). From NSA.
-# 45) nsa_absmag_el: As nsa_absmag but using elliptical Petrosian flux.
+# 45) nsa_absmag_el: As nsa_absmag but using elliptical Petrosian apertures.
 # 46) nsa_version: The version of the NSA catalogue used to select these targets.
 # 47) nsa_id: The NSAID field in the NSA catalogue referenced in nsa_version.
 # 48) nsa_id100: The NSAID of the target in the NSA v1_0_0 catalogue. Obtained by

@@ -102,6 +102,9 @@ def runMaNGAPostDesign(plateids, overwrite=False, skipPlateHolesSorted=False):
 
     for catId in catPlateMangaID:
 
+        if catId == 0:
+            continue
+
         addedRows = 0
 
         log.info('Doing catalogid={0} ...'.format(catID))
