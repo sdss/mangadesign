@@ -40,10 +40,8 @@ conversions = {
 }
 
 
-neverobserve = map(
-    int,
-    open(readPath(config['plateTargets']['neverobserve']),
-         'r').read().splitlines()[1:])
+neverobserve = map(int, open(readPath(config['plateTargets']['neverobserve']),
+                             'r').read().splitlines()[1:])
 
 
 class PlateTargets(object):
@@ -268,11 +266,13 @@ class PlateTargets(object):
                            ]
 
         # Now we get the specific fields for this catalogid.
-        if self.catalogid == 1:
+        if self.catalogid in [1, 12]:
             # We call the specific method for the main sample.
             specificData = self._getMainSampleData(mangaids, specificColumns)
         else:
-            # Temporary.
+            # Completes specific columns using information in mangaScience
+            # specificData = self._getAncillaryData(mangaids, mangaScienceData,
+            #                                       commonData)
             specificData = {}
 
         # Finally we add the data target by target.
@@ -348,8 +348,11 @@ class PlateTargets(object):
 
         requiredColumns = utils.getRequiredPlateTargetsColumns()
 
-        designid = (plateHolesSortedPairs['designid']
-                    if plateHolesSortedPairs is not None else None)
+        designid = int(mangaSciencePairs['designid'])
+
+        if self.catalogid == 12:
+            nsaV1bCat = self._toLowerCase(
+                table.Table.read(readPath('+etc/targets-12.fits')))
 
         for mangaid in mangaids:
             result[mangaid] = {}
@@ -391,6 +394,10 @@ class PlateTargets(object):
                     result[mangaid][column] = mangaSciencePairs[column]
                 elif column in mangaScienceRow.colnames:
                     result[mangaid][column] = mangaScienceRow[column]
+                elif (self.catalogid == 12 and column in nsaV1bCat.colnames and
+                        mangaid in nsaV1bCat['mangaid']):
+                    result[mangaid][column] = nsaV1bCat[
+                        nsaV1bCat['mangaid'] == mangaid][column]
 
                 else:
                     # If the column is not in mangaScience or plateHolesSorted,
@@ -436,6 +443,10 @@ class PlateTargets(object):
         petro = table.Table.read(petroPath)
         petroKCorr = table.Table.read(petroKCorrPath)
 
+        # Reads the NSA v1b to v1 match
+        nsaV1b = table.Table.read(readPath('+etc/NSA_v1b_to_v1.dat'),
+                                  format='ascii.commented_header')
+
         result = {}
         for mangaid in mangaids:
 
@@ -446,15 +457,20 @@ class PlateTargets(object):
 
             nsaCatPath = utils.getCataloguePath(self.catalogid)
             nsaRow = utils.getCatalogueRow(mangaid)
+
             if nsaRow is None:
-                raise GohanPlateTargetsError(
-                    'mangaid={0} cannot be found in catalogue {1}'
-                    .format(mangaid, nsaCatPath))
+                    raise GohanPlateTargetsError(
+                        'mangaid={0} cannot be found in catalogue {1}'
+                        .format(mangaid, nsaCatPath))
 
             petroRow = petro[targetID]
             petroKCorrRow = petroKCorr[targetID]
 
             for field in fields:
+
+                if self.catalogid == 12:
+                    if field in ['nsa_zdist']:
+                        continue
 
                 if field == 'field':
                     mangaidDict[field] = nsaRow[field]
@@ -507,11 +523,61 @@ class PlateTargets(object):
                 elif field == 'nsa_id':
                     mangaidDict[field] = nsaRow['nsaid']
                 elif field == 'nsa_id100':
-                    mangaidDict[field] = nsaRow['nsaid']
+                    if self.catalogid == 1:
+                        mangaidDict[field] = nsaRow['nsaid']
+                    elif self.catalogid == 12:
+                        if mangaid in nsaV1b['MaNGAID']:
+                            mangaidDict[field] = nsaV1b[
+                                nsaV1b['MaNGAID'] == mangaid]['NSAID_v1_0_0']
+                        else:
+                            mangaidDict[field] = -999
+                    else:
+                        mangaidDict[field] = -999
                 else:
                     raise GohanPlateTargetsError(
                         'unexpected field {0} when compiling data for '
                         'plateTargets-{1}'.format(field, self.catalogid))
+
+        return result
+
+    def _getAncillaryData(self, mangaids, mangaScienceData, commonData):
+        """Returns a dictionary with all the columns in mangaScience.
+
+        This method returns a dictionary with the data in the mangaScience
+        structure that are not in the common fields. It is mainly used for
+        ancillary plateTargets that do not have a set list of specific columns.
+
+        """
+
+        result = {}
+        for mangaid in mangaids:
+
+            result[mangaid] = {}
+            mangaidDict = result[mangaid]
+
+            row = mangaScienceData[mangaScienceData['mangaid'] == mangaid]
+
+            for field in mangaScienceData.colnames:
+
+                if field in commonData[mangaid]:
+                    # If the column is in the common fields, skips it because
+                    # we have already compiled this information
+                    continue
+
+                if field not in self.structure.colnames:
+                    # If the fields is new, adds the column to the structure
+                    # only if the structure is empty. Once the structure
+                    # columns are set, they won't change.
+                    if len(self.structure) == 0:
+                        newCol = table.Column(
+                            None, name=field,
+                            dtype=mangaScienceData[field].descr[1],
+                            shape=mangaScienceData[field].descr[2])
+                        self.structure.add_column(newCol)
+                    else:
+                        continue
+
+                mangaidDict[field] = row[field]
 
         return result
 
