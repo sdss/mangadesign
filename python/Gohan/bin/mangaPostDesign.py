@@ -100,38 +100,49 @@ def runMaNGAPostDesign(plateids, overwrite=False, skipPlateHolesSorted=False):
     # Creates the returned dictionary {catID: plateTargets}
     returnDict = OrderedDict()
 
-    for catId in catPlateMangaID:
+    for catID in catPlateMangaID:
 
-        if catId == 0:
+        if catID == 0:
             continue
 
         addedRows = 0
 
         log.info('Doing catalogid={0} ...'.format(catID))
 
-        if catId not in returnDict:
+        if catID not in returnDict:
             # If returnDict does not contain a PlateTargets instance for
             # catId creates it.
-            returnDict[catId] = PlateTargets(catId)
+            returnDict[catID] = PlateTargets(catID)
 
-        plateTargets = returnDict[catId]
+        plateTargets = returnDict[catID]
 
         # Adds the targets with catalogid=catID for each plate
-        for plateid in catPlateMangaID[catId]:
+        for plateid in catPlateMangaID[catID]:
             log.info('Adding targets for plate_id={0}'.format(plateid))
-            plateMangaids = catPlateMangaID[catId][plateid]
-            newRows = plateTargets.addTargets(plateMangaids, plateid=plateid,
-                                              overwrite=overwrite)
-            addedRows += len(newRows)
+
+            plateMangaids = [mangaid.strip()
+                             for mangaid in catPlateMangaID[catID][plateid]]
+            plateTargetsMangaids = plateTargets.structure['mangaid']
+
+            if not overwrite:
+                # Excludes mangaids already in plateTargets
+                plateMangaids = [mangaid for mangaid in plateMangaids
+                                 if mangaid not in plateTargetsMangaids]
+
+            if len(plateMangaids) > 0:
+                newRows = plateTargets.addTargets(plateMangaids,
+                                                  plateid=plateid,
+                                                  overwrite=overwrite)
+                addedRows += len(newRows)
 
         # Logs some information
         if addedRows > 0:
             plateTargetsPath, nAppended = plateTargets.write()
-            log.info('plateTargets-{0}.par saved'.format(catId))
+            log.info('plateTargets-{0}.par saved'.format(catID))
             log.info('Appended {0} targets to {1}'.format(
                 nAppended, plateTargetsPath))
         else:
-            log.info('no targets added to plateTargets-{0}.par'.format(catId))
+            log.info('no targets added to plateTargets-{0}.par'.format(catID))
 
     if skipPlateHolesSorted:
         warnings.warn('skipping copying plateHolesSorted files to mangacore',
