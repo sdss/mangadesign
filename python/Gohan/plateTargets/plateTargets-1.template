@@ -58,32 +58,34 @@
 # ---- These columns may vary between typeids ----
 # 23) field: The SDSS field covering the target.
 # 24) run: The SDSS run covering the target.
-# 25) nsa_redshift: Heliocentric redshift from NSA.
-# 26) nsa_zdist: Distance estimate using pecular velocity model of
+# 25) nsa_ba: Axis ratio b/a from the elliptical Petrosian apertures.
+# 26) nsa_phi: Angle (E of N) of major axis from the elliptical Petrosian apertures.
+# 27) nsa_redshift: Heliocentric redshift from NSA.
+# 28) nsa_zdist: Distance estimate using peculiar velocity model of
 #                Willick et al. (1997); multiply by c/H0 for Mpc. From NSA.
-# 27) nsa_mstar: Stellar mass from K-correction fit in h-2 solar masses, from NSA.
-# 28) nsa_vdisp: Central stellar velocity dispersion in km/s, from NSA
-# 29) nsa_inclination: Inclination derived using BA90 from NSA.
-# 30) nsa_petro_th50: Petrosian 50% light radius (derived from r band), in arcsec.
-#                     From NSA.
-# 31) nsa_petroflux: Azimuthally-averaged SDSS-style Petrosian flux in
-#                    FNugriz (GALEX-SDSS photometric systems). In nanomaggies.
-#                    Taken from NSA.
-# 32) nsa_petroflux_ivar: Inverse variance of petroflux in nanomaggies-2, from NSA.
-# 33) nsa_sersic_ba: Axis ratio b/a from 2D Sersic fit. From NSA.
-# 34) nsa_sersic_n: 2D Sersic index from fit. From NSA.
-# 35) nsa_sersic_phi: Angle (E of N, degrees) of major axis in 2D Sersic fit,
-#                     from NSA.
-# 36) nsa_sersic_th50: 50% light radius of 2D Sersic fit (along major axis),
-#                      in arcsec. From NSA
-# 37) nsa_sersicflux: 2D Sersic fit flux in FNugriz (GALEX-SDSS photometric systems)
+# 29) nsa_mstar: Stellar mass from K-correction fit, in h-2 solar masses. From NSA.
+# 30) nsa_mstar_el: As nsa_mstar, but using the elliptical Petrosian flux.
+# 31) nsa_vdisp: Central stellar velocity dispersion in km/s, from NSA.
+# 32) nsa_petro_th50: Petrosian 50% light radius (derived from r band), in arcsec. From NSA.
+# 33) nsa_petro_th50_el: Elliptical Petrosian 50% light radius, in arcsec.
+# 34) nsa_petroflux: Azimuthally-averaged SDSS-style Petrosian flux in FNugriz
+#                    (GALEX-SDSS photometric systems). In nanomaggies. Taken from NSA.
+# 35) nsa_petroflux_ivar: Inverse variance of petroflux in nanomaggies-2, from NSA.
+# 36) nsa_petroflux_el: As nsa_petroflux but using elliptical Petrosian apertures.
+# 37) nsa_petroflux_el_ivar: As nsa_petroflux_ivar but using the elliptical Petrosian apertures.
+# 38) nsa_sersic_ba: Axis ratio b/a from 2D Sersic fit. From NSA.
+# 39) nsa_sersic_n: 2D Sersic index from fit. From NSA.
+# 40) nsa_sersic_phi: Angle (E of N, degrees) of major axis in 2D Sersic fit. From NSA.
+# 41) nsa_sersic_th50: 50% light radius of 2D Sersic fit (along major axis), in arcsec. From NSA
+# 42) nsa_sersicflux: 2D Sersic fit flux in FNugriz (GALEX-SDSS photometric systems)
 #                     in nanommagies. From NSA.
-# 38) nsa_sersicflux_ivar: Inverse variance of sersicflux in nanomaggies-2, from NSA.
-# 39) nsa_absmag: Absolute magnitude estimates for FNugriz from K-corrections
+# 43) nsa_sersicflux_ivar: Inverse variance of sersicflux in nanomaggies-2, from NSA.
+# 44) nsa_absmag: Absolute magnitude estimates for FNugriz from K-corrections
 #                 (Ωm=0.3, ΩΛ=0.7, h=1). From NSA.
-# 40) nsa_version: The version of the NSA catalogue used to select these targets.
-# 41) nsa_id: The NSAID field in the NSA catalogue referenced in nsa_version.
-# 42) nsa_id100: The NSAID of the target in the NSA v1_0_0 catalogue. Obtained by
+# 45) nsa_absmag_el: As nsa_absmag but using elliptical Petrosian apertures.
+# 46) nsa_version: The version of the NSA catalogue used to select these targets.
+# 47) nsa_id: The NSAID field in the NSA catalogue referenced in nsa_version.
+# 48) nsa_id100: The NSAID of the target in the NSA v1_0_0 catalogue. Obtained by
 #                cross-matching the coordinates of the targets in both catalogues.
 
 typeid 1
@@ -113,14 +115,19 @@ typedef struct {
     int ifudesignwrongsize;
     long field;
     long run;
+    float nsa_ba;
+    float nsa_phi;
     float nsa_redshift;
     float nsa_zdist;
     float nsa_mstar;
+    float nsa_mstar_el;
     float nsa_vdisp;
-    float nsa_inclination;
     float nsa_petro_th50;
+    float nsa_petro_th50_el;
     float nsa_petroflux[7];
     float nsa_petroflux_ivar[7];
+    float nsa_petroflux_el[7];
+    float nsa_petroflux_el_ivar[7];
     float nsa_sersic_ba;
     float nsa_sersic_n;
     float nsa_sersic_phi;
@@ -128,9 +135,10 @@ typedef struct {
     float nsa_sersicflux[7];
     float nsa_sersicflux_ivar[7];
     float nsa_absmag[7];
+    float nsa_absmag_el[7];
     char nsa_version[20];
     long nsa_id;
     long nsa_id100;
 } PLTTRGT;
 
-PLTTRGT 0000 0000 0000 0000 1-000000 0 15h/p40/J152554.88+415435 231.478756028 41.9097725983 231.478756028 41.9097725983 230.99167 42.68736 78.935912 -169.09538 2014.07 2 0 0 37 -999 -999 224 3918 0.0226546 -999.0 6.49071e+08 -999.0 50.4463 2.54327 {18.0174 22.1203 54.5087 128.257 185.835 229.213 255.979} {0.132904 6.57025 0.190638 1.59099 1.04681 0.319301 0.0163769} 0.482523 1.5851 62.1492 3.19605 {21.7792 26.0488 52.4875 132.169 193.079 235.423 259.846} {0.143117 3.81636 1.07508 5.37342 2.69955 1.27748 0.0982024} {-15.2445 -15.4517 -16.228 -17.1187 -17.5194 -17.6736 -17.757} v1b_0_0_v2 102195 12345
+PLTTRGT 0000 0000 0000 0000 1-000000 0 15h/p40/J152554.88+415435 231.478756028 41.9097725983 231.478756028 41.9097725983 230.99167 42.68736 78.935912 -169.09538 2014.07 2 0 0 37 -999 -999 224 3918 0.0 0.0 0.0226546 -999.0 6.49071e+08 6.49071e+08 -999.0 50.4463 2.54327 {18.0174 22.1203 54.5087 128.257 185.835 229.213 255.979} {0.132904 6.57025 0.190638 1.59099 1.04681 0.319301 0.0163769} {0.132904 6.57025 0.190638 1.59099 1.04681 0.319301 0.0163769} {0.132904 6.57025 0.190638 1.59099 1.04681 0.319301 0.0163769} 0.482523 1.5851 62.1492 3.19605 {21.7792 26.0488 52.4875 132.169 193.079 235.423 259.846} {0.143117 3.81636 1.07508 5.37342 2.69955 1.27748 0.0982024} {-15.2445 -15.4517 -16.228 -17.1187 -17.5194 -17.6736 -17.757} {-15.2445 -15.4517 -16.228 -17.1187 -17.5194 -17.6736 -17.757} v1b_0_0_v2 102195 12345

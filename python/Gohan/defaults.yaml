@@ -13,6 +13,7 @@ catalogues:
     APASS: $MANGASAMPLE_APASS_CATALOGUE
     sky: None
     NSA: $MANGASAMPLE_NSA_CATALOGUE
+    inputs: $MANGASAMPLE_DIR/mangawork/target/inputs/
 
 decollision:
     FOV: 1.49

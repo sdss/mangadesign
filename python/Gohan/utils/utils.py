@@ -304,7 +304,7 @@ def getPointing(plateInputData):
             'ifu_dec': plateInputData['ifu_dec']}
 
 
-def getMangaScience(input, format='designid'):
+def getMangaSciencePath(input, format='designid'):
     """Returns the path of the mangaScience data for a design or plate."""
 
     if format == 'plateid':
@@ -318,7 +318,8 @@ def getMangaScience(input, format='designid'):
 
     for key in plateDefYanny.keys():
         if 'plateInput' in key:
-            if 'mangaScience' in plateDefYanny[key]:
+            if ('mangaScience' in plateDefYanny[key] or
+                    'plateInput' in plateDefYanny[key]):
                 return os.path.join(readPath(config['platelist']), 'inputs',
                                     plateDefYanny[key])
 
@@ -370,7 +371,7 @@ def getCatalogueRow(mangaid, catalogue=None):
 
     # List of catalogids for catalogues in which the targetid in mangaid is
     # the index (zero-indexed) in the parent catalogue.
-    indexedCatalogues = [1, 8, 12]
+    indexedCatalogues = [1, 12, 8]
 
     catalogID, targetID = mangaid.strip().split('-')
 
@@ -380,8 +381,7 @@ def getCatalogueRow(mangaid, catalogue=None):
             catalogue = cachedCatalogues[catalogID]
 
         else:
-            # Reads catalogue and caches is
-
+            # Reads catalogue and caches it
             cataloguePath = getCataloguePath(catalogID)
 
             if cataloguePath is None:
@@ -451,9 +451,11 @@ def getCataloguePath(catalogid):
 def getPlateTargetsTemplate(catalogid):
     """Returns the path to the plateTargets template for a given catalogid."""
 
-    if catalogid in [1, 12]:
+    if catalogid == 1:
         return readPath('+plateTargets/plateTargets-1.template')
-    elif catalogid >= 30:
+    elif catalogid == 12:
+        return readPath('+plateTargets/plateTargets-12.template')
+    elif catalogid >= 30 or catalogid == 18:
         return readPath('+plateTargets/plateTargets-Ancillary.template')
     else:
         warnings.warn('no template found for catalogid={0}'.format(catalogid),
@@ -529,7 +531,7 @@ def getStellarLibraryTargets(designid=None):
         if designid[0] in [7933, 7934, 7935]:
             return None
 
-        mangaScience = getMangaScience(designid[0])
+        mangaScience = getMangaSciencePath(designid[0])
         mangaScienceStruct = table.Table(yanny.yanny(mangaScience,
                                                      np=True)['MANGAINPUT'])
 
@@ -564,3 +566,14 @@ def getStellarLibraryDesigns():
                 db.plateDB.SurveyMode.label == 'APOGEE lead').all()
 
     return [getDesignID(plate.plate_id) for plate in plates]
+
+
+def getRequiredPlateTargetsColumns():
+    """Returns a list with the mandatory plateTargets columns."""
+
+    path = os.path.join(os.path.dirname(getPlateTargetsPath(1)),
+                        'requiredColumns.dat')
+
+    assert os.path.exists(path), 'requiredColumns.dat not found in mangacore'
+
+    return open(path, 'r').read().splitlines()
