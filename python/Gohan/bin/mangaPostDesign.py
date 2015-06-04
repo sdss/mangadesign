@@ -100,7 +100,7 @@ def runMaNGAPostDesign(plateids, overwrite=False, skipPlateHolesSorted=False):
     # Creates the returned dictionary {catID: plateTargets}
     returnDict = OrderedDict()
 
-    for catID in catPlateMangaID:
+    for catID in sorted(catPlateMangaID.keys()):
 
         if catID == 0:
             continue
