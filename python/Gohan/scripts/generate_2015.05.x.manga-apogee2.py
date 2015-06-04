@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # encoding: utf-8
 """
-generate_manga-apogee2.py
+generate_2015.04.x.manga-apogee2.py
 
-Created by José Sánchez-Gallego on 22 May 2014.
+Created by José Sánchez-Gallego on 5 May 2015.
 Licensed under a 3-clause BSD license.
 
 Revision history:
-    4 Dec 2014 J. Sánchez-Gallego
+    5 May 2015 J. Sánchez-Gallego
       Initial version
 
 """
@@ -23,24 +23,23 @@ from Gohan.utils.assignIFUDesigns import plotIFUs
 from Gohan import PlateInput, PlateDefinition
 
 
+plateRun = '2015.05.x.manga-apogee2'
+
+mangaTargetVersion = 'v1_2_12'
+toRepo = False
+
 rejectTargets = []
 rejectTargetsStd = []
 
-fieldList = 'fieldListDec2014.dat'
-plateRun = '2014.12.x.manga-apogee2'
-epoch = '2014-12-29'
-toRepo = True
-savePlot = True
-saveLog = True
-
-
-fields = table.Table.read(fieldList, format='ascii.commented_header')
+fields = table.Table.read('./fieldListMay2015.dat',
+                          format='ascii.commented_header')
 
 platePlansBlob = open('{0}-platePlans.dat'.format(plateRun), 'w')
 
-sciTemplate = './targets/MaNGA_targets_extNSA_tiled_{0:d}.fits'
-sciTemplateRA = './targets/MaNGA_targets_extNSA_tiled_{0:d}_ra.fits'
-stdTemplate = './standards/manga_stds_{0:d}.fit'
+sciTemplate = os.path.join(os.path.expandvars('$MANGASAMPLE_DIR'),
+                           'mangawork/target/{0}'.format(mangaTargetVersion),
+                           'MaNGA_targets_extNSA_tiled_ancillary_{0:d}.fits')
+stdTemplate = './manga_stds_may15/manga_stds_{0:d}.fit'
 
 
 for field in fields:
@@ -52,12 +51,12 @@ for field in fields:
     raCen = float(field['RA'])
     decCen = float(field['Dec'])
 
-    sciCat = sciTemplateRA.format(mangaTileID) \
-        if os.path.exists(sciTemplateRA.format(mangaTileID)) else \
-        sciTemplate.format(mangaTileID)
+    sciCat = sciTemplate.format(mangaTileID)
+
     stdCat = stdTemplate.format(mangaTileID)
 
-    print(_color_text('mangaTileID: {0}'.format(mangaTileID), 'lightred'))
+    print(_color_text('\ndesignID: {0}, mangaTileID: {1}'
+                      .format(designID, mangaTileID), 'lightred'))
 
     mangaScience = PlateInput(designID, 'science', catalogues=sciCat,
                               surveyMode='mangaLead', plateRun=plateRun,
@@ -77,18 +76,15 @@ for field in fields:
     mangaStandard.write(toRepo=toRepo)
 
     plateDefinition = PlateDefinition([mangaScience, mangaStandard])
-    # toRepo is set to False in plateDefinition because I want to be sure that
-    # I don't overwrite the plate definition when only modifying the plate
-    # inputs (e.g., when APOGEE has already changed the plateDefintion file)
-    plateDefinition.write(toRepo=False)
+    plateDefinition.write(toRepo=toRepo)
 
-    platePlans = plateDefinition.getPlatePlans(epoch)
+    platePlans = plateDefinition.getPlatePlans('2015-06-15')
     platePlansBlob.write(platePlans + '\n')
 
-    if savePlot:
-        plotIFUs([mangaScience, mangaStandard], centre=None,
-                 filename='ifuPlot_{0}.pdf'.format(designID))
+    plotIFUs([mangaScience], centre=None,
+             filename='ifuPlot_{0}.pdf'.format(designID))
 
-if saveLog:
-    sh.copy(log.logFilename, os.path.join('./', plateRun + '.log'))
+sh.copy(log.logFilename, os.path.join('./', plateRun + '.log'))
+
+if toRepo:
     log.logToRepo(plateRun)

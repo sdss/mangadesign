@@ -43,6 +43,8 @@ nsa_sersicflux  ->  NSA v1 [SERSICFLUX]
 nsa_sersicflux_ivar  ->  NSA v1 [SERSICFLUX_IVAR]
 nsa_absmag  ->  NSA v1 [ABSMAG]
 nsa_absmag_el  ->  petro_kcorrect_v1_0_0_a3.fits [ABSMAG]
+nsa_amivar_el  ->  petro_kcorrect_v1_0_0_a3.fits [AMIVAR]
+nsa_extinction  ->  petro_kcorrect_v1_0_0_a3.fits [EXTINCTION]
 nsa_version  ->  "v1_0_0"
 nsa_id  ->  NSA v1 [NSAID]
 nsa_id100  ->  same as nsa_id
