@@ -83,9 +83,11 @@
 # 44) nsa_absmag: Absolute magnitude estimates for FNugriz from K-corrections
 #                 (Ωm=0.3, ΩΛ=0.7, h=1). From NSA.
 # 45) nsa_absmag_el: As nsa_absmag but using elliptical Petrosian apertures.
-# 46) nsa_version: The version of the NSA catalogue used to select these targets.
-# 47) nsa_id: The NSAID field in the NSA catalogue referenced in nsa_version.
-# 48) nsa_id100: The NSAID of the target in the NSA v1_0_0 catalogue. Obtained by
+# 46) nsa_amivar_el: Inverse variance on absolute magnitudes in FNugriz for nsa_absmag_el.
+# 47) nsa_extinction: Galactic extinction in FNugriz from Schlegel, Finkbeiner & Davis (1997).
+# 48) nsa_version: The version of the NSA catalogue used to select these targets.
+# 49) nsa_id: The NSAID field in the NSA catalogue referenced in nsa_version.
+# 50) nsa_id100: The NSAID of the target in the NSA v1_0_0 catalogue. Obtained by
 #                cross-matching the coordinates of the targets in both catalogues.
 
 typeid 1
@@ -136,9 +138,11 @@ typedef struct {
     float nsa_sersicflux_ivar[7];
     float nsa_absmag[7];
     float nsa_absmag_el[7];
+    float nsa_amivar_el[7];
+    float nsa_extinction[7];
     char nsa_version[20];
     long nsa_id;
     long nsa_id100;
 } PLTTRGT;
 
-PLTTRGT 0000 0000 0000 0000 1-000000 0 15h/p40/J152554.88+415435 231.478756028 41.9097725983 231.478756028 41.9097725983 230.99167 42.68736 78.935912 -169.09538 2014.07 2 0 0 37 -999 -999 224 3918 0.0 0.0 0.0226546 -999.0 6.49071e+08 6.49071e+08 -999.0 50.4463 2.54327 {18.0174 22.1203 54.5087 128.257 185.835 229.213 255.979} {0.132904 6.57025 0.190638 1.59099 1.04681 0.319301 0.0163769} {0.132904 6.57025 0.190638 1.59099 1.04681 0.319301 0.0163769} {0.132904 6.57025 0.190638 1.59099 1.04681 0.319301 0.0163769} 0.482523 1.5851 62.1492 3.19605 {21.7792 26.0488 52.4875 132.169 193.079 235.423 259.846} {0.143117 3.81636 1.07508 5.37342 2.69955 1.27748 0.0982024} {-15.2445 -15.4517 -16.228 -17.1187 -17.5194 -17.6736 -17.757} {-15.2445 -15.4517 -16.228 -17.1187 -17.5194 -17.6736 -17.757} v1b_0_0_v2 102195 12345
+PLTTRGT 0000 0000 0000 0000 1-000000 0 15h/p40/J152554.88+415435 231.478756028 41.9097725983 231.478756028 41.9097725983 230.99167 42.68736 78.935912 -169.09538 2014.07 2 0 0 37 -999 -999 224 3918 0.0 0.0 0.0226546 -999.0 6.49071e+08 6.49071e+08 -999.0 50.4463 2.54327 {18.0174 22.1203 54.5087 128.257 185.835 229.213 255.979} {0.132904 6.57025 0.190638 1.59099 1.04681 0.319301 0.0163769} {0.132904 6.57025 0.190638 1.59099 1.04681 0.319301 0.0163769} {0.132904 6.57025 0.190638 1.59099 1.04681 0.319301 0.0163769} 0.482523 1.5851 62.1492 3.19605 {21.7792 26.0488 52.4875 132.169 193.079 235.423 259.846} {0.143117 3.81636 1.07508 5.37342 2.69955 1.27748 0.0982024} {-15.2445 -15.4517 -16.228 -17.1187 -17.5194 -17.6736 -17.757} {-15.2445 -15.4517 -16.228 -17.1187 -17.5194 -17.6736 -17.757} {-15.2445 -15.4517 -16.228 -17.1187 -17.5194 -17.6736 -17.757} {-15.2445 -15.4517 -16.228 -17.1187 -17.5194 -17.6736 -17.757} v1b_0_0_v2 102195 12345

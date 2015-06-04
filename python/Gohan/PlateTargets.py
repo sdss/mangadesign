@@ -444,8 +444,9 @@ class PlateTargets(object):
         petroKCorr = table.Table.read(petroKCorrPath)
 
         # Reads the NSA v1b to v1 match
-        nsaV1b = table.Table.read(readPath('+etc/NSA_v1b_to_v1.dat'),
-                                  format='ascii.commented_header')
+        nsaV1bToV1 = table.Table.read(readPath('+etc/NSA_v1b_to_v1.dat'),
+                                      format='ascii.fixed_width',
+                                      delimiter='|')
 
         result = {}
         for mangaid in mangaids:
@@ -456,21 +457,43 @@ class PlateTargets(object):
             targetID = int(mangaid.split('-')[1])
 
             nsaCatPath = utils.getCataloguePath(self.catalogid)
-            nsaRow = utils.getCatalogueRow(mangaid)
+
+            # We want to get the right row from NSA v1_0_0. If catalogid=1, we
+            # just use utils.getCatalogueRow with the mangaid. If catalogid=12
+            # we create a mock mangaid with the format 1-{nsa100_catID} taking
+            # NSAID_v100 from the list of conversions in nsaV1bToV1. We do the
+            # same for targetID.
+
+            if self.catalogid == 1:
+                nsa100_mangaid = mangaid
+                targetID_100 = targetID
+            elif self.catalogid == 12:
+
+                nsaV1bToV1_row = nsaV1bToV1[nsaV1bToV1['MaNGAID'] == mangaid]
+
+                nsa100_catID = nsaV1bToV1_row['catid'][0]
+                nsa100_mangaid = '1-{0}'.format(nsa100_catID)
+                targetID_100 = nsa100_catID
+
+            nsaRow = utils.getCatalogueRow(nsa100_mangaid)
+
+            # If this is from catalogid=12, let's make a quick check and make
+            # sure we have selected the right column.
+            if self.catalogid == 12:
+                assert nsaRow['nsaid'] == nsaV1bToV1_row['NSAID_v1_0_0'][0], \
+                    ('row selected from NSA v1_0_0 foes not match the '
+                     'value expected for NSAID ({0} != {1})'.format(
+                        nsaRow['nsaid'], nsaV1bToV1_row['NSAID_v1_0_0'][0]))
 
             if nsaRow is None:
                     raise GohanPlateTargetsError(
                         'mangaid={0} cannot be found in catalogue {1}'
                         .format(mangaid, nsaCatPath))
 
-            petroRow = petro[targetID]
-            petroKCorrRow = petroKCorr[targetID]
+            petroRow = petro[targetID_100]
+            petroKCorrRow = petroKCorr[targetID_100]
 
             for field in fields:
-
-                if self.catalogid == 12:
-                    if field in ['nsa_zdist']:
-                        continue
 
                 if field == 'field':
                     mangaidDict[field] = nsaRow[field]
@@ -518,21 +541,16 @@ class PlateTargets(object):
                     mangaidDict[field] = nsaRow['absmag']
                 elif field == 'nsa_absmag_el':
                     mangaidDict[field] = petroKCorrRow['ABSMAG']
+                elif field == 'nsa_amivar_el':
+                    mangaidDict[field] = petroKCorrRow['AMIVAR']
+                elif field == 'nsa_extinction':
+                    mangaidDict[field] = petroKCorrRow['EXTINCTION']
                 elif field == 'nsa_version':
                     mangaidDict[field] = self._getNSAVersion()
                 elif field == 'nsa_id':
                     mangaidDict[field] = nsaRow['nsaid']
                 elif field == 'nsa_id100':
-                    if self.catalogid == 1:
-                        mangaidDict[field] = nsaRow['nsaid']
-                    elif self.catalogid == 12:
-                        if mangaid in nsaV1b['MaNGAID']:
-                            mangaidDict[field] = nsaV1b[
-                                nsaV1b['MaNGAID'] == mangaid]['NSAID_v1_0_0']
-                        else:
-                            mangaidDict[field] = -999
-                    else:
-                        mangaidDict[field] = -999
+                    mangaidDict[field] = targetID_100
                 else:
                     raise GohanPlateTargetsError(
                         'unexpected field {0} when compiling data for '
