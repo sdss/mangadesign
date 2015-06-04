@@ -122,12 +122,6 @@ def runMaNGAPostDesign(plateids, overwrite=False, skipPlateHolesSorted=False):
 
             plateMangaids = [mangaid.strip()
                              for mangaid in catPlateMangaID[catID][plateid]]
-            plateTargetsMangaids = plateTargets.structure['mangaid']
-
-            if not overwrite:
-                # Excludes mangaids already in plateTargets
-                plateMangaids = [mangaid for mangaid in plateMangaids
-                                 if mangaid not in plateTargetsMangaids]
 
             if len(plateMangaids) > 0:
                 newRows = plateTargets.addTargets(plateMangaids,
