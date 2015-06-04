@@ -16,7 +16,7 @@ from __future__ import division
 from __future__ import print_function
 from sdss.internal.manga.Totoro.dbclasses import Plate
 from sdss.internal.manga.Totoro import TotoroDBConnection, site, utils, config
-from Gohan import utils
+from Gohan import GohanUtils
 import cPickle
 from matplotlib import pyplot as plt
 from astropy import table
@@ -150,7 +150,7 @@ def plotHistograms(plates, fields):
 
 def createFieldList(fields, drillRun):
 
-    lastLocationID = utils.getLastLocationID()
+    lastLocationID = GohanUtils.getLastLocationID()
     locationID = lastLocationID + 1
 
     for field in fields:
