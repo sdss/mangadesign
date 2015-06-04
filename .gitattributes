@@ -28,6 +28,7 @@ python/Gohan/docs/index.rst -text
 python/Gohan/docs/make.bat -text
 python/Gohan/etc/BOSS_SNvsFibMag2.dat -text
 python/Gohan/etc/NSA_v1b_to_v1.dat -text
+python/Gohan/etc/lastLocationID.dat -text
 python/Gohan/etc/mangaDefinition_Default.par -text
 python/Gohan/etc/mangaInput_Default.par -text
 python/Gohan/etc/neverobserve.dat -text

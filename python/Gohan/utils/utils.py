@@ -577,3 +577,25 @@ def getRequiredPlateTargetsColumns():
     assert os.path.exists(path), 'requiredColumns.dat not found in mangacore'
 
     return open(path, 'r').read().splitlines()
+
+
+def getLastLocationID():
+    """Returns the value of the last locationid used for plate design.
+
+    This is a convenience function that simply returns the value of
+    Gohan/etc/lastLocationID.dat
+
+    """
+
+    file = readPath('+etc/lastLocationID.dat')
+
+    assert os.path.exists(file), 'lastLocationID.dat not found'
+
+    lines = open(file, 'r').read().splitlines()
+
+    for line in lines:
+        lineStripped = line.strip()
+        if lineStripped != '' and lineStripped[0] != '#':
+            return int(line)
+
+    raise ValueError('the format of lastLocationID.dat does not seem valid.')
