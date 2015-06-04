@@ -32,9 +32,6 @@ python/Gohan/etc/mangaDefinition_Default.par -text
 python/Gohan/etc/mangaInput_Default.par -text
 python/Gohan/etc/neverobserve.dat -text
 python/Gohan/etc/targets-12.fits -text
-python/Gohan/examples/createPlateMags.py -text
-python/Gohan/examples/generate_2014.07.x.manga-apogee2.py -text
-python/Gohan/examples/generate_manga-apogee2.py -text
 python/Gohan/exceptions.py -text
 python/Gohan/plateTargets/__init__.py -text
 python/Gohan/plateTargets/plateTargets-1.template -text
@@ -42,6 +39,10 @@ python/Gohan/plateTargets/plateTargets-12.template -text
 python/Gohan/plateTargets/plateTargets-1_relationships.dat -text
 python/Gohan/plateTargets/plateTargets-50.template -text
 python/Gohan/plateTargets/plateTargets-Ancillary.template -text
+python/Gohan/scripts/createFieldList.py -text
+python/Gohan/scripts/generate_2015.05.x.apogee2-manga.py -text
+python/Gohan/scripts/generate_2015.05.x.manga-apogee2.py -text
+python/Gohan/scripts/selectFieldsJun2015.py -text
 python/Gohan/utils/Staralt.py -text
 python/Gohan/utils/__init__.py -text
 python/Gohan/utils/assignIFUDesigns.py -text
