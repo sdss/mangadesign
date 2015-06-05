@@ -28,7 +28,6 @@ nsa_redshift  ->  NSA v1 [Z]
 nsa_zdist  ->  NSA v1 [ZDIST]
 nsa_mstar  ->  NSA v1 [MASS]
 nsa_mstar_el  ->  petro_kcorrect_v1_0_0_a3.fits [MASS]
-nsa_vdisp  ->  ???? (currently is all -999.)
 nsa_petro_th50  ->  NSA v1 [PETROTH50]
 nsa_petro_th50_el  ->  petro_v1_0_0_a3.fits [petroth50_r]
 nsa_petroflux  ->  NSA v1 [PETROFLUX]

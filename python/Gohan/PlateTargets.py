@@ -511,8 +511,6 @@ class PlateTargets(object):
                     mangaidDict[field] = nsaRow['mass']
                 elif field == 'nsa_mstar_el':
                     mangaidDict[field] = petroKCorrRow['MASS']
-                elif field == 'nsa_vdisp':
-                    mangaidDict[field] = -999.
                 elif field == 'nsa_petro_th50':
                     mangaidDict[field] = nsaRow['petroth50']
                 elif field == 'nsa_petro_th50_el':
