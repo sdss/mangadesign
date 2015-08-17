@@ -33,8 +33,7 @@ import argparse
 nBundles = sum(config['IFUs'].values())
 
 
-def runMaNGAPostDesign(plateids, overwrite=False, skipPlateHolesSorted=False,
-                       rebuild=False):
+def runMaNGAPostDesign(plateids, overwrite=False, skipPlateHolesSorted=False):
     """Runs MaNGA post-design procedure.
 
     This function accepts a list of plateids and updates the necessary
@@ -54,8 +53,6 @@ def runMaNGAPostDesign(plateids, overwrite=False, skipPlateHolesSorted=False,
         targets and replace the plateHolesSorted files.
     skipPlateHolesSorted : bool, optional
         If True, skips copying the plateHolesSorted files to mangacore.
-    rebuild : bool, optional
-        Recreates the plateTargets from scratch.
 
     Returns
     -------
@@ -112,10 +109,10 @@ def runMaNGAPostDesign(plateids, overwrite=False, skipPlateHolesSorted=False,
 
         log.info('Doing catalogid={0} ...'.format(catID))
 
-        if catID not in returnDict or rebuild:
+        if catID not in returnDict:
             # If returnDict does not contain a PlateTargets instance for
             # catId creates it.
-            returnDict[catID] = PlateTargets(catID, rebuild=rebuild)
+            returnDict[catID] = PlateTargets(catID)
 
         plateTargets = returnDict[catID]
 
@@ -196,27 +193,26 @@ if __name__ == '__main__':
     parser.add_argument('--noplateholessorted', '-n', action='store_true',
                         help='skips copying plateHolesSorted files to '
                         'mangacore.')
-    parser.add_argument('--rebuild', '-r', action='store_true',
-                        help='removes all plateTargets and recreate them '
-                        'using all the runs available in platePlans.')
+    parser.add_argument('--all', '-a', action='store_true',
+                        help='runs post design for all plate runs.')
     parser.add_argument('plateRuns', metavar='plateRuns/plateids',
                         type=str, nargs='*', help='the plate run or plateids '
                         'to process.')
 
     args = parser.parse_args()
 
-    if len(args.plateRuns) == 0 and not args.rebuild:
+    if len(args.plateRuns) == 0 and not args.all:
         parser.error('plateRuns/plateids must be specified '
-                     'unless rebuild=True.')
+                     'unless all=True.')
 
-    if args.rebuild:
+    if args.all:
         args.plateid = False
 
     if args.plateid:
         plateids = [int(plateid) for plateid in args.plateRuns]
         runMaNGAPostDesign(plateids, overwrite=args.overwrite)
     else:
-        if not args.rebuild:
+        if not args.all:
             plateRuns = args.plateRuns
         else:
             plateRuns = utils.getAllMaNGAPlateRuns()
@@ -226,5 +222,4 @@ if __name__ == '__main__':
             plates = map(int,
                          utils.getFromPlatePlans(plateRun, column='plateid'))
             runMaNGAPostDesign(plates, overwrite=args.overwrite,
-                               skipPlateHolesSorted=args.noplateholessorted,
-                               rebuild=args.rebuild)
+                               skipPlateHolesSorted=args.noplateholessorted)

@@ -46,15 +46,13 @@ neverobserve = map(int, open(readPath(config['plateTargets']['neverobserve']),
 
 class PlateTargets(object):
 
-    def __init__(self, input, rebuild=False, **kwargs):
+    def __init__(self, input, **kwargs):
         """A class to handle plateTargets files.
 
         Parameters
         ----------
         input : integer or string
             Either the catalogid or the path to the plateTargets file to use.
-        rebuild : bool, optional
-            Removes the file, if it exists, and recreates it from scratch.
 
         """
 
@@ -70,13 +68,7 @@ class PlateTargets(object):
         else:
             catalogid = input
             self.path = utils.getPlateTargetsPath(catalogid)
-            if not os.path.exists(self.path) or rebuild:
-
-                if rebuild:
-                    warnings.warn(
-                        'recreating {0}'.format(os.path.basename(self.path)),
-                        GohanPlateTargetsWarning)
-
+            if not os.path.exists(self.path):
                 self.path = utils.getPlateTargetsTemplate(catalogid)
                 if self.path is None:
                     raise GohanPlateTargetsError(
