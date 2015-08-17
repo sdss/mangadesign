@@ -610,7 +610,7 @@ def getAllMaNGAPlateRuns():
 
     mangaLeadRuns = []
     for mangaRun in mangaRuns:
-        year = int(mangaRun.split('.')[-1])
+        year = int(mangaRun.split('.')[0])
         if year < 2014:
             continue
         surveys = mangaRun.split('.')[-1].split('-')
