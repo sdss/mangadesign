@@ -611,7 +611,7 @@ def getAllMaNGAPlateRuns():
 
     mangaLeadRuns = []
     for mangaRun in mangaRuns:
-        if mangaRun == '2014.02.f.manga':
+        if mangaRun in ['2014.02.f.manga', '2014.04.e.manga-apogee2']:
             continue
         year = int(mangaRun.split('.')[0])
         if year < 2014:
