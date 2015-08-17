@@ -112,10 +112,10 @@ def runMaNGAPostDesign(plateids, overwrite=False, skipPlateHolesSorted=False,
 
         log.info('Doing catalogid={0} ...'.format(catID))
 
-        if catID not in returnDict:
+        if catID not in returnDict or rebuild:
             # If returnDict does not contain a PlateTargets instance for
             # catId creates it.
-            returnDict[catID] = PlateTargets(catID)
+            returnDict[catID] = PlateTargets(catID, rebuild=rebuild)
 
         plateTargets = returnDict[catID]
 
