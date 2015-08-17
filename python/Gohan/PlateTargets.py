@@ -46,13 +46,15 @@ neverobserve = map(int, open(readPath(config['plateTargets']['neverobserve']),
 
 class PlateTargets(object):
 
-    def __init__(self, input, **kwargs):
+    def __init__(self, input, rebuild=False, **kwargs):
         """A class to handle plateTargets files.
 
         Parameters
         ----------
         input : integer or string
             Either the catalogid or the path to the plateTargets file to use.
+        rebuild : bool, optional
+            Removes the file, if it exists, and recreates it from scratch.
 
         """
 
@@ -60,7 +62,7 @@ class PlateTargets(object):
         self._nAppended = 0
 
         if isinstance(input, basestring):
-            self.path = basestring
+            self.path = input
             if not os.path.exists(self.path):
                 raise GohanPlateTargetsError(
                     'path {0} cannot be found'.format(self.path))
@@ -68,7 +70,13 @@ class PlateTargets(object):
         else:
             catalogid = input
             self.path = utils.getPlateTargetsPath(catalogid)
-            if not os.path.exists(self.path):
+            if not os.path.exists(self.path) or rebuild:
+
+                if rebuild:
+                    warnings.warn(
+                        'recreating {0}'.format(os.path.basename(self.path)),
+                        GohanPlateTargetsWarning)
+
                 self.path = utils.getPlateTargetsTemplate(catalogid)
                 if self.path is None:
                     raise GohanPlateTargetsError(
@@ -460,20 +468,16 @@ class PlateTargets(object):
 
             # We want to get the right row from NSA v1_0_0. If catalogid=1, we
             # just use utils.getCatalogueRow with the mangaid. If catalogid=12
-            # we create a mock mangaid with the format 1-{nsa100_catID} taking
-            # NSAID_v100 from the list of conversions in nsaV1bToV1. We do the
-            # same for targetID.
+            # we create a mock mangaid with the format 1-{indexID_100} taking
+            # NSAID_v100 from the list of conversions in nsaV1bToV1.
 
             if self.catalogid == 1:
                 nsa100_mangaid = mangaid
-                targetID_100 = targetID
+                indexID_100 = targetID
             elif self.catalogid == 12:
-
                 nsaV1bToV1_row = nsaV1bToV1[nsaV1bToV1['MaNGAID'] == mangaid]
-
-                nsa100_catID = nsaV1bToV1_row['catid'][0]
-                nsa100_mangaid = '1-{0}'.format(nsa100_catID)
-                targetID_100 = nsa100_catID
+                indexID_100 = nsaV1bToV1_row['catid'][0]
+                nsa100_mangaid = '1-{0}'.format(indexID_100)
 
             nsaRow = utils.getCatalogueRow(nsa100_mangaid)
 
@@ -490,8 +494,8 @@ class PlateTargets(object):
                         'mangaid={0} cannot be found in catalogue {1}'
                         .format(mangaid, nsaCatPath))
 
-            petroRow = petro[targetID_100]
-            petroKCorrRow = petroKCorr[targetID_100]
+            petroRow = petro[indexID_100]
+            petroKCorrRow = petroKCorr[indexID_100]
 
             for field in fields:
 
@@ -548,7 +552,10 @@ class PlateTargets(object):
                 elif field == 'nsa_id':
                     mangaidDict[field] = nsaRow['nsaid']
                 elif field == 'nsa_id100':
-                    mangaidDict[field] = targetID_100
+                    if self.catalogid == 1:
+                        mangaidDict[field] = nsaRow['nsaid']
+                    else:
+                        mangaidDict[field] = nsaV1bToV1_row['NSAID_v1_0_0'][0]
                 else:
                     raise GohanPlateTargetsError(
                         'unexpected field {0} when compiling data for '
