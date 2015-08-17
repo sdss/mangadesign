@@ -606,7 +606,7 @@ def getAllMaNGAPlateRuns():
     plateRuns = np.unique(platePlans['platerun'])
 
     mangaRuns = [plateRun for plateRun in plateRuns
-                 if 'manga' in plateRun.lower()]
+                 if 'manga' in plateRun.lower() and '2012' not in plateRun]
 
     mangaLeadRuns = []
     for mangaRun in mangaRuns:
