@@ -606,10 +606,13 @@ def getAllMaNGAPlateRuns():
     plateRuns = np.unique(platePlans['platerun'])
 
     mangaRuns = [plateRun for plateRun in plateRuns
-                 if 'manga' in plateRun.lower() and '2012' not in plateRun]
+                 if 'manga' in  plateRun.lower()]
 
     mangaLeadRuns = []
     for mangaRun in mangaRuns:
+        year = int(mangaRun.split('.')[-1])
+        if year < 2014:
+            continue
         surveys = mangaRun.split('.')[-1].split('-')
         if len(surveys) == 1:
             mangaLeadRuns.append(mangaRun)
