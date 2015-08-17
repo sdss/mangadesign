@@ -598,3 +598,23 @@ def getLastLocationID():
             return int(line)
 
     raise ValueError('the format of lastLocationID.dat does not seem valid.')
+
+
+def getAllMaNGAPlateRuns():
+    """Returns a list of all plate runs."""
+
+    plateRuns = np.unique(platePlans['platerun'])
+
+    mangaRuns = [plateRun for plateRun in plateRuns
+                 if 'manga' in plateRun.lower()]
+
+    mangaLeadRuns = []
+    for mangaRun in mangaRuns:
+        surveys = mangaRun.split('.')[-1].split('-')
+        if len(surveys) == 1:
+            mangaLeadRuns.append(mangaRun)
+        else:
+            if surveys[0] == 'manga':
+                mangaLeadRuns.append(mangaRun)
+
+    return mangaLeadRuns
