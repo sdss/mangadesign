@@ -647,7 +647,7 @@ class PlateTargets(object):
         if self.catalogid == 1:
             return 'v1_0_0'
         elif self.catalogid == 12:
-            return 'v1b_0_0_v2'
+            return 'v1_0_0'
         else:
             return '-999'
 
