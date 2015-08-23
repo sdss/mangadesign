@@ -15,7 +15,7 @@ Revision history:
 from __future__ import division
 from __future__ import print_function
 import argparse
-from Gohan.utils import getFromPlatePlans, getMangaScience
+from Gohan.utils import getFromPlatePlans, getMangaSciencePath
 from Gohan.PlateMags import PlateMags
 from Gohan import config, readPath, log
 import os
@@ -57,7 +57,7 @@ def createPlateMags(input, mode='drillRun', plot=False, debug=False,
             log.info('Creating plateMags for designID={0:d} ({1}/{2})'
                      .format(designID, nn+1, nDesigns))
 
-        mangaScience = getMangaScience(designID)
+        mangaScience = getMangaSciencePath(designID)
 
         plateMags = PlateMags(mangaScience)
         plateMags.write()
