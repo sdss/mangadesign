@@ -565,7 +565,6 @@ class PlateTargets(object):
         """
 
         result = {}
-        print(mangaids)
         for mangaid in mangaids:
 
             result[mangaid] = {}
@@ -581,7 +580,6 @@ class PlateTargets(object):
                     continue
 
                 if field not in self.structure.colnames:
-                    print(field)
                     # If the fields is new, adds the column to the structure
                     # only if the structure is empty. Once the structure
                     # columns are set, they won't change.
