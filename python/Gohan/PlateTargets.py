@@ -271,9 +271,9 @@ class PlateTargets(object):
             specificData = self._getMainSampleData(mangaids, specificColumns)
         else:
             # Completes specific columns using information in mangaScience
-            # specificData = self._getAncillaryData(mangaids, mangaScienceData,
-            #                                       commonData)
-            specificData = {}
+            specificData = self._getAncillaryData(mangaids, mangaScienceData,
+                                                  commonData)
+            # specificData = {}
 
         # Finally we add the data target by target.
         for mangaid in mangaids:
@@ -479,7 +479,7 @@ class PlateTargets(object):
                 assert nsaRow['nsaid'] == nsaV1bToV1_row['NSAID_v1_0_0'][0], \
                     ('row selected from NSA v1_0_0 foes not match the '
                      'value expected for NSAID ({0} != {1})'.format(
-                        nsaRow['nsaid'], nsaV1bToV1_row['NSAID_v1_0_0'][0]))
+                         nsaRow['nsaid'], nsaV1bToV1_row['NSAID_v1_0_0'][0]))
 
             if nsaRow is None:
                     raise GohanPlateTargetsError(
@@ -565,6 +565,7 @@ class PlateTargets(object):
         """
 
         result = {}
+        print(mangaids)
         for mangaid in mangaids:
 
             result[mangaid] = {}
@@ -580,6 +581,7 @@ class PlateTargets(object):
                     continue
 
                 if field not in self.structure.colnames:
+                    print(field)
                     # If the fields is new, adds the column to the structure
                     # only if the structure is empty. Once the structure
                     # columns are set, they won't change.
