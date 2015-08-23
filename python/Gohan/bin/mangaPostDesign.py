@@ -152,7 +152,7 @@ def runMaNGAPostDesign(plateids, overwrite=False, skipPlateHolesSorted=False):
     if not os.path.exists(plateHolesDir):
         raise GohanPostDesignError('not plateholes dir found in mangacore')
 
-    for plate in plates:
+    for plate in plateids:
         plateHolesSortedPath = utils.getPlateHolesSortedPath(plate)
         plateHolesPlatePath = os.path.join(
             plateHolesDir, '{0}XX/'.format('{0:06d}'.format(plate)[0:4]))
