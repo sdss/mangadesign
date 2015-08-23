@@ -344,7 +344,7 @@ def getTargetFix(plateID):
 
     path = os.path.join(
         readPath(config['mangacore']), 'platedesign/targetfix/',
-        '{0:04d}XX'.format(int(plateID/100)),
+        '{0:04d}XX'.format(int(plateID / 100)),
         'targetfix-{0}.par'.format(plateID))
 
     if not os.path.exists(path):
