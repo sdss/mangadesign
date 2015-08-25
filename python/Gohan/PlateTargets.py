@@ -348,7 +348,7 @@ class PlateTargets(object):
 
         requiredColumns = utils.getRequiredPlateTargetsColumns()
 
-        designid = int(mangaSciencePairs['designid'])
+        designid = int(plateHolesSortedPairs['designid'])
 
         if self.catalogid == 12:
             nsaV1bCat = self._toLowerCase(
