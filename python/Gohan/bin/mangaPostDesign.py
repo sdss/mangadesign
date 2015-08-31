@@ -94,7 +94,7 @@ def runMaNGAPostDesign(plateids, overwrite=False, skipPlateHolesSorted=False):
             catPlateMangaID[catID][plate].append(mangaid)
 
     if len(catPlateMangaID.keys()) == 0:
-        log.important('No targets found for that platerun.')
+        log.important('No targets found for that list of plates.')
         return OrderedDict()
 
     # Creates the returned dictionary {catID: plateTargets}
@@ -132,11 +132,12 @@ def runMaNGAPostDesign(plateids, overwrite=False, skipPlateHolesSorted=False):
         # Logs some information
         if addedRows > 0:
             plateTargetsPath, nAppended = plateTargets.write()
-            log.info('plateTargets-{0}.par saved'.format(catID))
+            log.info('{0} saved'.format(os.path.basename(plateTargetsPath)))
             log.info('Appended {0} targets to {1}'.format(
                 nAppended, plateTargetsPath))
         else:
-            log.info('no targets added to plateTargets-{0}.par'.format(catID))
+            log.info('no targets added to {0}'.format(
+                     os.path.basename(plateTargetsPath)))
 
     if skipPlateHolesSorted:
         warnings.warn('skipping copying plateHolesSorted files to mangacore',
