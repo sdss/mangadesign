@@ -285,12 +285,12 @@ def _checkNSATarget(targets, target, centre):
     # Gets mangaids with bad photometry
     badPhotometry = getBadPhotometry()
 
-    if target['MANGAID'] in badPhotometry:
+    if target['MANGAID'].strip() in badPhotometry:
         log.debug('target {0} rejected because it has bad photometry'
                   .format(target['MANGAID']))
         return False
 
-    if target['MANGAID'] in targets['MANGAID']:
+    if target['MANGAID'].strip() in targets['MANGAID']:
         return False
 
     FOV = config['decollision']['FOV']
