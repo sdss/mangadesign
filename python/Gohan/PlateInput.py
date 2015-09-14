@@ -138,7 +138,7 @@ class PlateInput(object):
     rejectTargets : list, optional
         A list of mangaids of targets to be rejected.
     plotIFUs : bool, optional
-        If True, a plot with the position of each IFU on the plate is saved.
+        If True, a S with the position of each IFU on the plate is saved.
     silentOnCollision : bool, optional
         If False, does not raise a warning on collision. Default is False.
     autocomplete : bool, optional
@@ -535,7 +535,7 @@ class PlateInput(object):
             log.debug('sorting targets')
             newCoords, order = sortTargets(
                 targetCoords, (self.raCen, self.decCen),
-                plot=kwargs.get('plotSorted', True),
+                plot=False,  # kwargs.get('plotSorted', True),
                 limitTo=limitTargets,
                 plotFilename=('sortedTargets_{0:d}_{1}.pdf'
                               .format(self.designid,

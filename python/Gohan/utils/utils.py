@@ -318,8 +318,7 @@ def getMangaSciencePath(input, format='designid'):
 
     for key in plateDefYanny.keys():
         if 'plateInput' in key:
-            if ('mangaScience' in plateDefYanny[key] or
-                    'plateInput' in plateDefYanny[key]):
+            if ('mangaScience' in plateDefYanny[key]):
                 return os.path.join(readPath(config['platelist']), 'inputs',
                                     plateDefYanny[key])
 
