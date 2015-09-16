@@ -385,10 +385,12 @@ class PlateTargets(object):
                 # Now uses mangaScience and plateHolesSorted to complete the
                 # information.
                 if (plateHolesSortedPairs is not None and
-                        column in plateHolesSortedPairs):
+                        column in plateHolesSortedPairs and
+                        column not in ['target_ra', 'target_dec']):
                     result[mangaid][column] = plateHolesSortedPairs[column]
                 elif (plateHolesSortedRow is not None and
-                        column in plateHolesSortedRow.colnames):
+                        column in plateHolesSortedRow.colnames and
+                        column not in ['target_ra', 'target_dec']):
                     result[mangaid][column] = plateHolesSortedRow[column]
                 elif column in mangaSciencePairs:
                     result[mangaid][column] = mangaSciencePairs[column]
