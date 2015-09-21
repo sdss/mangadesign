@@ -26,6 +26,16 @@ import warnings
 import os
 
 
+def _toLowerCase(structure):
+    """Renames all the columns in an `astropy.table.Table` to lowercase."""
+
+    for colname in structure.colnames:
+        if colname != colname.lower():
+            structure.rename_column(colname, colname.lower())
+
+    return structure
+
+
 # Fields from mangaScience to exclude in ancillary plateTargets.
 excludeFields = ['priority', 'sourcetype', 'manga_tileids']
 
@@ -42,6 +52,15 @@ conversions = {
 
 neverobserve = map(int, open(readPath(config['plateTargets']['neverobserve']),
                              'r').read().splitlines()[1:])
+
+try:
+    mangaTargetsExtNSA = table.Table.read(
+        readPath(config['catalogues']['science']))
+    mangaTargetsExtNSA['MANGAID'] = map(lambda xx: xx.strip(),
+                                        mangaTargetsExtNSA['MANGAID'])
+    mangaTargetsExtNSA = _toLowerCase(mangaTargetsExtNSA)
+except:
+    raise GohanPlateTargetsError('failed loading targeting catalogue')
 
 
 class PlateTargets(object):
@@ -246,7 +265,7 @@ class PlateTargets(object):
         # Gets data from mangaScience structure and pairs
         mangaScienceData, mangaSciencePairs = \
             self._readMangaScience(mangaScience)
-        mangaScienceData = self._toLowerCase(mangaScienceData)
+        mangaScienceData = _toLowerCase(mangaScienceData)
 
         # Defines mangaids either from input or from the mangaScience data.
         if mangaids is not None:
@@ -271,9 +290,9 @@ class PlateTargets(object):
             specificData = self._getMainSampleData(mangaids, specificColumns)
         else:
             # Completes specific columns using information in mangaScience
-            specificData = self._getAncillaryData(mangaids, mangaScienceData,
-                                                  commonData)
-            # specificData = {}
+            # specificData = self._getAncillaryData(mangaids, mangaScienceData,
+            #                                       commonData)
+            specificData = {}
 
         # Finally we add the data target by target.
         for mangaid in mangaids:
@@ -351,7 +370,7 @@ class PlateTargets(object):
         designid = int(plateHolesSortedPairs['designid'])
 
         if self.catalogid == 12:
-            nsaV1bCat = self._toLowerCase(
+            nsaV1bCat = _toLowerCase(
                 table.Table.read(readPath('+etc/targets-12.fits')))
 
         for mangaid in mangaids:
@@ -373,6 +392,14 @@ class PlateTargets(object):
             else:
                 plateHolesSortedRow = None
 
+            # Gets the row for the mangaid from te targeting catalogue
+            targetRow = mangaTargetsExtNSA[
+                mangaTargetsExtNSA['mangaid'] == mangaid.strip()]
+            if len(targetRow) == 0:
+                warnings.warn('mangaid={0} not found in targeting catalogue'
+                              .format(mangaid), GohanPlateTargetsWarning)
+                targetRow = None
+
             for column in requiredColumns:
 
                 # Handles the neverobserve column. Note that if plateid is None
@@ -382,18 +409,24 @@ class PlateTargets(object):
                         1 if designid in neverobserve else 0
                     continue
 
-                # Now uses mangaScience and plateHolesSorted to complete the
-                # information.
+                # We get the coordinate information
+                if column in ['ifu_ra', 'ifu_dec', 'object_ra', 'object_dec']:
+                    result[mangaid][column] = \
+                        self._getCoordinate(column, targetRow, mangaScienceRow)
+                    continue
+
+                # Now uses mangaScience, the targeting catalogue, and
+                # plateHolesSorted to complete the information.
                 if (plateHolesSortedPairs is not None and
-                        column in plateHolesSortedPairs and
-                        column not in ['target_ra', 'target_dec']):
+                        column in plateHolesSortedPairs):
                     result[mangaid][column] = plateHolesSortedPairs[column]
                 elif (plateHolesSortedRow is not None and
-                        column in plateHolesSortedRow.colnames and
-                        column not in ['target_ra', 'target_dec']):
+                        column in plateHolesSortedRow.colnames):
                     result[mangaid][column] = plateHolesSortedRow[column]
                 elif column in mangaSciencePairs:
                     result[mangaid][column] = mangaSciencePairs[column]
+                elif (targetRow is not None and column in targetRow.colnames):
+                    result[mangaid][column] = targetRow[column][0]
                 elif column in mangaScienceRow.colnames:
                     result[mangaid][column] = mangaScienceRow[column]
                 elif (self.catalogid == 12 and column in nsaV1bCat.colnames and
@@ -402,15 +435,7 @@ class PlateTargets(object):
                         nsaV1bCat['mangaid'] == mangaid][column]
 
                 else:
-                    # If the column is not in mangaScience or plateHolesSorted,
-                    # handles the specific cases
-                    if column in ['ifu_ra', 'target_ra']:
-                        # If ifu_ra/dec or target_ra/dec are not specifically
-                        # defined in mangaScience, we use ra/dec.
-                        result[mangaid][column] = mangaScienceRow['ra']
-                    elif column in ['ifu_dec', 'target_dec']:
-                        result[mangaid][column] = mangaScienceRow['dec']
-                    elif 'manga_target' in column:
+                    if 'manga_target' in column:
                         # If manga_targetX is not defined, we set it to 0.
                         result[mangaid][column] = 0
                     else:
@@ -423,6 +448,26 @@ class PlateTargets(object):
                         result[mangaid][column] = -999
 
         return result
+
+    def _getCoordinate(self, column, targetRow, mangaScienceRow):
+        """Returns the appropriate coordinate for a column and target."""
+
+        baseCoord = column.split('_')[1]
+
+        if targetRow is not None:
+            if 'ifu_' in column:
+                return targetRow[column][0]
+            elif 'object_' in column:
+                mangaTarget3 = targetRow['manga_target3']
+                if mangaTarget3 == 0:
+                    return targetRow[baseCoord][0]
+                else:
+                    return targetRow['ifu_' + baseCoord][0]
+            else:
+                raise GohanPlateTargetsError(
+                    'unknown coordinate {0}'.format(column))
+        else:
+            return mangaScienceRow[baseCoord]
 
     def _getMainSampleData(self, mangaids, fields):
         """Returns the specific columns for the MaNGA main sample.
@@ -623,7 +668,7 @@ class PlateTargets(object):
                 'no maga_tileid or tileid field found in mangaScience {0}'
                 .format(mangaSciencePath))
 
-        structure = self._toLowerCase(
+        structure = _toLowerCase(
             table.Table(mangaScienceData.pop(structName)))
         mangaScienceData.pop('symbols')
 
@@ -633,15 +678,6 @@ class PlateTargets(object):
 
         # return the mangaScience structure and all the keywords.
         return (structure, mangaScienceData)
-
-    def _toLowerCase(self, structure):
-        """Renames all the columns in an `astropy.table.Table` to lowercase."""
-
-        for colname in structure.colnames:
-            if colname != colname.lower():
-                structure.rename_column(colname, colname.lower())
-
-        return structure
 
     def _getNSAVersion(self):
         """Returns the version of the NSA catalogue used."""

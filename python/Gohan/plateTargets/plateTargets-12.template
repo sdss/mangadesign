@@ -39,8 +39,8 @@
 # 7) iauname: The accepted IAU name
 # 8) ifu_ra: RA of the IFU center in decimal degrees
 # 9) ifu_dec: DEC of the IFU center in decimal degrees
-# 10) target_ra: RA of the target center (usually same as bundle_ra, unless offset)
-# 11) target_dec: DEC of the target center (usually same as bundle_dec, unless offset)
+# 10) object_ra: RA of the target center (usually same as ifu_ra, unless offset)
+# 11) object_dec: DEC of the target center (usually same as ifu_dec, unless offset)
 # 12) racen: RA of the plate center
 # 13) deccen: DEC of the plate center
 # 14) xfocal: xfocal location of the IFU hole in the plate
@@ -101,8 +101,8 @@ typedef struct {
     char iauname[25];
     double ifu_ra;
     double ifu_dec;
-    double target_ra;
-    double target_dec;
+    double object_ra;
+    double object_dec;
     double racen;
     double deccen;
     double xfocal;
