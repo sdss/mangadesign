@@ -625,3 +625,16 @@ def getAllMaNGAPlateRuns():
                 mangaLeadRuns.append(mangaRun)
 
     return mangaLeadRuns
+
+
+def getAllMaNGAPlates():
+    """Returns a list of all MaNGA plates. Rejects some old plates."""
+
+    runs = getAllMaNGAPlateRuns()
+
+    plates = []
+    for run in runs:
+        runPlates = platePlans[platePlans['platerun'] == run]['plateid']
+        plates += runPlates.tolist()
+
+    return plates
