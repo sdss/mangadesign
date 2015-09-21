@@ -455,17 +455,18 @@ class PlateTargets(object):
         baseCoord = column.split('_')[1]
 
         if targetRow is not None:
-            if 'ifu_' in column:
-                return targetRow[column][0]
-            elif 'object_' in column:
-                mangaTarget3 = targetRow['manga_target3']
-                if mangaTarget3 != 0:
-                    return targetRow[baseCoord][0]
-                else:
-                    return targetRow['ifu_' + baseCoord][0]
-            else:
-                raise GohanPlateTargetsError(
-                    'unknown coordinate {0}'.format(column))
+            return targetRow[column]
+            # if 'ifu_' in column:
+            #     return targetRow[column][0]
+            # elif 'object_' in column:
+            #     mangaTarget3 = targetRow['manga_target3']
+            #     if mangaTarget3 != 0:
+            #         return targetRow[baseCoord][0]
+            #     else:
+            #         return targetRow['ifu_' + baseCoord][0]
+            # else:
+            #     raise GohanPlateTargetsError(
+            #         'unknown coordinate {0}'.format(column))
         else:
             return mangaScienceRow[baseCoord]
 
