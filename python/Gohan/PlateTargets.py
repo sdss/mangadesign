@@ -459,7 +459,7 @@ class PlateTargets(object):
                 return targetRow[column][0]
             elif 'object_' in column:
                 mangaTarget3 = targetRow['manga_target3']
-                if mangaTarget3 == 0:
+                if mangaTarget3 != 0:
                     return targetRow[baseCoord][0]
                 else:
                     return targetRow['ifu_' + baseCoord][0]
