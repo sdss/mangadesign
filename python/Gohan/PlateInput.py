@@ -479,7 +479,8 @@ class PlateInput(object):
                                                      rejectTargets)
             else:
                 # Sky selection is different, so we call a special method.
-                targetsInField = catalogue  # self._selectSkies(catalogue, **kwargs)
+                targetsInField = catalogue
+                # self._selectSkies(catalogue, **kwargs)
 
             if isinstance(catalogue, basestring):
                 log.debug('{0} targets selected from catalogue {1}'
