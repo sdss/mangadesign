@@ -199,7 +199,7 @@ class PlateMags(list):
             if overwrite:
                 os.remove(plateMagsPlotPath)
             else:
-                log.info('plot {0} aready exists'.format(
+                log.info('plot {0} already exists'.format(
                          shortenPath(plateMagsPlotPath)))
                 return
 
@@ -358,7 +358,7 @@ class PlateMagsIFU(object):
         a single target.
     useRepo : bool, optional
         If True, the default, preimaging is created at the appropiate location
-        in the repositiory defined by `repoPath`.
+        in the repository defined by `repoPath`.
     repoPath : bool, optional
         The path of the repository. Deafaults to the value of
         `Gohan.default['preimaging']`.
