@@ -137,7 +137,7 @@ def runMaNGAPostDesign(plateids, overwrite=False, skipPlateHolesSorted=False):
                 nAppended, plateTargetsPath))
         else:
             log.info('no targets added to {0}'.format(
-                     os.path.basename(plateTargetsPath)))
+                     os.path.basename(plateTargets.path)))
 
     if skipPlateHolesSorted:
         warnings.warn('skipping copying plateHolesSorted files to mangacore',
