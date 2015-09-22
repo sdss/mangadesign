@@ -456,6 +456,8 @@ def getPlateTargetsTemplate(catalogid):
         return readPath('+plateTargets/plateTargets-1.template')
     elif catalogid == 12:
         return readPath('+plateTargets/plateTargets-12.template')
+    elif catalogid == 50:
+        return readPath('+plateTargets/plateTargets-50.template')
     elif catalogid >= 30 or catalogid == 18:
         return readPath('+plateTargets/plateTargets-Ancillary.template')
     else:
