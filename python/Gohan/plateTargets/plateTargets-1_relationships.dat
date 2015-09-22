@@ -9,6 +9,8 @@ ifu_ra  ->  MaNGA_targets_extNSA
 ifu_dec  ->  MaNGA_targets_extNSA
 object_ra  ->  MaNGA_targets_extNSA
 object_dec  ->  MaNGA_targets_extNSA
+catalog_ra  ->  MaNGA_targets_extNSA
+catalog_dec  ->  MaNGA_targets_extNSA
 racen  ->  MaNGA_targets_extNSA
 deccen  ->  MaNGA_targets_extNSA
 xfocal  ->  plateHolesSorted[STRUCT1]

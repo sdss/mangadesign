@@ -41,53 +41,55 @@
 # 9) ifu_dec: DEC of the IFU center in decimal degrees
 # 10) object_ra: RA of the target center (usually same as ifu_ra, unless offset)
 # 11) object_dec: DEC of the target center (usually same as ifu_dec, unless offset)
-# 12) racen: RA of the plate center
-# 13) deccen: DEC of the plate center
-# 14) xfocal: xfocal location of the IFU hole in the plate
-# 15) yfocal: yfocal location of the IFU hole in the plate
-# 16) epoch: Epoch of the coordinates
-# 17) manga_target1: Primary target bitmask. To be used for galaxies.
-# 18) manga_target2: Secondary target bitmask. To be used for stars, standards and sky positions.
-# 19) manga_target3: Tertiary target bitmask. To be used for ancillary programs.
-# 20) ifudesignsize: The size of the IFU assigned to the target.
-# 21) ifutargetsize: The size of the IFU that was meant to be assigned.
+# 12) catalog_ra: RA of the target in its parent catalogue (usually same as ifu_ra and object_ra
+                  unless offset)
+# 13) catalog_ra: DEC of the target in its parent catalogue (usually same as ifu_ra and object_dec
+                  unless offset)
+# 14) racen: RA of the plate center
+# 15) deccen: DEC of the plate center
+# 16) xfocal: xfocal location of the IFU hole in the plate
+# 17) yfocal: yfocal location of the IFU hole in the plate
+# 18) epoch: Epoch of the coordinates
+# 19) manga_target1: Primary target bitmask. To be used for galaxies.
+# 20) manga_target2: Secondary target bitmask. To be used for stars, standards and sky positions.
+# 21) manga_target3: Tertiary target bitmask. To be used for ancillary programs.
+# 22) ifudesignsize: The size of the IFU assigned to the target.
+# 23) ifutargetsize: The size of the IFU that was meant to be assigned.
 #                    Same as ifudesignsize unless changed during the plate
 #                    design process.
-# 22) ifudesignwrongsize: 1 if the IFU assigned is of the wrong size (for
+# 24) ifudesignwrongsize: 1 if the IFU assigned is of the wrong size (for
 #                         instance, if it does not cover 1.5Reff).
 # ---- These columns may vary between typeids ----
-# 23) field: The SDSS field covering the target.
-# 24) run: The SDSS run covering the target.
-# 25) nsa_ba: Axis ratio b/a from the elliptical Petrosian apertures.
-# 26) nsa_phi: Angle (E of N) of major axis from the elliptical Petrosian apertures.
-# 27) nsa_redshift: Heliocentric redshift from NSA.
-# 28) nsa_zdist: Distance estimate using peculiar velocity model of
+# 25) field: The SDSS field covering the target.
+# 26) run: The SDSS run covering the target.
+# 27) nsa_ba: Axis ratio b/a from the elliptical Petrosian apertures.
+# 28) nsa_phi: Angle (E of N) of major axis from the elliptical Petrosian apertures.
+# 29) nsa_redshift: Heliocentric redshift from NSA.
+# 30) nsa_zdist: Distance estimate using peculiar velocity model of
 #                Willick et al. (1997); multiply by c/H0 for Mpc. From NSA.
-# 29) nsa_mstar: Stellar mass from K-correction fit, in h-2 solar masses. From NSA.
-# 30) nsa_mstar_el: As nsa_mstar, but using the elliptical Petrosian flux.
-# 31) nsa_petro_th50: Petrosian 50% light radius (derived from r band), in arcsec. From NSA.
-# 32) nsa_petro_th50_el: Elliptical Petrosian 50% light radius, in arcsec.
-# 33) nsa_petroflux: Azimuthally-averaged SDSS-style Petrosian flux in FNugriz
+# 31) nsa_mstar: Stellar mass from K-correction fit, in h-2 solar masses. From NSA.
+# 32) nsa_mstar_el: As nsa_mstar, but using the elliptical Petrosian flux.
+# 33) nsa_petro_th50: Petrosian 50% light radius (derived from r band), in arcsec. From NSA.
+# 34) nsa_petro_th50_el: Elliptical Petrosian 50% light radius, in arcsec.
+# 35) nsa_petroflux: Azimuthally-averaged SDSS-style Petrosian flux in FNugriz
 #                    (GALEX-SDSS photometric systems). In nanomaggies. Taken from NSA.
-# 34) nsa_petroflux_ivar: Inverse variance of petroflux in nanomaggies-2, from NSA.
-# 35) nsa_petroflux_el: As nsa_petroflux but using elliptical Petrosian apertures.
-# 36) nsa_petroflux_el_ivar: As nsa_petroflux_ivar but using the elliptical Petrosian apertures.
-# 37) nsa_sersic_ba: Axis ratio b/a from 2D Sersic fit. From NSA.
-# 38) nsa_sersic_n: 2D Sersic index from fit. From NSA.
-# 39) nsa_sersic_phi: Angle (E of N, degrees) of major axis in 2D Sersic fit. From NSA.
-# 40) nsa_sersic_th50: 50% light radius of 2D Sersic fit (along major axis), in arcsec. From NSA
-# 41) nsa_sersicflux: 2D Sersic fit flux in FNugriz (GALEX-SDSS photometric systems)
+# 36) nsa_petroflux_ivar: Inverse variance of petroflux in nanomaggies-2, from NSA.
+# 37) nsa_petroflux_el: As nsa_petroflux but using elliptical Petrosian apertures.
+# 38) nsa_petroflux_el_ivar: As nsa_petroflux_ivar but using the elliptical Petrosian apertures.
+# 39) nsa_sersic_ba: Axis ratio b/a from 2D Sersic fit. From NSA.
+# 40) nsa_sersic_n: 2D Sersic index from fit. From NSA.
+# 41) nsa_sersic_phi: Angle (E of N, degrees) of major axis in 2D Sersic fit. From NSA.
+# 42) nsa_sersic_th50: 50% light radius of 2D Sersic fit (along major axis), in arcsec. From NSA
+# 43) nsa_sersicflux: 2D Sersic fit flux in FNugriz (GALEX-SDSS photometric systems)
 #                     in nanommagies. From NSA.
-# 42) nsa_sersicflux_ivar: Inverse variance of sersicflux in nanomaggies-2, from NSA.
-# 43) nsa_absmag: Absolute magnitude estimates for FNugriz from K-corrections
+# 44) nsa_sersicflux_ivar: Inverse variance of sersicflux in nanomaggies-2, from NSA.
+# 45) nsa_absmag: Absolute magnitude estimates for FNugriz from K-corrections
 #                 (Ωm=0.3, ΩΛ=0.7, h=1). From NSA.
-# 44) nsa_absmag_el: As nsa_absmag but using elliptical Petrosian apertures.
-# 45) nsa_amivar_el: Inverse variance on absolute magnitudes in FNugriz for nsa_absmag_el.
-# 46) nsa_extinction: Galactic extinction in FNugriz from Schlegel, Finkbeiner & Davis (1997).
-# 47) nsa_version: The version of the NSA catalogue used to select these targets.
-# 48) nsa_id: The NSAID field in the NSA catalogue referenced in nsa_version.
-# 49) nsa_id100: The NSAID of the target in the NSA v1_0_0 catalogue. Obtained by
-#                cross-matching the coordinates of the targets in both catalogues.
+# 46) nsa_absmag_el: As nsa_absmag but using elliptical Petrosian apertures.
+# 47) nsa_amivar_el: Inverse variance on absolute magnitudes in FNugriz for nsa_absmag_el.
+# 48) nsa_extinction: Galactic extinction in FNugriz from Schlegel, Finkbeiner & Davis (1997).
+# 49) nsa_version: The version of the NSA catalogue used to select these targets.
+# 50) nsa_id: The NSAID field in the NSA catalogue referenced in nsa_version.
 
 typeid 12
 
@@ -103,6 +105,8 @@ typedef struct {
     double ifu_dec;
     double object_ra;
     double object_dec;
+    double catalog_ra;
+    double catalog_dec;
     double racen;
     double deccen;
     double xfocal;
@@ -142,4 +146,4 @@ typedef struct {
     long nsa_id;
 } PLTTRGT;
 
-PLTTRGT 0000 0000 0000 0000 1-000000 0 15h/p40/J152554.88+415435 231.478756028 41.9097725983 231.478756028 41.9097725983 230.99167 42.68736 78.935912 -169.09538 2014.07 2 0 0 37 -999 -999 224 3918 0.0 0.0 0.0226546 6.49071e+08 6.49071e+08 -999.0 50.4463 2.54327 {18.0174 22.1203 54.5087 128.257 185.835 229.213 255.979} {0.132904 6.57025 0.190638 1.59099 1.04681 0.319301 0.0163769} {0.132904 6.57025 0.190638 1.59099 1.04681 0.319301 0.0163769} {0.132904 6.57025 0.190638 1.59099 1.04681 0.319301 0.0163769} 0.482523 1.5851 62.1492 3.19605 {21.7792 26.0488 52.4875 132.169 193.079 235.423 259.846} {0.143117 3.81636 1.07508 5.37342 2.69955 1.27748 0.0982024} {-15.2445 -15.4517 -16.228 -17.1187 -17.5194 -17.6736 -17.757} {-15.2445 -15.4517 -16.228 -17.1187 -17.5194 -17.6736 -17.757} {-15.2445 -15.4517 -16.228 -17.1187 -17.5194 -17.6736 -17.757} {-15.2445 -15.4517 -16.228 -17.1187 -17.5194 -17.6736 -17.757} v1b_0_0_v2 102195
+PLTTRGT 0000 0000 0000 0000 12-000000 0 15h/p40/J152554.88+415435 231.478756028 41.9097725983 231.478756028 41.9097725983 231.478756028 41.9097725983 230.99167 42.68736 78.935912 -169.09538 2014.07 2 0 0 37 -999 -999 224 3918 0.0 0.0 0.0226546 6.49071e+08 6.49071e+08 -999.0 50.4463 2.54327 {18.0174 22.1203 54.5087 128.257 185.835 229.213 255.979} {0.132904 6.57025 0.190638 1.59099 1.04681 0.319301 0.0163769} {0.132904 6.57025 0.190638 1.59099 1.04681 0.319301 0.0163769} {0.132904 6.57025 0.190638 1.59099 1.04681 0.319301 0.0163769} 0.482523 1.5851 62.1492 3.19605 {21.7792 26.0488 52.4875 132.169 193.079 235.423 259.846} {0.143117 3.81636 1.07508 5.37342 2.69955 1.27748 0.0982024} {-15.2445 -15.4517 -16.228 -17.1187 -17.5194 -17.6736 -17.757} {-15.2445 -15.4517 -16.228 -17.1187 -17.5194 -17.6736 -17.757} {-15.2445 -15.4517 -16.228 -17.1187 -17.5194 -17.6736 -17.757} {-15.2445 -15.4517 -16.228 -17.1187 -17.5194 -17.6736 -17.757} v1_0_0 102195

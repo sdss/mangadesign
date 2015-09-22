@@ -410,7 +410,8 @@ class PlateTargets(object):
                     continue
 
                 # We get the coordinate information
-                if column in ['ifu_ra', 'ifu_dec', 'object_ra', 'object_dec']:
+                if column in ['ifu_ra', 'ifu_dec', 'object_ra', 'object_dec',
+                              'catalog_ra', 'catalog_dec']:
                     result[mangaid][column] = \
                         self._getCoordinate(column, targetRow, mangaScienceRow)
                     continue
