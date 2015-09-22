@@ -553,19 +553,22 @@ class PlateMagsIFU(object):
     def getNSAImage(self, imageName, IAUName, subDir, pID, **kwargs):
         """Downloads NSA imaging and creates the parent FITS file."""
 
-        baseURL = os.path.join(SDSS_BASE_URL,
-                               'sdsswork/atlas/v1/detect/v1_0/',
-                               '{0}'.format(subDir))
+        mosaicBaseURL = os.path.join(SDSS_BASE_URL,
+                                     'sdsswork/atlas/v1/detect/sdss/{0}/'
+                                     .format(subDir))
+        bpsfBaseURL = os.path.join(SDSS_BASE_URL,
+                                   'sdsswork/atlas/v1/detect/v1_0/{0}/'
+                                   .format(subDir))
 
-        parentURL = baseURL + \
-            '/atlases/{0}/{1}-parent-{0}.fits.gz'.format(pID, IAUName)
-        varURL = baseURL + \
-            '/atlases/{0}/{1}-ivar-{0}.fits.gz'.format(pID, IAUName)
-        bpsfURL = [baseURL + '/{0}-{1}-bpsf.fits.gz'.format(IAUName, band)
-                   for band in FILTERS]
+        mosaicURLs = [mosaicBaseURL + '{0}-{1}.fits.gz'.format(IAUName, band)
+                      for band in FILTERS]
+        # varURL = baseURL + \
+        #     '/atlases/{0}/{1}-ivar-{0}.fits.gz'.format(pID, IAUName)
+        bpsfURLs = [bpsfBaseURL + '{0}-{1}-bpsf.fits.gz'.format(IAUName, band)
+                    for band in FILTERS]
 
         hdus = []
-        for url in [parentURL] + [varURL] + bpsfURL:
+        for url in mosaicURLs + bpsfURLs:
             hdus.append(self._getNSAHDU(url, **kwargs))
             if None in hdus:
                 return False
@@ -616,11 +619,13 @@ class PlateMagsIFU(object):
 
         # Concatenates the images, vars and PSFs in a single FITS.
         fullHDU = fits.HDUList([fits.PrimaryHDU()])
+        primary = fullHDU[0]
+        primary.header['PREIMVER'] = config['sdssImaging']['preimagingVersion']
+
         for ii, filt in enumerate(FILTERS):
-            nn = NSAFILTERPOS[filt]
-            fullHDU.append(hdus[0][nn].copy())    # image
-            fullHDU.append(hdus[1][nn].copy())    # variance
-            fullHDU.append(hdus[2+ii][0].copy())  # psf
+            fullHDU.append(hdus[ii][0].copy())    # image
+            fullHDU.append(hdus[ii][1].copy())    # variance
+            fullHDU.append(hdus[len(FILTERS)+ii][0].copy())  # psf
 
         for ii in range(NFILTERS):
             fullHDU[ii*3+1].header['EXTNAME'] = '{0} img'.format(FILTERS[ii])
@@ -630,6 +635,12 @@ class PlateMagsIFU(object):
             fullHDU[ii*3+2].header['FLUXUNIT'] = 'nanomaggies'
             fullHDU[ii*3+3].header['EXTNAME'] = \
                 '{0} psf'.format(FILTERS[ii])
+
+            for keyword in ['CTYPE1', 'CTYPE2', 'EQUINOX', 'CD1_1', 'CD2_1',
+                            'CD1_2', 'CD2_2', 'CRPIX1', 'CRPIX2', 'CRVAL1',
+                            'CRVAL2', 'LONPOLE', 'LATPOLE']:
+                fullHDU[ii*3+2].header[keyword] = \
+                    fullHDU[ii*3+1].header[keyword]
 
         fullHDU.update_extend()
 
@@ -1268,10 +1279,10 @@ class PlateMagsIFU(object):
 
         if self.source == 'NSA':
             irgURL = os.path.join(SDSS_BASE_URL,
-                                  'sdsswork/atlas/v1/detect/v1_0/',
-                                  '{0}'.format(self.subDir),
-                                  'atlases/{0}/{1}-parent-{0}-irg.jpg'
-                                  .format(self.pID, self.IAUName))
+                                  'sdsswork/atlas/v1/detect/sdss/',
+                                  '{0}/{1}.jpg'.format(self.subDir,
+                                                       self.IAUName))
+
         elif self.source == 'SDSS':
             run, rerun, camcol, field = self.SDSSField
             fieldDic = {'run': run, 'rerun': rerun,
