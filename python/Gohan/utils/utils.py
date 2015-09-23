@@ -531,9 +531,6 @@ def getStellarLibraryTargets(designid=None):
 
     if len(designid) == 1:
 
-        if designid[0] in [7933, 7934, 7935]:
-            return None
-
         mangaScience = getMangaSciencePath(designid[0])
         mangaScienceStruct = table.Table(yanny.yanny(mangaScience,
                                                      np=True)['MANGAINPUT'])
@@ -556,19 +553,18 @@ def getStellarLibraryTargets(designid=None):
 def getStellarLibraryDesigns():
     """Returns, from apodb, all the designids for stellar library plates."""
 
-    from sdss.internal.manga.Totoro import TotoroDBConnection
+    plateRuns = np.unique(platePlans['platerun'])
 
-    db = TotoroDBConnection()
-    session = db.session
+    apogeeMangaRuns = [plateRun for plateRun in plateRuns
+                       if 'apogee2-manga' in plateRun.strip().lower() and
+                       plateRun.strip().lower() != '2014.04.f.apogee2-manga']
 
-    with session.begin():
-        plates = session.query(db.plateDB.Plate).join(
-            db.plateDB.PlateToSurvey, db.plateDB.Survey,
-            db.plateDB.SurveyMode).filter(
-                db.plateDB.Survey.label == 'MaNGA',
-                db.plateDB.SurveyMode.label == 'APOGEE lead').all()
+    apogeeMangaDesigns = []
+    for run in apogeeMangaRuns:
+        apogeeMangaDesigns += (platePlans[platePlans['platerun'] == run]
+                               ['designid'].tolist())
 
-    return [getDesignID(plate.plate_id) for plate in plates]
+    return apogeeMangaDesigns
 
 
 def getRequiredPlateTargetsColumns():
