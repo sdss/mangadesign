@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 """
-function.py
+PlateTargets.py
 
 Created by José Sánchez-Gallego on 26 Mar 2015.
 Licensed under a 3-clause BSD license.
