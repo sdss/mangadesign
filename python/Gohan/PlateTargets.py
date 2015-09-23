@@ -132,7 +132,7 @@ class PlateTargets(object):
 
         return header
 
-    def write(self, path=None, useCatID=True):
+    def write(self, path=None):
         """Writes the current instance to a Yanny file.
 
         Parameters
@@ -147,15 +147,8 @@ class PlateTargets(object):
             A tuple containing, in the first element, the path where the
             file was writen, and in the second element the number of new
             targets added to the plateTargets file.
-        useCatID : bool
-            If False, not typeid will be written in the Yanny file. This is
-            mainly to be used when StarPlateTargets super calls this method.
 
         """
-
-        if len(self.structure) == 0:
-            raise GohanPlateTargetsError('there are no targets added to the '
-                                         'plateTargets file.')
 
         if path is None:
             if self.template:
@@ -167,13 +160,9 @@ class PlateTargets(object):
             os.remove(path)
 
         # Writes the yanny file.
-        if useCatID:
-            yanny.write_ndarray_to_yanny(path, self.structure.as_array(),
-                                         structname='PLTTRGT',
-                                         hdr={'typeid': self.catalogid})
-        else:
-            yanny.write_ndarray_to_yanny(path, self.structure.as_array(),
-                                         structname='PLTTRGT')
+        yanny.write_ndarray_to_yanny(path, self.structure.as_array(),
+                                     structname='PLTTRGT',
+                                     hdr={'typeid': self.catalogid})
 
         # Now adds the comments on top of the file.
         lines = [line for line in open(path, 'r').read().splitlines()
@@ -183,11 +172,9 @@ class PlateTargets(object):
         unit.write(lines)
         unit.close()
 
-        if useCatID:
-            log.debug('plateTargets-{0} saved to {1}'
-                      .format(self.catalogid, path))
-            log.debug('{0} targets appended to plateTargets-{1}'
-                      .format(self._nAppended, self.catalogid))
+        log.debug('plateTargets-{0} saved to {1}'.format(self.catalogid, path))
+        log.debug('{0} targets appended to plateTargets-{1}'
+                  .format(self._nAppended, self.catalogid))
 
         # If this was a template, it stops being it after writing the file
         # to disk.
@@ -266,23 +253,19 @@ class PlateTargets(object):
         assert os.path.exists(mangaScience), ('path {0} does not exist'
                                               .format(mangaScience))
 
-        # Gets data from mangaScience structure and pairs
-        mangaScienceData, mangaSciencePairs = \
-            self._readMangaScience(mangaScience)
-        mangaScienceData = _toLowerCase(mangaScienceData)
-
-        if mangaids is None:
-            mangaids = mangaScienceData['mangaid']
-
         # Makes sure that all the mangaids have the catalogid of the current
         # instance of PlateTargets.
         catalogids = np.array([int(mangaid.split('-')[0])
                                for mangaid in mangaids])
 
-        if self.catalogid != 'MaSTAR':
-            assert np.all(catalogids == self.catalogid), \
-                'one or more of the mangaids has catalogid != {0}'.format(
-                    self.catalogid)
+        assert np.all(catalogids == self.catalogid), \
+            'one or more of the mangaids has catalogid != {0}'.format(
+                self.catalogid)
+
+        # Gets data from mangaScience structure and pairs
+        mangaScienceData, mangaSciencePairs = \
+            self._readMangaScience(mangaScience)
+        mangaScienceData = _toLowerCase(mangaScienceData)
 
         # Defines mangaids either from input or from the mangaScience data.
         if mangaids is not None:
@@ -295,9 +278,6 @@ class PlateTargets(object):
         commonData = self._getCommonData(
             mangaids, mangaScienceData, mangaSciencePairs,
             plateHolesSortedData, plateHolesSortedPairs)
-
-        if self.catalogid == 'MaSTAR':
-            return commonData
 
         # Creates a list of specific fields for this plateTargets file
         specificColumns = [col for col in self.structure.colnames
@@ -356,7 +336,7 @@ class PlateTargets(object):
             # Adds the new targets
             if not existing:
                 self.structure.add_row(targetData)
-                addedIndices.append(len(self.structure) - 1)
+                addedIndices.append(self.structure[-1].index)
             else:
                 # If the target already exists, replaces it values
                 idx = np.where((self.structure['mangaid'] == mangaid) &
@@ -367,13 +347,9 @@ class PlateTargets(object):
                 addedIndices.append(idx[0][0])
 
             self._nAppended += 1
-
-            if self.catalogid != 'MaSTAR':
-                fileName = 'plateTargets-{0}'.format(self.catalogid)
-            else:
-                fileName = 'starPlateTargets'
-            log.debug('mangaid={0} added to {1}'.format(mangaid, fileName))
-
+            log.debug(
+                'mangaid={0} added to plateTargets-{1}'.format(mangaid,
+                                                               self.catalogid))
         return self.structure[addedIndices]
 
     def _getCommonData(self, mangaids, mangaScienceData, mangaSciencePairs,
@@ -416,15 +392,11 @@ class PlateTargets(object):
                 plateHolesSortedRow = None
 
             # Gets the row for the mangaid from te targeting catalogue
-            if self.catalogid != 'MaSTAR':
-                targetRow = mangaTargetsExtNSA[
-                    mangaTargetsExtNSA['mangaid'] == mangaid.strip()]
-                if len(targetRow) == 0:
-                    warnings.warn('mangaid={0} not found in targeting '
-                                  'catalogue'.format(mangaid),
-                                  GohanPlateTargetsWarning)
-                    targetRow = None
-            else:
+            targetRow = mangaTargetsExtNSA[
+                mangaTargetsExtNSA['mangaid'] == mangaid.strip()]
+            if len(targetRow) == 0:
+                warnings.warn('mangaid={0} not found in targeting catalogue'
+                              .format(mangaid), GohanPlateTargetsWarning)
                 targetRow = None
 
             for column in requiredColumns:
@@ -468,17 +440,12 @@ class PlateTargets(object):
                         result[mangaid][column] = 0
                     else:
                         # If other value is not found, we set it to -999 but
-                        # raise a warning. Skips columns that we know will
-                        # systematically fail for stellar library targets
-                        if (self.catalogid != 'MaSTAR' or column not in
-                                ['iauname', 'ifutargetsize',
-                                 'ifudesignwrongsize']):
-                            warnings.warn('mangaid={0}: no value found for '
-                                          'mandatory field {1}. '
-                                          'Setting it to -999'
-                                          .format(mangaid, column),
-                                          GohanPlateTargetsWarning)
-                            result[mangaid][column] = -999
+                        # raise a warning.
+                        warnings.warn('mangaid={0}: no value found for '
+                                      'mandatory field {1}. Setting it to -999'
+                                      .format(mangaid, column),
+                                      GohanPlateTargetsWarning)
+                        result[mangaid][column] = -999
 
         return result
 
