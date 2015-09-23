@@ -67,7 +67,7 @@ plateTypes:
         drillstyle: manga
 
 sdssImaging:
-    baseURL: https://data.sdss.org/sas/
+    baseURL: https://data.mirror.sdss.org/sas/
     username: sdss
     password: 2.5-meters
     scale: 0.396
