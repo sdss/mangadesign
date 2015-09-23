@@ -339,18 +339,17 @@ class PlateTargets(object):
                 addedIndices.append(self.structure[-1].index)
             else:
                 # If the target already exists, replaces it values
-                row = self.structure[
-                    (self.structure['mangaid'] == mangaid) &
-                    (self.structure['plateid'] == plateid)]
+                idx = np.where((self.structure['mangaid'] == mangaid) &
+                               (self.structure['plateid'] == plateid))
+
                 for field in targetData:
-                    row[field] = targetData[field]
-                addedIndices.append(row.index)
+                    self.structure[field][idx] = targetData[field]
+                addedIndices.append(idx[0][0])
 
             self._nAppended += 1
             log.debug(
                 'mangaid={0} added to plateTargets-{1}'.format(mangaid,
                                                                self.catalogid))
-
         return self.structure[addedIndices]
 
     def _getCommonData(self, mangaids, mangaScienceData, mangaSciencePairs,
