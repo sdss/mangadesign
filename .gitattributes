@@ -42,6 +42,7 @@ python/Gohan/plateTargets/plateTargets-12.template -text
 python/Gohan/plateTargets/plateTargets-1_relationships.dat -text
 python/Gohan/plateTargets/plateTargets-50.template -text
 python/Gohan/plateTargets/plateTargets-Ancillary.template -text
+python/Gohan/plateTargets/starPlateTargets.template -text
 python/Gohan/scripts/createFieldList.py -text
 python/Gohan/scripts/generate_2015.05.x.apogee2-manga.py -text
 python/Gohan/scripts/generate_2015.05.x.manga-apogee2.py -text
