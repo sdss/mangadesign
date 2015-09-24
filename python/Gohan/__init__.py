@@ -56,6 +56,7 @@ from Gohan.PlateInput import PlateInput
 from Gohan.PlateMags import PlateMags
 from Gohan.PlateDefinition import PlateDefinition
 from Gohan.PlateTargets import PlateTargets
+from Gohan.StarPlateTargets import StarPlateTargets
 
 __all__ = ['PlateInput', 'PlateMags', 'PlateTargets',
            'log', 'config', 'PlateDefinition']
