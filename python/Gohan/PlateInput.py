@@ -266,6 +266,8 @@ class PlateInput(object):
         for col in data.colnames:
             if col != col.upper():
                 data.rename_column(col, col.upper())
+            if data[col].dtype.type == np.string_:
+                data[col] = map(lambda xx: xx.strip(), col)
 
         if 'MANGAID' not in data.colnames and self.targettype == 'sky':
             mangaidCol = table.Column(['0-{0:d}'.format(targetid)
