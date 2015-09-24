@@ -553,11 +553,7 @@ def getStellarLibraryTargets(designid=None):
 def getStellarLibraryDesigns():
     """Returns, from apodb, all the designids for stellar library plates."""
 
-    plateRuns = np.unique(platePlans['platerun'])
-
-    apogeeMangaRuns = [plateRun for plateRun in plateRuns
-                       if 'apogee2-manga' in plateRun.strip().lower() and
-                       plateRun.strip().lower() != '2014.04.f.apogee2-manga']
+    apogeeMangaRuns = getStellarLibraryRuns()
 
     apogeeMangaDesigns = []
     for run in apogeeMangaRuns:
@@ -565,6 +561,18 @@ def getStellarLibraryDesigns():
                                ['designid'].tolist())
 
     return apogeeMangaDesigns
+
+
+def getStellarLibraryRuns():
+    """Returns all APOGEE2-MaNGA plate runs."""
+
+    plateRuns = np.unique(platePlans['platerun'])
+
+    apogeeMangaRuns = [plateRun for plateRun in plateRuns
+                       if 'apogee2-manga' in plateRun.strip().lower() and
+                       plateRun.strip().lower() != '2014.04.f.apogee2-manga']
+
+    return apogeeMangaRuns
 
 
 def getRequiredPlateTargetsColumns():
@@ -636,3 +644,14 @@ def getAllMaNGAPlates():
         plates += runPlates.tolist()
 
     return plates
+
+
+def getPlateID(designID):
+    """Returns the plateid associated with a designid."""
+
+    plateID = platePlans[platePlans['designid'] == designID]['plateid']
+
+    if len(plateID) == 0:
+        return None
+
+    return plateID[0]
