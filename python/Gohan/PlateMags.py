@@ -489,6 +489,9 @@ class PlateMagsIFU(object):
         if plateTargetsRow is None:
             return None
 
+        if 'nsa_id' not in plateTargetsRow.colnames:
+            return None
+
         nsaid = plateTargetsRow['nsa_id'][0]
         nsaRow = getNSArow(nsaid)
         if nsaRow is None:
