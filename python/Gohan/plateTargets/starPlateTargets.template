@@ -25,9 +25,9 @@
 # 10) object_ra: RA of the target center (usually same as ifu_ra, unless offset)
 # 11) object_dec: DEC of the target center (usually same as ifu_dec, unless offset)
 # 12) catalog_ra: RA of the target in its parent catalogue (usually same as ifu_ra and object_ra
-                  unless offset)
+#                 unless offset)
 # 13) catalog_ra: DEC of the target in its parent catalogue (usually same as ifu_ra and object_dec
-                  unless offset)
+#                 unless offset)
 # 14) racen: RA of the plate center
 # 15) deccen: DEC of the plate center
 # 16) xfocal: xfocal location of the IFU hole in the plate
