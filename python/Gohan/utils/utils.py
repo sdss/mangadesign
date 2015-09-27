@@ -27,8 +27,9 @@ from astropy import time
 import warnings
 
 
-# Dictionary to cache catalogues after being read
+# Dictionary to cache catalogues and plateTargets after being read
 cachedCatalogues = {}
+cachedPlateTargets = {}
 
 
 try:
@@ -655,3 +656,49 @@ def getPlateID(designID):
         return None
 
     return plateID[0]
+
+
+def getPlateTargetsRow(mangaid, plateid=None):
+    """Returns the row in plateTarget for a certain target.
+
+    Note that if plateid is None, more than one row may be returned."""
+
+    mangaid = mangaid.strip()
+
+    catalogid = int(mangaid.split('-')[0])
+    if catalogid in cachedPlateTargets:
+        plateTargets = cachedPlateTargets[catalogid]
+    else:
+        plateTargets = yanny.yanny(getPlateTargetsPath(catalogid), np=True)
+        plateTargets = table.Table(plateTargets['PLTTRGT'])
+        cachedPlateTargets[catalogid] = plateTargets
+
+    if plateid is not None:
+        idx = np.where((plateTargets['mangaid'] == mangaid) &
+                       (plateTargets['plateid'] == plateid))
+    else:
+        idx = np.where(plateTargets['mangaid'] == mangaid)
+
+    row = plateTargets[idx]
+
+    if len(row) == 0:
+        return None
+    else:
+        return row
+
+
+def getNSArow(nsaid):
+    """Returns the NSA row for a certain nsaid."""
+
+    if 1 in cachedCatalogues:
+        cat = cachedCatalogues[1]
+    else:
+        cat = table.Table.read(getCataloguePath(1))
+        cachedCatalogues[1] = cat
+
+    row = cat[cat['NSAID'] == nsaid]
+
+    if len(row) == 0:
+        return None
+    else:
+        return row

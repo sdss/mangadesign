@@ -32,6 +32,7 @@ from Gohan.exceptions import GohanUserWarning, GohanError
 from Gohan import log, config, readPath
 from Gohan.utils import pywcsgrid2 as pw2
 from Gohan.utils import getSDSSRun
+from Gohan.utils.utils import getNSArow, getPlateTargetsRow
 from Gohan.utils.yanny import yanny, write_ndarray_to_yanny
 
 from astropy import wcs
@@ -484,26 +485,18 @@ class PlateMagsIFU(object):
     def _getNSAParams(self):
         """Determines if enough data is present to download NSA imaging."""
 
-        data = self._plateInputRow
-        cols = [col.lower() for col in data.colnames]
-        neededCols = ['iauname', 'subdir', 'pid']
+        plateTargetsRow = getPlateTargetsRow(self.mangaid)
+        if plateTargetsRow is None:
+            return None
 
-        returnValues = []
-        for neededCol in neededCols:
+        nsaid = plateTargetsRow['nsa_id'][0]
+        nsaRow = getNSArow(nsaid)
+        if nsaRow is None:
+            return None
 
-            if neededCol not in cols:
-                return None
+        neededCols = ['IAUNAME', 'SUBDIR', 'PID']
 
-            value = data[cols.index(neededCol)]
-            if value in [-999, '-999', '-999.', 'NULL']:
-                return None
-
-            if neededCol == 'pid':
-                value = int(value)
-
-            returnValues.append(value)
-
-        return returnValues
+        return nsaRow[neededCols][0]
 
     def _getFromNSA(self, **kwargs):
         """Main routine to download NSA data for the target."""
