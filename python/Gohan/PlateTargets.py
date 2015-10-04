@@ -393,9 +393,9 @@ class PlateTargets(object):
         designid = int(plateHolesSortedPairs['designid'])
 
         # Reads the NSA v1b to v1 match
-        nsaV1bToV1 = table.Table.read(readPath('+etc/NSA_v1b_to_v1.dat'),
-                                      format='ascii.fixed_width',
-                                      delimiter='|')
+        # nsaV1bToV1 = table.Table.read(readPath('+etc/NSA_v1b_to_v1.dat'),
+        #                               format='ascii.fixed_width',
+        #                               delimiter='|')
 
         if self.catalogid == 12:
             nsaV1bCat = _toLowerCase(
@@ -404,12 +404,12 @@ class PlateTargets(object):
         for mangaid in mangaids:
             result[mangaid] = {}
 
-            if self.catalogid == 12:
-                nsaV1bToV1_row = nsaV1bToV1[nsaV1bToV1['MaNGAID'] == mangaid]
-                indexID_100 = nsaV1bToV1_row['catid'][0]
-                nsa100_mangaid = '1-{0}'.format(indexID_100)
-            else:
-                nsa100_mangaid = mangaid
+            # if self.catalogid == 12:
+            #     nsaV1bToV1_row = nsaV1bToV1[nsaV1bToV1['MaNGAID'] == mangaid]
+            #     indexID_100 = nsaV1bToV1_row['catid'][0]
+            #     nsa100_mangaid = '1-{0}'.format(indexID_100)
+            # else:
+            #     nsa100_mangaid = mangaid
 
             # We get the appropriate row in mangaScience
             assert mangaid in mangaScienceData['mangaid'], \
@@ -430,7 +430,7 @@ class PlateTargets(object):
             # Gets the row for the mangaid from te targeting catalogue
             if self.catalogid != 'MaSTAR':
                 targetRow = mangaTargetsExtNSA[
-                    mangaTargetsExtNSA['mangaid'] == nsa100_mangaid.strip()]
+                    mangaTargetsExtNSA['mangaid'] == mangaid.strip()]
                 if len(targetRow) == 0:
                     warnings.warn('mangaid={0} not found in targeting '
                                   'catalogue'.format(mangaid),
@@ -452,7 +452,8 @@ class PlateTargets(object):
                 if column in ['ifu_ra', 'ifu_dec', 'object_ra', 'object_dec',
                               'catalog_ra', 'catalog_dec']:
                     result[mangaid][column] = \
-                        self._getCoordinate(column, targetRow, mangaScienceRow)
+                        self._getCoordinate(column, targetRow, mangaScienceRow,
+                                            plateHolesSortedRow)
                     continue
 
                 # Now uses mangaScience, the targeting catalogue, and
@@ -494,15 +495,17 @@ class PlateTargets(object):
 
         return result
 
-    def _getCoordinate(self, column, targetRow, mangaScienceRow):
+    def _getCoordinate(self, column, targetRow, mangaScienceRow,
+                       plateHolesSortedRow):
         """Returns the appropriate coordinate for a column and target."""
 
         baseCoord = column.split('_')[1]
 
         if targetRow is not None:
-            return targetRow[column]
             # if 'ifu_' in column:
-            #     return targetRow[column][0]
+            #     return plateHolesSortedRow['target_' + baseCoord][0]
+            # else:
+            return targetRow[column]
             # elif 'object_' in column:
             #     mangaTarget3 = targetRow['manga_target3']
             #     if mangaTarget3 != 0:
