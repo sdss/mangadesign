@@ -501,10 +501,10 @@ class PlateTargets(object):
 
         baseCoord = column.split('_')[1]
 
+        if 'ifu_' in column:
+            return plateHolesSortedRow['target_' + baseCoord][0]
+
         if targetRow is not None:
-            # if 'ifu_' in column:
-            #     return plateHolesSortedRow['target_' + baseCoord][0]
-            # else:
             return targetRow[column]
             # elif 'object_' in column:
             #     mangaTarget3 = targetRow['manga_target3']
