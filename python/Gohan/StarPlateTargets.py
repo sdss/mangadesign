@@ -63,7 +63,8 @@ class StarPlateTargets(PlateTargets):
                 if self.path is None:
                     raise GohanPlateTargetsError(
                         'neither the plateTargets nor the template '
-                        'for catalogid={0} can be found'.format(catalogid))
+                        'for catalogid={0} can be found'
+                        .format(self.catalogid))
                 warnings.warn('using template for starPlateTargets',
                               GohanPlateTargetsWarning)
                 self.template = True
