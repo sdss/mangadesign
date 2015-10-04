@@ -392,12 +392,24 @@ class PlateTargets(object):
 
         designid = int(plateHolesSortedPairs['designid'])
 
+        # Reads the NSA v1b to v1 match
+        nsaV1bToV1 = table.Table.read(readPath('+etc/NSA_v1b_to_v1.dat'),
+                                      format='ascii.fixed_width',
+                                      delimiter='|')
+
         if self.catalogid == 12:
             nsaV1bCat = _toLowerCase(
                 table.Table.read(readPath('+etc/targets-12.fits')))
 
         for mangaid in mangaids:
             result[mangaid] = {}
+
+            if self.catalogid == 12:
+                nsaV1bToV1_row = nsaV1bToV1[nsaV1bToV1['MaNGAID'] == mangaid]
+                indexID_100 = nsaV1bToV1_row['catid'][0]
+                nsa100_mangaid = '1-{0}'.format(indexID_100)
+            else:
+                nsa100_mangaid = mangaid
 
             # We get the appropriate row in mangaScience
             assert mangaid in mangaScienceData['mangaid'], \
@@ -418,7 +430,7 @@ class PlateTargets(object):
             # Gets the row for the mangaid from te targeting catalogue
             if self.catalogid != 'MaSTAR':
                 targetRow = mangaTargetsExtNSA[
-                    mangaTargetsExtNSA['mangaid'] == mangaid.strip()]
+                    mangaTargetsExtNSA['mangaid'] == nsa100_mangaid.strip()]
                 if len(targetRow) == 0:
                     warnings.warn('mangaid={0} not found in targeting '
                                   'catalogue'.format(mangaid),
@@ -456,7 +468,7 @@ class PlateTargets(object):
                 elif (targetRow is not None and column in targetRow.colnames):
                     result[mangaid][column] = targetRow[column][0]
                 elif column in mangaScienceRow.colnames:
-                    result[mangaid][column] = mangaScienceRow[column]
+                    result[mangaid][column] = mangaScienceRow[column][0]
                 elif (self.catalogid == 12 and column in nsaV1bCat.colnames and
                         mangaid in nsaV1bCat['mangaid']):
                     result[mangaid][column] = nsaV1bCat[
