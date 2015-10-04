@@ -107,11 +107,11 @@ def getPlateDir(plateid):
     if not isinstance(plateid, (Number, np.int32)):
         raise GohanError('plate must be a number')
 
-    plateid = str(int(plateid)).zfill(4)
+    plateidDir = str(int(plateid)).zfill(6)
+    plateidPre = plateidDir[0:4] + 'XX'
 
     platePath = os.path.join(getPlateListDir(),
-                             'plates/00{0}XX/00{1}'.format(plateid[0:2],
-                                                           plateid))
+                             'plates/{0}/{1}'.format(plateidPre, plateidDir))
 
     if not os.path.exists(platePath):
         raise GohanError(
