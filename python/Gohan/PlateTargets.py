@@ -754,6 +754,25 @@ class PlateTargets(object):
             except:
                 pass
 
+            try:
+                # Checks if value(s) are NaN
+                isNaN = np.isnan(targetData[key])
+                if np.any(isNaN):
+                    if np.isscalar(isNaN):
+                        targetData[key] = -999.
+                    else:
+                        targetData[key][isNaN] = -999.
+
+                # Does the same for infs
+                isInf = np.isinf(targetData[key])
+                if np.any(isInf):
+                    if np.isscalar(isInf):
+                        targetData[key] = -999.
+                    else:
+                        targetData[key][isInf] = -999.
+            except TypeError:
+                pass
+
         return targetData
 
     def _applyTargetFix(self, targetData):
