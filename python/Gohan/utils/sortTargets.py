@@ -31,8 +31,8 @@ def simpleMesh(centre, radius, width=None, **kwargs):
     dec0 = centre[1] - radius
     dec1 = centre[1] + radius
 
-    mRA, mDec = np.meshgrid(np.arange(ra0, ra1+width, width),
-                            np.arange(dec0, dec1+width, width))
+    mRA, mDec = np.meshgrid(np.arange(ra0, ra1 + width, width),
+                            np.arange(dec0, dec1 + width, width))
 
     coords = np.array([mRA.flatten(), mDec.flatten()]).T
     distanceToCentre = calculateSeparation(coords, centre)
@@ -56,8 +56,8 @@ def plotTargets(targets, centre, radius, plotGrid=None, plotAllTargets=None,
     fig.set_size_inches(8, 8)
 
     plate = Ellipse((raCen, decCen),
-                    height=2*radius,
-                    width=2*radius/np.cos(decCen*np.pi/180.),
+                    height=2 * radius,
+                    width=2 * radius / np.cos(decCen * np.pi / 180.),
                     linewidth=2,
                     edgecolor='k', facecolor='None')
     ax.add_patch(plate)
@@ -75,9 +75,9 @@ def plotTargets(targets, centre, radius, plotGrid=None, plotAllTargets=None,
 
     ax.scatter(targets[:, 0], targets[:, 1], marker='x', s=20, color='r')
 
-    ax.set_xlim(raCen + 1.05*radius/np.cos(decCen*np.pi/180.),
-                raCen - 1.05*radius/np.cos(decCen*np.pi/180.))
-    ax.set_ylim(decCen - 1.05*radius, decCen + 1.05*radius)
+    ax.set_xlim(raCen + 1.05 * radius / np.cos(decCen * np.pi / 180.),
+                raCen - 1.05 * radius / np.cos(decCen * np.pi / 180.))
+    ax.set_ylim(decCen - 1.05 * radius, decCen + 1.05 * radius)
 
     ax.set_xlabel(r'$\alpha_{2000}$')
     ax.set_ylabel(r'$\delta_{2000}$')
@@ -104,7 +104,7 @@ def calculateSeparation(coord1, coord2):
 
     return np.sqrt(((coord1[:, 0] - coord2[:, 0]) *
                     np.cos(np.deg2rad(coord1[:, 1])))**2 +
-                   (coord1[:, 1]-coord2[:, 1])**2)
+                   (coord1[:, 1] - coord2[:, 1])**2)
 
 
 def getTargetIdx(coords, assigned, grid, centre, radius):
@@ -178,7 +178,8 @@ def sortTargets(targets, centre=None, radius=1.49,
     if centre is None:
         centre = np.mean(targets, axis=0)
 
-    assert limitTo <= targets.shape[0]
+    assert limitTo <= targets.shape[0], ('limitTo={0} but only {1} targets'
+                                         .format(limitTo, targets.shape[0]))
 
     grid = simpleMesh(centre, radius, **kwargs)
 
