@@ -267,7 +267,7 @@ class PlateInput(object):
             if col != col.upper():
                 data.rename_column(col, col.upper())
             if data[col].dtype.type == np.string_:
-                data[col] = map(lambda xx: xx.strip(), col)
+                data[col] = map(lambda xx: xx.strip(), data[col])
 
         if 'MANGAID' not in data.colnames and self.targettype == 'sky':
             mangaidCol = table.Column(['0-{0:d}'.format(targetid)
@@ -277,7 +277,7 @@ class PlateInput(object):
 
         return data
 
-    def _selectSkies(self, data, skyPatrolRadius=16/60.,
+    def _selectSkies(self, data, skyPatrolRadius=16 / 60.,
                      minNeightborDist=4, **kwargs):
         """Selects skies near the targets defined in the list of `mangaInputs`
         PlateInput objects."""
@@ -408,7 +408,7 @@ class PlateInput(object):
         stdInput = None
 
         for nn in range(nInputs):
-            inp = plateDefinition['plateInput{0}'.format(nn+1)]
+            inp = plateDefinition['plateInput{0}'.format(nn + 1)]
             if fnmatch.fnmatch(inp, '*plateInput*_SCI_*.par'):
                 scienceInput = os.path.join(inputsPath, inp)
             elif fnmatch.fnmatch(inp, '*plateInput*_STA_*.par'):
@@ -542,8 +542,7 @@ class PlateInput(object):
                 limitTo=limitTargets,
                 plotFilename=('sortedTargets_{0:d}_{1}.pdf'
                               .format(self.designid,
-                                      self.targettype[0:3].upper()))
-                )
+                                      self.targettype[0:3].upper())))
             targets = targets[order]
         else:
             targets = targets[0:limitTargets]
@@ -636,7 +635,7 @@ class PlateInput(object):
                 limitTo=nBundlesToAllocate,
                 filename=('sortedTargets_{0:d}_{1}.pdf'
                           .format(self.designid, self.targettype[0:3].upper()))
-                )
+            )
             targets = targets[order]
         else:
 
@@ -690,7 +689,7 @@ class PlateInput(object):
         nTargets = len(targets)
         targets = self.internalDecollision(targets, **kwargs)
         log.debug('{0} targets rejected because internal collisions.'
-                  .format(nTargets-len(targets)))
+                  .format(nTargets - len(targets)))
         nTargets = len(targets)
 
         if coords is None and len(decollidePlateInputs) == 0:
@@ -717,7 +716,7 @@ class PlateInput(object):
             if coords is not None:
                 targets = self.decollideCoords(targets, coords, **kwargs)
             log.debug('{0} targets rejected from collision with other '
-                      'catalogues.'.format(nTargets-len(targets)))
+                      'catalogues.'.format(nTargets - len(targets)))
 
         return targets
 
@@ -754,7 +753,7 @@ class PlateInput(object):
         collided = []
         coords = coo.SkyCoord(targets['RA'], targets['DEC'], unit='deg')
 
-        for ii in range(len(coords)-1, -1, -1):
+        for ii in range(len(coords) - 1, -1, -1):
             separations = coords[ii].separation(coords[0:ii]).deg
 
             if any(separations < targetAvoid):
