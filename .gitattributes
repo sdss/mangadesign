@@ -47,6 +47,7 @@ python/Gohan/scripts/createFieldList.py -text
 python/Gohan/scripts/generate_2015.05.x.apogee2-manga.py -text
 python/Gohan/scripts/generate_2015.05.x.manga-apogee2.py -text
 python/Gohan/scripts/selectFieldsJun2015.py -text
+python/Gohan/test.dat -text
 python/Gohan/utils/Staralt.py -text
 python/Gohan/utils/__init__.py -text
 python/Gohan/utils/assignIFUDesigns.py -text
