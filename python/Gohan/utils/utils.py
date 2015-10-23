@@ -308,6 +308,23 @@ def getPointing(plateInputData):
 def getMangaSciencePath(input, format='designid'):
     """Returns the path of the mangaScience data for a design or plate."""
 
+    return getPlateInputPath(input, mode='science', format=format)
+
+
+def getPlateInputPath(input, mode='science', format='designid'):
+    """Returns the path of the plateInput data for a design or plate.
+
+    Parameters
+    ----------
+    input : int
+        Either the plateid or designid of the design to be used.
+    format : str
+        Either `'designid'` or `'plateid'`. Defines the type of `input`.
+    mode : str
+        One of `'science', 'standard', 'sky'`.
+
+    """
+
     if format == 'plateid':
         designID = getDesignID(input)
     else:
@@ -317,9 +334,11 @@ def getMangaSciencePath(input, format='designid'):
 
     plateDefYanny = yanny.yanny(plateDefinition)
 
+    mangaInput = 'manga' + mode.capitalize()
+
     for key in plateDefYanny.keys():
         if 'plateInput' in key:
-            if (('mangaScience' in plateDefYanny[key]) or
+            if ((mangaInput in plateDefYanny[key]) or
                     ('plateInput' in plateDefYanny[key] and
                      designID in [7878, 7879, 7888])):
                 return os.path.join(readPath(config['platelist']), 'inputs',
