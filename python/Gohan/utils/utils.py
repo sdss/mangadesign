@@ -27,8 +27,9 @@ from astropy import time
 import warnings
 
 
-# Dictionary to cache catalogues after being read
+# Dictionary to cache catalogues and plateTargets after being read
 cachedCatalogues = {}
+cachedPlateTargets = {}
 
 
 try:
@@ -106,11 +107,11 @@ def getPlateDir(plateid):
     if not isinstance(plateid, (Number, np.int32)):
         raise GohanError('plate must be a number')
 
-    plateid = str(int(plateid)).zfill(4)
+    plateidDir = str(int(plateid)).zfill(6)
+    plateidPre = plateidDir[0:4] + 'XX'
 
     platePath = os.path.join(getPlateListDir(),
-                             'plates/00{0}XX/00{1}'.format(plateid[0:2],
-                                                           plateid))
+                             'plates/{0}/{1}'.format(plateidPre, plateidDir))
 
     if not os.path.exists(platePath):
         raise GohanError(
@@ -307,6 +308,23 @@ def getPointing(plateInputData):
 def getMangaSciencePath(input, format='designid'):
     """Returns the path of the mangaScience data for a design or plate."""
 
+    return getPlateInputPath(input, mode='science', format=format)
+
+
+def getPlateInputPath(input, mode='science', format='designid'):
+    """Returns the path of the plateInput data for a design or plate.
+
+    Parameters
+    ----------
+    input : int
+        Either the plateid or designid of the design to be used.
+    format : str
+        Either `'designid'` or `'plateid'`. Defines the type of `input`.
+    mode : str
+        One of `'science', 'standard', 'sky'`.
+
+    """
+
     if format == 'plateid':
         designID = getDesignID(input)
     else:
@@ -316,9 +334,13 @@ def getMangaSciencePath(input, format='designid'):
 
     plateDefYanny = yanny.yanny(plateDefinition)
 
+    mangaInput = 'manga' + mode.capitalize()
+
     for key in plateDefYanny.keys():
         if 'plateInput' in key:
-            if 'mangaScience' in plateDefYanny[key]:
+            if ((mangaInput in plateDefYanny[key]) or
+                    ('plateInput' in plateDefYanny[key] and
+                     designID in [7878, 7879, 7888])):
                 return os.path.join(readPath(config['platelist']), 'inputs',
                                     plateDefYanny[key])
 
@@ -343,7 +365,7 @@ def getTargetFix(plateID):
 
     path = os.path.join(
         readPath(config['mangacore']), 'platedesign/targetfix/',
-        '{0:04d}XX'.format(int(plateID/100)),
+        '{0:04d}XX'.format(int(plateID / 100)),
         'targetfix-{0}.par'.format(plateID))
 
     if not os.path.exists(path):
@@ -454,6 +476,8 @@ def getPlateTargetsTemplate(catalogid):
         return readPath('+plateTargets/plateTargets-1.template')
     elif catalogid == 12:
         return readPath('+plateTargets/plateTargets-12.template')
+    elif catalogid == 50:
+        return readPath('+plateTargets/plateTargets-50.template')
     elif catalogid >= 30 or catalogid == 18:
         return readPath('+plateTargets/plateTargets-Ancillary.template')
     else:
@@ -527,9 +551,6 @@ def getStellarLibraryTargets(designid=None):
 
     if len(designid) == 1:
 
-        if designid[0] in [7933, 7934, 7935]:
-            return None
-
         mangaScience = getMangaSciencePath(designid[0])
         mangaScienceStruct = table.Table(yanny.yanny(mangaScience,
                                                      np=True)['MANGAINPUT'])
@@ -552,19 +573,26 @@ def getStellarLibraryTargets(designid=None):
 def getStellarLibraryDesigns():
     """Returns, from apodb, all the designids for stellar library plates."""
 
-    from sdss.internal.manga.Totoro import TotoroDBConnection
+    apogeeMangaRuns = getStellarLibraryRuns()
 
-    db = TotoroDBConnection()
-    session = db.session
+    apogeeMangaDesigns = []
+    for run in apogeeMangaRuns:
+        apogeeMangaDesigns += (platePlans[platePlans['platerun'] == run]
+                               ['designid'].tolist())
 
-    with session.begin():
-        plates = session.query(db.plateDB.Plate).join(
-            db.plateDB.PlateToSurvey, db.plateDB.Survey,
-            db.plateDB.SurveyMode).filter(
-                db.plateDB.Survey.label == 'MaNGA',
-                db.plateDB.SurveyMode.label == 'APOGEE lead').all()
+    return apogeeMangaDesigns
 
-    return [getDesignID(plate.plate_id) for plate in plates]
+
+def getStellarLibraryRuns():
+    """Returns all APOGEE2-MaNGA plate runs."""
+
+    plateRuns = np.unique(platePlans['platerun'])
+
+    apogeeMangaRuns = [plateRun for plateRun in plateRuns
+                       if 'apogee2-manga' in plateRun.strip().lower() and
+                       plateRun.strip().lower() != '2014.04.f.apogee2-manga']
+
+    return apogeeMangaRuns
 
 
 def getRequiredPlateTargetsColumns():
@@ -598,3 +626,98 @@ def getLastLocationID():
             return int(line)
 
     raise ValueError('the format of lastLocationID.dat does not seem valid.')
+
+
+def getAllMaNGAPlateRuns():
+    """Returns a list of all plate runs."""
+
+    plateRuns = np.unique(platePlans['platerun'])
+
+    mangaRuns = [plateRun for plateRun in plateRuns
+                 if 'manga' in plateRun.lower()]
+
+    mangaLeadRuns = []
+    for mangaRun in mangaRuns:
+        if mangaRun in ['2014.02.f.manga', '2014.04.e.manga-apogee2']:
+            continue
+        year = int(mangaRun.split('.')[0])
+        if year < 2014:
+            continue
+        surveys = mangaRun.split('.')[-1].split('-')
+        if len(surveys) == 1:
+            mangaLeadRuns.append(mangaRun)
+        else:
+            if surveys[0] == 'manga':
+                mangaLeadRuns.append(mangaRun)
+
+    return mangaLeadRuns
+
+
+def getAllMaNGAPlates():
+    """Returns a list of all MaNGA plates. Rejects some old plates."""
+
+    runs = getAllMaNGAPlateRuns()
+
+    plates = []
+    for run in runs:
+        runPlates = platePlans[platePlans['platerun'] == run]['plateid']
+        plates += runPlates.tolist()
+
+    return plates
+
+
+def getPlateID(designID):
+    """Returns the plateid associated with a designid."""
+
+    plateID = platePlans[platePlans['designid'] == designID]['plateid']
+
+    if len(plateID) == 0:
+        return None
+
+    return plateID[0]
+
+
+def getPlateTargetsRow(mangaid, plateid=None):
+    """Returns the row in plateTarget for a certain target.
+
+    Note that if plateid is None, more than one row may be returned."""
+
+    mangaid = mangaid.strip()
+
+    catalogid = int(mangaid.split('-')[0])
+    if catalogid in cachedPlateTargets:
+        plateTargets = cachedPlateTargets[catalogid]
+    else:
+        plateTargets = yanny.yanny(getPlateTargetsPath(catalogid), np=True)
+        plateTargets = table.Table(plateTargets['PLTTRGT'])
+        cachedPlateTargets[catalogid] = plateTargets
+
+    if plateid is not None:
+        idx = np.where((plateTargets['mangaid'] == mangaid) &
+                       (plateTargets['plateid'] == plateid))
+    else:
+        idx = np.where(plateTargets['mangaid'] == mangaid)
+
+    row = plateTargets[idx]
+
+    if len(row) == 0:
+        return None
+    else:
+        return row
+
+
+def getNSArow(nsaid):
+    """Returns the NSA row for a certain nsaid."""
+
+    if 1 in cachedCatalogues:
+        cat = cachedCatalogues[1]
+    else:
+        cat = table.Table.read(getCataloguePath(1))
+        cachedCatalogues[1] = cat
+
+    row = cat[cat['NSAID'] == nsaid]
+
+    if len(row) == 0:
+        return None
+    else:
+        return row

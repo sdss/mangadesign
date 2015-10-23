@@ -1,4 +1,4 @@
-# !/usr/bin/env python
+#!/usr/bin/env python
 # encoding: utf-8
 """
 mangaPostDesign.py
@@ -94,7 +94,7 @@ def runMaNGAPostDesign(plateids, overwrite=False, skipPlateHolesSorted=False):
             catPlateMangaID[catID][plate].append(mangaid)
 
     if len(catPlateMangaID.keys()) == 0:
-        log.important('No targets found for that platerun.')
+        log.important('No targets found for that list of plates.')
         return OrderedDict()
 
     # Creates the returned dictionary {catID: plateTargets}
@@ -132,11 +132,12 @@ def runMaNGAPostDesign(plateids, overwrite=False, skipPlateHolesSorted=False):
         # Logs some information
         if addedRows > 0:
             plateTargetsPath, nAppended = plateTargets.write()
-            log.info('plateTargets-{0}.par saved'.format(catID))
+            log.info('{0} saved'.format(os.path.basename(plateTargetsPath)))
             log.info('Appended {0} targets to {1}'.format(
                 nAppended, plateTargetsPath))
         else:
-            log.info('no targets added to plateTargets-{0}.par'.format(catID))
+            log.info('no targets added to {0}'.format(
+                     os.path.basename(plateTargets.path)))
 
     if skipPlateHolesSorted:
         warnings.warn('skipping copying plateHolesSorted files to mangacore',
@@ -152,7 +153,7 @@ def runMaNGAPostDesign(plateids, overwrite=False, skipPlateHolesSorted=False):
     if not os.path.exists(plateHolesDir):
         raise GohanPostDesignError('not plateholes dir found in mangacore')
 
-    for plate in plates:
+    for plate in plateids:
         plateHolesSortedPath = utils.getPlateHolesSortedPath(plate)
         plateHolesPlatePath = os.path.join(
             plateHolesDir, '{0}XX/'.format('{0:06d}'.format(plate)[0:4]))
@@ -193,17 +194,30 @@ if __name__ == '__main__':
     parser.add_argument('--noplateholessorted', '-n', action='store_true',
                         help='skips copying plateHolesSorted files to '
                         'mangacore.')
+    parser.add_argument('--all', '-a', action='store_true',
+                        help='runs post design for all plate runs.')
     parser.add_argument('plateRuns', metavar='plateRuns/plateids',
-                        type=str, nargs='+', help='the plate run or plateids '
+                        type=str, nargs='*', help='the plate run or plateids '
                         'to process.')
 
     args = parser.parse_args()
+
+    if len(args.plateRuns) == 0 and not args.all:
+        parser.error('plateRuns/plateids must be specified '
+                     'unless all=True.')
+
+    if args.all:
+        args.plateid = False
 
     if args.plateid:
         plateids = [int(plateid) for plateid in args.plateRuns]
         runMaNGAPostDesign(plateids, overwrite=args.overwrite)
     else:
-        plateRuns = args.plateRuns
+        if not args.all:
+            plateRuns = args.plateRuns
+        else:
+            plateRuns = utils.getAllMaNGAPlateRuns()
+
         for plateRun in plateRuns:
             log.info('Plate run: ' + plateRun)
             plates = map(int,

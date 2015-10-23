@@ -2,30 +2,12 @@
 #
 # Uses SDSS-style Yanny .par formatting
 #
-# The purpose of this file is to store information required for DAP
-# analyses of a given galaxy (e.g., redshift, inclination), and to
-# provide the correspondence between the mangaid identifier and the
-# plate-ifudesign identifier.  This file has entries indexed by
-# designid (plate designid) and ifudesign.  Rows are added when new
-# plates are designed.
-#
-# Note that not all information is required here, much information
-# is instead passed from the plate design stage via the plateHoles
-# file.
-#
-# Different files cover different target types.  E.g., '12' was
-# used for commissioning run galaxies.
-#
-# Information from this file about targeting is combined with information
-# from the DRP (slitmap and output headers) about reductions to
-# generate the information in the platelist file for a given DRP tag.
-# This platelist file is the searchable reference for a given set
-# of reductions.
+# The purpose of this file is to compile information about the standards for the
+# stellar library (although it could arguably be used for any kind of standard).
+# Unlike plateTargets, the standardPlateTargets file contains targets from different
+# catalogids. Accordingly, the typeid header keyword has been removed.
 #
 # The data structure is as follows:
-#
-# Header keywords:
-# typeid: E.g., '12' for the commissioning data
 #
 # Data table entries:
 # ---- These columns are required for ALL typeids ----
@@ -59,17 +41,14 @@
 #                    design process.
 # 24) ifudesignwrongsize: 1 if the IFU assigned is of the wrong size (for
 #                         instance, if it does not cover 1.5Reff).
-#
 # ---- These columns may vary between typeids ----
-#
-# For ancillary-based plateTargets, the column list will be automatically completed
-# by using all the columns typically included in plateInput. Columns specific to
-# plate design (e.g., lambda_eff, targettype, etc.) won't be included. Once the
-# plateTargets file for the specific catalogue (catalogid) has been created, the
-# columns list will be considered fixed.
-#
+# 25) psfmag: the optimal measure of the total flux is determined by fitting a PSF model to the object
+#             in (u, g, t, i, z) bands.
+# 26) extinction: Galactic extinction in (u, g, r, i, z) for the target.
+# 27) pmra: proper motion, in arcsec/yr, in the RA direction.
+# 28) pmdec: proper motion, in arcsec/yr, in the Dec direction.
+# 29) epoch_imaging: the epoch of the imaging from which these data are derived.
 
-typeid 30
 
 typedef struct {
     long designid;
@@ -96,7 +75,11 @@ typedef struct {
     int ifudesignsize;
     int ifutargetsize;
     int ifudesignwrongsize;
+    double psfmag[5];
+    double extinction[5];
+    double pmra;
+    double pmdec;
+    double epoch_imaging;
 } PLTTRGT;
 
-PLTTRGT 0000 0000 0000 0000 1-000000 0 J213418.49+111251.6 323.577092837 11.2143239831 323.577092837 11.2143239831 323.577092837 11.2143239831 324.49449707 11.5765455462 -195.98829 -78.573101 2014.07 128 0 0 127 127 0
-
+PLTTRGT 0000 0000 0000 0000 1-000000 0 15h/p40/J152554.88+415435 231.478756028 41.9097725983 231.478756028 41.9097725983 231.478756028 41.9097725983 230.99167 42.68736 78.935912 -169.09538 2014.07 2 0 0 37 0 0 {1. 2. 3. 4. 5.} {1. 2. 3. 4. 5.} -999. -999. -999.

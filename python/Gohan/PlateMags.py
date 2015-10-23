@@ -32,6 +32,7 @@ from Gohan.exceptions import GohanUserWarning, GohanError
 from Gohan import log, config, readPath
 from Gohan.utils import pywcsgrid2 as pw2
 from Gohan.utils import getSDSSRun
+from Gohan.utils.utils import getNSArow, getPlateTargetsRow
 from Gohan.utils.yanny import yanny, write_ndarray_to_yanny
 
 from astropy import wcs
@@ -156,7 +157,8 @@ class PlateMags(list):
         plateMagsIFUList = [PlateMagsIFU(row, designid=self.designid,
                                          **kwargs)
                             for row in self.struct1
-                            if row['ifudesignsize'] >= IFU_MIN_SIZE]
+                            if (row['ifudesignsize'] >= IFU_MIN_SIZE and
+                                int(row['mangaid'].split('-')[0]) > 0)]
 
         list.__init__(self, plateMagsIFUList)
 
@@ -198,7 +200,7 @@ class PlateMags(list):
             if overwrite:
                 os.remove(plateMagsPlotPath)
             else:
-                log.info('plot {0} aready exists'.format(
+                log.info('plot {0} already exists'.format(
                          shortenPath(plateMagsPlotPath)))
                 return
 
@@ -357,7 +359,7 @@ class PlateMagsIFU(object):
         a single target.
     useRepo : bool, optional
         If True, the default, preimaging is created at the appropiate location
-        in the repositiory defined by `repoPath`.
+        in the repository defined by `repoPath`.
     repoPath : bool, optional
         The path of the repository. Deafaults to the value of
         `Gohan.default['preimaging']`.
@@ -474,7 +476,7 @@ class PlateMagsIFU(object):
         # in SDSS matches the one in the r frame. In NSA all frames
         # are aligned
         rFilt = FILTERS.index('r')
-        rIdx = 3*rFilt+1
+        rIdx = 3 * rFilt + 1
         self._getIRGImage(_preImageIRG, data[rIdx].header)
 
         data.close()
@@ -483,26 +485,21 @@ class PlateMagsIFU(object):
     def _getNSAParams(self):
         """Determines if enough data is present to download NSA imaging."""
 
-        data = self._plateInputRow
-        cols = [col.lower() for col in data.colnames]
-        neededCols = ['iauname', 'subdir', 'pid']
+        plateTargetsRow = getPlateTargetsRow(self.mangaid)
+        if plateTargetsRow is None:
+            return None
 
-        returnValues = []
-        for neededCol in neededCols:
+        if 'nsa_id' not in plateTargetsRow.colnames:
+            return None
 
-            if neededCol not in cols:
-                return None
+        nsaid = plateTargetsRow['nsa_id'][0]
+        nsaRow = getNSArow(nsaid)
+        if nsaRow is None:
+            return None
 
-            value = data[cols.index(neededCol)]
-            if value in [-999, '-999', '-999.', 'NULL']:
-                return None
+        neededCols = ['IAUNAME', 'SUBDIR', 'PID']
 
-            if neededCol == 'pid':
-                value = int(value)
-
-            returnValues.append(value)
-
-        return returnValues
+        return nsaRow[neededCols][0]
 
     def _getFromNSA(self, **kwargs):
         """Main routine to download NSA data for the target."""
@@ -552,19 +549,22 @@ class PlateMagsIFU(object):
     def getNSAImage(self, imageName, IAUName, subDir, pID, **kwargs):
         """Downloads NSA imaging and creates the parent FITS file."""
 
-        baseURL = os.path.join(SDSS_BASE_URL,
-                               'sdsswork/atlas/v1/detect/v1_0/',
-                               '{0}'.format(subDir))
+        mosaicBaseURL = os.path.join(SDSS_BASE_URL,
+                                     'sdsswork/atlas/v1/detect/sdss/{0}/'
+                                     .format(subDir))
+        bpsfBaseURL = os.path.join(SDSS_BASE_URL,
+                                   'sdsswork/atlas/v1/detect/v1_0/{0}/'
+                                   .format(subDir))
 
-        parentURL = baseURL + \
-            '/atlases/{0}/{1}-parent-{0}.fits.gz'.format(pID, IAUName)
-        varURL = baseURL + \
-            '/atlases/{0}/{1}-ivar-{0}.fits.gz'.format(pID, IAUName)
-        bpsfURL = [baseURL + '/{0}-{1}-bpsf.fits.gz'.format(IAUName, band)
-                   for band in FILTERS]
+        mosaicURLs = [mosaicBaseURL + '{0}-{1}.fits.gz'.format(IAUName, band)
+                      for band in FILTERS]
+        # varURL = baseURL + \
+        #     '/atlases/{0}/{1}-ivar-{0}.fits.gz'.format(pID, IAUName)
+        bpsfURLs = [bpsfBaseURL + '{0}-{1}-bpsf.fits.gz'.format(IAUName, band)
+                    for band in FILTERS]
 
         hdus = []
-        for url in [parentURL] + [varURL] + bpsfURL:
+        for url in mosaicURLs + bpsfURLs:
             hdus.append(self._getNSAHDU(url, **kwargs))
             if None in hdus:
                 return False
@@ -615,20 +615,29 @@ class PlateMagsIFU(object):
 
         # Concatenates the images, vars and PSFs in a single FITS.
         fullHDU = fits.HDUList([fits.PrimaryHDU()])
+        primary = fullHDU[0]
+        primary.header['PREIMVER'] = config['sdssImaging']['preimagingVersion']
+
         for ii, filt in enumerate(FILTERS):
-            nn = NSAFILTERPOS[filt]
-            fullHDU.append(hdus[0][nn].copy())    # image
-            fullHDU.append(hdus[1][nn].copy())    # variance
-            fullHDU.append(hdus[2+ii][0].copy())  # psf
+            fullHDU.append(hdus[ii][0].copy())    # image
+            fullHDU.append(hdus[ii][1].copy())    # variance
+            fullHDU.append(hdus[len(FILTERS) + ii][0].copy())  # psf
 
         for ii in range(NFILTERS):
-            fullHDU[ii*3+1].header['EXTNAME'] = '{0} img'.format(FILTERS[ii])
-            fullHDU[ii*3+1].header['FLUXUNIT'] = 'nanomaggies'
-            fullHDU[ii*3+2].header['EXTNAME'] = \
+            fullHDU[3 * ii + 1].header['EXTNAME'] = \
+                '{0} img'.format(FILTERS[ii])
+            fullHDU[3 * ii + 1].header['FLUXUNIT'] = 'nanomaggies'
+            fullHDU[3 * ii + 2].header['EXTNAME'] = \
                 '{0} ivar'.format(FILTERS[ii])
-            fullHDU[ii*3+2].header['FLUXUNIT'] = 'nanomaggies'
-            fullHDU[ii*3+3].header['EXTNAME'] = \
+            fullHDU[3 * ii + 2].header['FLUXUNIT'] = 'nanomaggies'
+            fullHDU[3 * ii + 3].header['EXTNAME'] = \
                 '{0} psf'.format(FILTERS[ii])
+
+            for keyword in ['CTYPE1', 'CTYPE2', 'EQUINOX', 'CD1_1', 'CD2_1',
+                            'CD1_2', 'CD2_2', 'CRPIX1', 'CRPIX2', 'CRVAL1',
+                            'CRVAL2', 'LONPOLE', 'LATPOLE']:
+                fullHDU[3 * ii + 2].header[keyword] = \
+                    fullHDU[3 * ii + 1].header[keyword]
 
         fullHDU.update_extend()
 
@@ -646,9 +655,9 @@ class PlateMagsIFU(object):
 
         for ii in range(NFILTERS):
 
-            imgIdx = ii*3 + 1
-            varIdx = ii*3 + 2
-            psfIdx = ii*3 + 3
+            imgIdx = ii * 3 + 1
+            varIdx = ii * 3 + 2
+            psfIdx = ii * 3 + 3
 
             ww = wcs.WCS(newHDU[imgIdx].header)
             xx, yy = ww.wcs_world2pix(ra, dec, 0)
@@ -666,12 +675,12 @@ class PlateMagsIFU(object):
             for nn in [imgIdx, varIdx]:
                 # Creates a frame for the image for the case its shape < 2*nPix
                 data = newHDU[nn].data.copy()
-                tmpData = np.zeros((data.shape[0]+nPix*2,
-                                    data.shape[1]+nPix*2), np.float)
-                tmpData[nPix:tmpData.shape[0]-nPix,
-                        nPix:tmpData.shape[1]-nPix] = data
+                tmpData = np.zeros((data.shape[0] + nPix * 2,
+                                    data.shape[1] + nPix * 2), np.float)
+                tmpData[nPix:tmpData.shape[0] - nPix,
+                        nPix:tmpData.shape[1] - nPix] = data
 
-                tmpData = tmpData[yy:yy+2*nPix, xx:xx+2*nPix]
+                tmpData = tmpData[yy:yy + 2 * nPix, xx:xx + 2 * nPix]
 
                 newHDU[nn].data = np.array(tmpData)
 
@@ -909,8 +918,8 @@ class PlateMagsIFU(object):
 
         for ii in range(NFILTERS):
 
-            img = data[3*ii+1]
-            psf = data[3*ii+3]
+            img = data[3 * ii + 1]
+            psf = data[3 * ii + 3]
 
             scale = config['sdssImaging']['scale']
 
@@ -925,8 +934,9 @@ class PlateMagsIFU(object):
                     '{0} from seeing {1:.3f} arcsec to {2} arcsec.'.format(
                         FILTERS[ii], seeingArcSec, targetSeeing))
 
-                targetSigma = targetSeeing / (2*np.sqrt(2*np.log(2))) / scale
-                sourceSigma = seeingPix / (2*np.sqrt(2*np.log(2)))
+                targetSigma = (targetSeeing / (2 * np.sqrt(2 * np.log(2))) /
+                               scale)
+                sourceSigma = seeingPix / (2 * np.sqrt(2 * np.log(2)))
 
                 rebinnedData = self.rebinImage(img.data, sourceSigma,
                                                targetSigma)
@@ -938,7 +948,7 @@ class PlateMagsIFU(object):
 
                 rebinnedData = img.data
 
-            rebin[3*ii+1].data = rebinnedData
+            rebin[3 * ii + 1].data = rebinnedData
 
         return rebin
 
@@ -1009,7 +1019,7 @@ class PlateMagsIFU(object):
 
         for jj in range(NFILTERS):
 
-            img = data[jj*3+1]
+            img = data[3 * jj + 1]
             ww = wcs.WCS(img.header)
             fibrePix = ww.wcs_world2pix(fibreWorld, 0)
 
@@ -1065,8 +1075,8 @@ class PlateMagsIFU(object):
 
         rMax = int(aperture) + 1
 
-        ii = np.arange(-rMax, rMax+1)
-        jj = np.arange(-rMax, rMax+1)
+        ii = np.arange(-rMax, rMax + 1)
+        jj = np.arange(-rMax, rMax + 1)
 
         coords = np.dstack(np.meshgrid(ii, jj)).reshape(-1, 2)
         distances = np.sqrt(coords[:, 0]**2 + coords[:, 1]**2)
@@ -1149,7 +1159,7 @@ class PlateMagsIFU(object):
 
         grid = axes_grid.ImageGrid(
             fig, 111,
-            nrows_ncols=(NFILTERS+1, 3),
+            nrows_ncols=(NFILTERS + 1, 3),
             ngrids=None,
             direction='row',
             axes_pad=0.04, add_all=True,
@@ -1165,11 +1175,11 @@ class PlateMagsIFU(object):
         nn = 0
         for ii in range(nRows):
 
-            imgData = self.binnedData[3*(ii-1)+1].data
+            imgData = self.binnedData[3 * (ii - 1) + 1].data
 
             for jj in range(nCols):
 
-                filt = FILTERS[ii-1]
+                filt = FILTERS[ii - 1]
 
                 if ii == 0:
 
@@ -1205,7 +1215,7 @@ class PlateMagsIFU(object):
 
                     else:
                         grid[nn].set_axis_bgcolor('k')
-                        self._plotFlux(grid[nn], scale, ii-1)
+                        self._plotFlux(grid[nn], scale, ii - 1)
                         grid[nn].text(1.1, 0.5, r'${0}$'.format(filt),
                                       horizontalalignment='center',
                                       verticalalignment='center',
@@ -1267,10 +1277,10 @@ class PlateMagsIFU(object):
 
         if self.source == 'NSA':
             irgURL = os.path.join(SDSS_BASE_URL,
-                                  'sdsswork/atlas/v1/detect/v1_0/',
-                                  '{0}'.format(self.subDir),
-                                  'atlases/{0}/{1}-parent-{0}-irg.jpg'
-                                  .format(self.pID, self.IAUName))
+                                  'sdsswork/atlas/v1/detect/sdss/',
+                                  '{0}/{1}.jpg'.format(self.subDir,
+                                                       self.IAUName))
+
         elif self.source == 'SDSS':
             run, rerun, camcol, field = self.SDSSField
             fieldDic = {'run': run, 'rerun': rerun,
@@ -1289,13 +1299,13 @@ class PlateMagsIFU(object):
         nPix = config['plateMags']['nPix']
 
         # Creates a frame for the image for the case its shape < 2*nPix
-        tmpData = np.zeros((data.shape[0]+nPix*2,
-                            data.shape[1]+nPix*2, 3), np.float)
+        tmpData = np.zeros((data.shape[0] + nPix * 2,
+                            data.shape[1] + nPix * 2, 3), np.float)
 
-        tmpData[nPix:tmpData.shape[0]-nPix,
-                nPix:tmpData.shape[1]-nPix, :] = data
+        tmpData[nPix:tmpData.shape[0] - nPix,
+                nPix:tmpData.shape[1] - nPix, :] = data
 
-        tmpData = tmpData[yy:yy+2*nPix, xx:xx+2*nPix, :]
+        tmpData = tmpData[yy:yy + 2 * nPix, xx:xx + 2 * nPix, :]
 
         imsave(imageName, tmpData)
 

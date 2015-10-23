@@ -28,7 +28,7 @@ from astropy.coordinates import SkyCoord
 nSkies = {127: 8, 91: 6, 61: 4, 37: 2, 19: 2, 7: 1}
 
 
-def getIFUSkies(data, coords, ra, dec, skyPatrolRadius=14/60.,
+def getIFUSkies(data, coords, ra, dec, skyPatrolRadius=14 / 60.,
                 minNeightborDist=4):
     """Selects skies near the targets defined in the list of `mangaInputs`
     PlateInput objects."""
@@ -45,7 +45,8 @@ def getIFUSkies(data, coords, ra, dec, skyPatrolRadius=14/60.,
     ifuSkyCoords[:, 1] = ifuSkies['dec']
 
     validTargets, assigned = sortTargets(ifuSkyCoords, centre=(ra, dec),
-                                         limitTo=40, radius=skyPatrolRadius)
+                                         limitTo=40, radius=skyPatrolRadius,
+                                         plot=False)
 
     return validTargets
 
@@ -65,7 +66,7 @@ def getInfoFromAPOGEE(designID):
     stdInput = None
 
     for nn in range(nInputs):
-        inp = plateDefinition['plateInput{0}'.format(nn+1)]
+        inp = plateDefinition['plateInput{0}'.format(nn + 1)]
         if fnmatch.fnmatch(inp, '*plateInput*_SCI_*.par'):
             scienceInput = os.path.join(inputsPath, inp)
         elif fnmatch.fnmatch(inp, '*plateInput*_STA_*.par'):

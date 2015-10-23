@@ -1,25 +1,27 @@
 designid  ->  mangaScience
 plateid  ->  plateHolesSorted
-manga_tileid  ->  mangaScience
-ifudesign  ->  mangaScience[MANGAINPUT]
-mangaid  ->  mangaScience[MANGAINPUT]
+manga_tileid  ->  MaNGA_targets_extNSA
+ifudesign  ->  MaNGA_targets_extNSA
+mangaid  ->  MaNGA_targets_extNSA
 neverobserve  ->  Gohan
-iauname  ->  mangaScience[MANGAINPUT]
-ifu_ra  ->  mangaScience[MANGAINPUT]
-ifu_dec  ->  mangaScience[MANGAINPUT]
-target_ra  ->  mangaScience[MANGAINPUT]
-target_dec  ->  mangaScience[MANGAINPUT]
-racen  ->  mangaScience
-deccen  ->  mangaScience
+iauname  ->  MaNGA_targets_extNSA
+ifu_ra  ->  MaNGA_targets_extNSA
+ifu_dec  ->  MaNGA_targets_extNSA
+object_ra  ->  MaNGA_targets_extNSA
+object_dec  ->  MaNGA_targets_extNSA
+catalog_ra  ->  MaNGA_targets_extNSA
+catalog_dec  ->  MaNGA_targets_extNSA
+racen  ->  MaNGA_targets_extNSA
+deccen  ->  MaNGA_targets_extNSA
 xfocal  ->  plateHolesSorted[STRUCT1]
 yfocal  ->  plateHolesSorted[STRUCT1]
 epoch  ->  plateHolesSorted[STRUCT1]
-manga_target1  ->  mangaScience[MANGAINPUT]
-manga_target2  ->  mangaScience[MANGAINPUT]
-manga_target3  ->  mangaScience[MANGAINPUT]
-ifudesignsize  ->  mangaScience[MANGAINPUT]
-ifutargetsize  ->  mangaScience[MANGAINPUT]
-ifudesignwrongsize  ->  mangaScience[MANGAINPUT]
+manga_target1  ->  MaNGA_targets_extNSA
+manga_target2  ->  MaNGA_targets_extNSA
+manga_target3  ->  MaNGA_targets_extNSA
+ifudesignsize  ->  MaNGA_targets_extNSA
+ifutargetsize  ->  MaNGA_targets_extNSA
+ifudesignwrongsize  ->  MaNGA_targets_extNSA
 field  ->  NSA v1 [FIELD]
 run  ->  NSA v1 [RUN]
 nsa_ba  ->  petro_v1_0_0_a3.fits [ba]
@@ -46,4 +48,3 @@ nsa_amivar_el  ->  petro_kcorrect_v1_0_0_a3.fits [AMIVAR]
 nsa_extinction  ->  petro_kcorrect_v1_0_0_a3.fits [EXTINCTION]
 nsa_version  ->  "v1_0_0"
 nsa_id  ->  NSA v1 [NSAID]
-nsa_id100  ->  same as nsa_id
