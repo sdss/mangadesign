@@ -219,7 +219,7 @@ class PlateTargets(object):
         ----------
         mangaids : string, list of strings or None
             The mangaid or list of mangaids to add. If None, all the mangaids
-            in the manga
+            in the plate.
         plateid : integer or None, optional
             The plateid of the plate on which the new target(s) have been
             drilled. If `mangaids` is a list, it is assumed that all the
@@ -279,7 +279,7 @@ class PlateTargets(object):
         catalogids = np.array([int(mangaid.split('-')[0])
                                for mangaid in mangaids])
 
-        if self.catalogid != 'MaSTAR':
+        if self.catalogid not in ['MaSTAR', 'standard']:
             assert np.all(catalogids == self.catalogid), \
                 'one or more of the mangaids has catalogid != {0}'.format(
                     self.catalogid)
@@ -296,7 +296,7 @@ class PlateTargets(object):
             mangaids, mangaScienceData, mangaSciencePairs,
             plateHolesSortedData, plateHolesSortedPairs)
 
-        if self.catalogid == 'MaSTAR':
+        if self.catalogid in ['MaSTAR', 'standard']:
             return commonData, mangaids, plateid
 
         # Creates a list of specific fields for this plateTargets file
@@ -368,10 +368,13 @@ class PlateTargets(object):
 
             self._nAppended += 1
 
-            if self.catalogid != 'MaSTAR':
-                fileName = 'plateTargets-{0}'.format(self.catalogid)
-            else:
+            if self.catalogid == 'MaSTAR':
                 fileName = 'starPlateTargets'
+            elif self.catalogid == 'standard':
+                fileName = 'standardPlateTargets'
+            else:
+                fileName = 'plateTargets-{0}'.format(self.catalogid)
+
             log.debug('mangaid={0} added to {1}'.format(mangaid, fileName))
 
         return self.structure[addedIndices]
@@ -428,7 +431,7 @@ class PlateTargets(object):
                 plateHolesSortedRow = None
 
             # Gets the row for the mangaid from te targeting catalogue
-            if self.catalogid != 'MaSTAR':
+            if self.catalogid not in ['MaSTAR', 'standard']:
                 targetRow = mangaTargetsExtNSA[
                     mangaTargetsExtNSA['mangaid'] == mangaid.strip()]
                 if len(targetRow) == 0:
@@ -454,6 +457,10 @@ class PlateTargets(object):
                     result[mangaid][column] = \
                         self._getCoordinate(column, targetRow, mangaScienceRow,
                                             plateHolesSortedRow)
+                    continue
+
+                if column == 'epoch':
+                    result[mangaid][column] = plateHolesSortedRow[column]
                     continue
 
                 # Now uses mangaScience, the targeting catalogue, and
@@ -483,9 +490,9 @@ class PlateTargets(object):
                         # If other value is not found, we set it to -999 but
                         # raise a warning. Skips columns that we know will
                         # systematically fail for stellar library targets
-                        if (self.catalogid != 'MaSTAR' or column not in
-                                ['iauname', 'ifutargetsize',
-                                 'ifudesignwrongsize']):
+                        if (self.catalogid not in ['MaSTAR', 'standard'] or
+                            column not in ['iauname', 'ifutargetsize',
+                                           'ifudesignwrongsize']):
                             warnings.warn('mangaid={0}: no value found for '
                                           'mandatory field {1}. '
                                           'Setting it to -999'

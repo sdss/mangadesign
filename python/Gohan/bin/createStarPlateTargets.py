@@ -18,7 +18,7 @@ from __future__ import division
 from __future__ import print_function
 
 from Gohan import log, config
-from Gohan import StarPlateTargets
+from Gohan import StarPlateTargets, StandardPlateTargets
 from Gohan.utils import utils
 import numpy as np
 
@@ -30,10 +30,10 @@ nBundles = sum(config['IFUs'].values())
 
 
 def createStarPlateTargets(plateids, overwrite=False):
-    """Adds targets to starPlateTarget.
+    """Adds targets to starPlateTargets and standardPlateTargets.
 
-    This function accepts a list of plateids and updates starPlateTargets
-    for all the mangaids in the list of plates.
+    This function accepts a list of plateids and updates starPlateTargets and
+    standardPlateTargets for all the mangaids in the list of plates.
 
     Parameters
     ----------
@@ -56,17 +56,24 @@ def createStarPlateTargets(plateids, overwrite=False):
     log.info('Identifying mangaids ... ')
 
     starPlateTargets = StarPlateTargets()
+    standardPlateTargets = StandardPlateTargets()
     for plateid in plateids:
 
         log.info('Adding targets for plate_id={0}'.format(plateid))
         starPlateTargets.addTargets(plateid=plateid)
+        standardPlateTargets.addTargets(plateid)
 
     starPlateTargetsPath, nAppended = starPlateTargets.write()
     log.info('{0} saved'.format(os.path.basename(starPlateTargetsPath)))
     log.info('Appended {0} targets to {1}'.format(nAppended,
                                                   starPlateTargetsPath))
 
-    return starPlateTargets
+    standardPlateTargetsPath, nAppended = standardPlateTargets.write()
+    log.info('{0} saved'.format(os.path.basename(standardPlateTargetsPath)))
+    log.info('Appended {0} targets to {1}'.format(nAppended,
+                                                  standardPlateTargetsPath))
+
+    return starPlateTargets, standardPlateTargets
 
 
 if __name__ == '__main__':
