@@ -536,7 +536,7 @@ class PlateTargets(object):
         # First we open the petrosian catalogues for NSA v1.
         inputsPath = readPath(config['catalogues']['inputs'])
 
-        petroPath = os.path.join(inputsPath, 'petro_v1_0_0_a3.fits')
+        petroPath = os.path.join(inputsPath, 'petro_v1_0_0_a4.fits')
         petroKCorrPath = os.path.join(inputsPath,
                                       'petro_kcorrect_v1_0_0_a3.fits')
 
