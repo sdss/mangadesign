@@ -55,7 +55,7 @@ typedef struct {
     long plateid;
     long manga_tileid;
     long ifudesign;
-    char mangaid[10];
+    char mangaid[15];
     long neverobserve;
     char iauname[25];
     double ifu_ra;
