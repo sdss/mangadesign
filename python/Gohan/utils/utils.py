@@ -361,12 +361,15 @@ def getPlateDefinition(designID):
         raise ValueError('plateDefinition does not exist.')
 
 
-def getTargetFix(plateID):
+def getTargetFix(plateID, alwaysReturnPath=False):
 
     path = os.path.join(
         readPath(config['mangacore']), 'platedesign/targetfix/',
         '{0:04d}XX'.format(int(plateID / 100)),
         'targetfix-{0}.par'.format(plateID))
+
+    if alwaysReturnPath:
+        return path
 
     if not os.path.exists(path):
         return None
