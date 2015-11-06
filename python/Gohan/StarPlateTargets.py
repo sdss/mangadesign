@@ -188,7 +188,7 @@ class StarPlateTargets(PlateTargets):
 
             for field in specificFields:
                 if field in mangaScience.colnames:
-                    specificData[mangaid][field] = row[field]
+                    specificData[mangaid][field] = row[field][0]
                 else:
                     if field != 'extinction':
                         specificData[mangaid][field] = -999.

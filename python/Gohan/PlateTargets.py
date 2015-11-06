@@ -813,7 +813,14 @@ class PlateTargets(object):
                 keyword = row['keyword']
                 if keyword in targetData:
                     oldValue = targetData[keyword]
-                    newValue = row['value']
+
+                    newValue = row['value'].strip()
+
+                    # Case that the value is an array in IDL format
+                    if newValue[0] == '{':
+                        newValue = np.fromstring(
+                            newValue[1:-1], dtype=float, sep=' ')
+
                     targetData[keyword] = newValue
                     log.debug('mangaid={0}: {1}={2} -> {3}'.format(
                               mangaid, keyword, oldValue, newValue))
