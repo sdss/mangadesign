@@ -67,8 +67,17 @@ def getMaskBitFromLabel(flag, label):
 def getPlateTargetsPath(catID):
 
     plateTargetsPath = os.path.join(
-        readPath(config['mangacore']), 'platedesign/platetargets/',
-        'plateTargets-{0}.par'.format(catID))
+        readPath(config['mangacore']), 'platedesign/platetargets/')
+
+    if catID == 'MaSTAR':
+        plateTargetsPath = os.path.join(plateTargetsPath,
+                                        'starPlateTargets.par')
+    elif catID == 'standards':
+        plateTargetsPath = os.path.join(plateTargetsPath,
+                                        'standardPlateTargets.par')
+    else:
+        plateTargetsPath = os.path.join(plateTargetsPath,
+                                        'plateTargets-{0}.par'.format(catID))
 
     return plateTargetsPath
 
@@ -546,31 +555,13 @@ def getStellarLibraryTargets(designid=None):
     for a certain list of designids. If designid is None, all the stellar
     library plates are returned."""
 
+    starPlateTargetsPath = getPlateTargetsPath('MaSTAR')
+    starPlateTargets = yanny.yanny(starPlateTargetsPath, np=True)['PLTTRGT']
+
     if designid is None:
-        designid = getStellarLibraryDesigns()
-
-    designid = np.atleast_1d(designid)
-    designid.sort()
-
-    if len(designid) == 1:
-
-        mangaScience = getMangaSciencePath(designid[0])
-        mangaScienceStruct = table.Table(yanny.yanny(mangaScience,
-                                                     np=True)['MANGAINPUT'])
-
-        returnTable = mangaScienceStruct[['mangaid', 'ra', 'dec']]
-        designidCol = table.Column(designid.tolist() * len(returnTable),
-                                   name='designid', dtype=int)
-        returnTable.add_column(designidCol, 0)
-
-        return returnTable
-
+        return starPlateTargets
     else:
-
-        tables = [getStellarLibraryTargets(dd) for dd in designid]
-        tables = [tt for tt in tables if tt is not None]
-
-        return table.vstack(tables)
+        return starPlateTargets[starPlateTargets['designid'] == designid]
 
 
 def getStellarLibraryDesigns():
