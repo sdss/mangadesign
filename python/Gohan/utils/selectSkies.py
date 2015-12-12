@@ -23,6 +23,7 @@ import fnmatch
 import numpy as np
 from astropy import table
 from astropy.coordinates import SkyCoord
+from Gohan.exceptions import GohanError
 
 
 nSkies = {127: 8, 91: 6, 61: 4, 37: 2, 19: 2, 7: 1}
@@ -170,17 +171,17 @@ def selectSkies(skyCat, designID, fieldName, raCen, decCen):
         decollidedSkies = decollide(candidateSkies, coords)
 
         if decollidedSkies is False:
-            raise Exception('target {0} ({1}) has not enough skies'.format(
-                            target['mangaid'], ifuDesign))
+            raise GohanError('target {0} ({1}) has not enough skies'.format(
+                             target['mangaid'], ifuDesign))
 
         ifuDesignSize = int(str(ifuDesign)[0:-2])
 
         if nSkies[ifuDesignSize] > len(decollidedSkies):
-            raise Exception('target {0} ({1}) has not enough skies '
-                            '({2} when {3} are needed)'
-                            .format(target['mangaid'], ifuDesign,
-                                    len(decollidedSkies),
-                                    nSkies[ifuDesignSize]))
+            raise GohanError('target {0} ({1}) has not enough skies '
+                             '({2} when {3} are needed)'
+                             .format(target['mangaid'], ifuDesign,
+                                     len(decollidedSkies),
+                                     nSkies[ifuDesignSize]))
 
         ifuSkies = decollidedSkies[:nSkies[ifuDesignSize], :]
 
@@ -190,7 +191,7 @@ def selectSkies(skyCat, designID, fieldName, raCen, decCen):
             mangaID += 1
 
     if len(skyTable) < 92:
-        raise Exception('not enough targets ({0})'.format(len(skyTable)))
+        raise GohanError('not enough targets ({0})'.format(len(skyTable)))
 
     fileName = 'selectedSkies_{0}_{1}.fits'.format(fieldName, designID)
     skyTable.write(fileName)
