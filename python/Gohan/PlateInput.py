@@ -799,7 +799,7 @@ class PlateInput(object):
                 self.logCollision(
                     'mangaid={0} '.format(targets['MANGAID'][ii]) +
                     'rejected: collides with ' +
-                    'RA={0:.5f}, Dec={0:.5f}'.format(
+                    'RA={0:.5f}, Dec={1:.5f}'.format(
                         skyCoords[collisions[0]].ra.deg,
                         skyCoords[collisions[0]].dec.deg), silent=silent)
 
