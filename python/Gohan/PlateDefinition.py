@@ -22,9 +22,10 @@ import shutil as sh
 from numbers import Real
 
 from astropy import time
+from astropy.coordinates import SkyCoord
 
 from Gohan import log, config, readPath
-from Gohan.utils.yanny import yanny
+from Gohan.exceptions import GohanError
 from Gohan.utils import getPlateTemperature
 
 
@@ -55,15 +56,78 @@ class PlateDefinition(object):
         self.locationid = locationid if locationid is not None \
             else plateInputs[0].locationid
 
-    def getPlateDefinitionYanny(self):
+    def _addPlateInput(self, lines, plateInput, path):
+        """Adds a plateInput to the lines of a new plateDefinition."""
+
+        fullPath = os.path.join(
+            readPath(config['platelist']), 'inputs', path)
+
+        if not os.path.exists(fullPath):
+            raise GohanError('input {0} does not exist'.format(path))
+
+        # If plateInput does not include the id, uses the following to the
+        # existing ones.
+        if plateInput == 'plateInput':
+            maxPlateInput = 0
+            for line in lines:
+                if line.strip() == '':
+                    continue
+                elif line.strip()[0] == '#':
+                    continue
+                elif 'plateInput' in line.strip():
+                    pp = int(line.strip().split()[0][10:])
+                    if pp > maxPlateInput:
+                        maxPlateInput = pp
+            plateInput = 'plateInput' + str(maxPlateInput + 1)
+
+        plateInputID = int(plateInput[10:])
+
+        lastLine = None
+        for ii, line in enumerate(lines):
+            if 'plateInput' in line.strip():
+                lastLine = ii
+
+        if lastLine is None:
+            if lines[-1].strip() != '':
+                lines.append('')
+            lines.append(plateInput + ' ' + str(path))
+        else:
+            lines.insert(lastLine + 1, plateInput + ' ' + str(path))
+
+        for ii, line in enumerate(lines):
+            if line.strip() == '':
+                continue
+            elif line.strip()[0] == '#':
+                continue
+            elif 'nInputs' in line:
+                nInputs = int(line.strip().split()[1])
+                lines[ii] = 'nInputs ' + str(nInputs + 1)
+            elif 'priority' in line:
+                lines[ii] = lines[ii].strip() + ' ' + str(plateInputID)
+
+    def createPlateDefinition(self):
         """Return the plateDefinition yanny object."""
 
-        plateDefinitionTemplate = readPath('+etc/mangaDefinition_Default.par')
+        if self.surveyMode == 'mangaOnly':
+            plateDefinitionTemplate = readPath(
+                '+etc/mangaDefinition_Default.par')
+        elif self.surveyMode == 'mangaLead':
+            plateDefinitionTemplate = readPath(
+                '+etc/mangaDefinition_coDesigned_Default.par')
+        else:
+            raise GohanError(
+                'surveyMode {0} is invalid'.format(self.surveyMode))
 
         raCen = self.plateInputs[0].raCen
         decCen = self.plateInputs[0].decCen
+
+        coords = SkyCoord(raCen, decCen, unit='deg')
+        apogeeCoords = '{0:03d}{1:+03d}'.format(
+            int(np.round(coords.galactic.galactic.l.deg)),
+            int(np.round(coords.galactic.galactic.b.deg)))
+
         nInputs = len(self.plateInputs)
-        priority = ' '.join([str(ii+1) for ii in range(nInputs)])
+        priority = ' '.join([str(ii + 1) for ii in range(nInputs)])
 
         defDict = OrderedDict(
             [['raCen', raCen], ['decCen', decCen], ['nInputs', nInputs],
@@ -82,15 +146,38 @@ class PlateDefinition(object):
         for nn, plateInput in enumerate(self.plateInputs):
             inputFilename = 'manga/{0}/{1}'.format(
                 self.plateRun, self.plateInputs[nn].getDefaultFilename())
-            inputs += [['plateInput{0:d}'.format(nn+1), inputFilename]]
+            inputs += [['plateInput{0:d}'.format(nn + 1), inputFilename]]
 
         inputs = OrderedDict(inputs)
         defDict.update(inputs)
 
-        template = yanny(plateDefinitionTemplate)
+        template = open(plateDefinitionTemplate, 'r').read().splitlines()
 
-        for key in defDict:
-            template[key] = defDict[key]
+        for ii, line in enumerate(template):
+            if line.strip() == '':
+                continue
+            elif line.strip()[0] == '#':
+                continue
+            for key in defDict:
+                if key in line:
+                    template[ii] = key + ' ' + str(defDict[key])
+                    defDict.pop(key)
+
+        if len(defDict) > 0:
+            if template[-1].strip() != '':
+                template.append('')
+            for key in defDict:
+                if 'plateInput' in key:
+                    self._addPlateInput(template, key, defDict[key])
+                else:
+                    template.append(key + ' ' + str(defDict[key]))
+
+        # If this is a MaNGA-APOGEE design, adds the APOGEE inputs
+        if self.surveyMode == 'mangaLead':
+            for inputType in ['STA', 'SCI', 'SKY']:
+                path = 'apogee/{0}/plateInput_{1}_MGA_{2}_{3}.par'.format(
+                    self.plateRun, apogeeCoords, inputType, self.designid)
+                self._addPlateInput(template, 'plateInput', path)
 
         return template
 
@@ -115,13 +202,13 @@ class PlateDefinition(object):
             blob.close()
 
         else:
-            definitionYanny = self.getPlateDefinitionYanny()
-            definitionYanny.set_filename(filename)
+            definitionYanny = self.createPlateDefinition()
+            # definitionYanny.set_filename(filename)
 
-            if os.path.exists(filename):
-                os.remove(filename)
-
-            definitionYanny.write()
+            unit = open(filename, 'w')
+            for line in definitionYanny:
+                unit.write(line + '\n')
+            unit.close()
 
         log.info('plateDefinition file {0} saved.'.format(filename))
 
