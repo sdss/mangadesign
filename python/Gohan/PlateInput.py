@@ -275,6 +275,19 @@ class PlateInput(object):
                                       name='MANGAID', dtype='S20')
             data.add_column(mangaidCol, 0)
 
+        # If the data does not have RA/DEC columns, we add them by copying the
+        # IFU_RA/DEC ones.
+        for col in ['RA', 'DEC']:
+            if col not in data.colnames:
+                if 'IFU_' + col in data.colnames:
+                    ifuCol = table.Column(data=data['IFU_' + col].data,
+                                          name=col)
+                    data.add_column(ifuCol)
+                else:
+                    raise exceptions.GohanPlateInputError(
+                        'input catalogue does not contain a column {0} or '
+                        'IFU_{0}'.format(col))
+
         return data
 
     def _selectSkies(self, data, skyPatrolRadius=16 / 60.,
@@ -576,6 +589,7 @@ class PlateInput(object):
         coords = None
         nAllocated = 0
         for catalogue in self.catalogues:
+            catalogue = self._formatCatalogue(catalogue)
             targetsInField = self._selectTargets(catalogue)
             targetsInField = self._rejectTargets(targetsInField, rejectTargets)
 
@@ -935,11 +949,6 @@ class PlateInput(object):
                 fillerBit = 2**getMaskBitFromLabel('MANGA_TARGET1',
                                                    'FILLER')[0]
                 target['manga_target1'] = fillerBit
-            elif target['manga_target1'] == 0 and target['manga_target3'] > 0:
-                # This is an ancillary target
-                ancillaryBit = 2**getMaskBitFromLabel('MANGA_TARGET1',
-                                                      'ANCILLARY')[0]
-                target['manga_target1'] = ancillaryBit
 
         # Checks that the proper motions, if present, contain all the needed
         # columns
