@@ -722,7 +722,7 @@ class PlateMagsIFU(object):
                 self._getSDSSImage(imageName, run, rerun, camcol, field,
                                    **kwargs)
             except:
-                raise GohanError('...... images could not be downloaded.')
+                raise GohanError('images could not be downloaded.')
 
         return imageName
 
