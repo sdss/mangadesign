@@ -23,3 +23,16 @@ nInputs None
 priority None
 plateInput1 manga/2015.12.x.manga-apogee2/mangaScience_2305_9548.par
 plateInput2 manga/2015.12.x.manga-apogee2/mangaStandard_2305_9548.par
+
+# Fiber distribution options
+relaxed_fiber_classes 1
+targettypes standard science sky
+nAPOGEE_standard 15
+nAPOGEE_science 250
+nAPOGEE_sky 35
+nAPOGEE_standard_bright 0
+nAPOGEE_standard_medium 0
+nAPOGEE_standard_faint 0
+nAPOGEE_science_bright 0
+nAPOGEE_science_medium 0
+nAPOGEE_science_faint 0
