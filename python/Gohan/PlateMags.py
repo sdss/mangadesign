@@ -487,9 +487,12 @@ class PlateMagsIFU(object):
 
         plateTargetsRow = getPlateTargetsRow(self.mangaid)
         if plateTargetsRow is None:
+            warnings.warn('target not found in plateTargets', GohanUserWarning)
             return None
 
         if 'nsa_id' not in plateTargetsRow.colnames:
+            warnings.warn('nsa_id column not found in plateTargets',
+                          GohanUserWarning)
             return None
 
         nsaid = plateTargetsRow['nsa_id'][0]
