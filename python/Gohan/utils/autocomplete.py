@@ -103,7 +103,7 @@ def autocomplete(targets, centre, **kwargs):
 
     if len(targets) < nBundles:
         log.important('even after autocomplete, {0} '.format(
-            nBundles-len(targets)) + 'bundles are still unassigned.')
+            nBundles - len(targets)) + 'bundles are still unassigned.')
 
     return targets
 
@@ -230,6 +230,7 @@ def _getValidNSATargets(targets, NSATargets):
                 else False for target in NSATargets]
 
     validNSATargets = NSATargets[np.where(validIdx)]
+    validNSATargets = validNSATargets[np.where(validNSATargets['Z'] > 0.01)]
     validNSATargets.sort('Z')
 
     mangaIDs = ['1-{0}'.format(row['CATIND']) for row in validNSATargets]
@@ -357,7 +358,7 @@ def addTarget(targets, target, bundleSize, centre):
         elif column.upper() in target.dtype.names:
             newRow.append(target[column.upper()])
         elif column.upper() == 'PRIORITY':
-            newRow.append(np.max(targets['priority'])+1)
+            newRow.append(np.max(targets['priority']) + 1)
         elif column.lower() in defaultValues:
             newRow.append(defaultValues[column.lower()])
         else:
