@@ -18,7 +18,7 @@ catalogues:
 decollision:
     FOV: 1.49
     centreAvoid: .041666667
-    targetAvoid: .033333333
+    targetAvoid: .032149054
 
 plateInputs:
     mangaInputStructure: 'MANGAINPUT'
