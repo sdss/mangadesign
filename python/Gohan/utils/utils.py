@@ -25,6 +25,7 @@ import numpy as np
 from astropy import table
 from astropy import time
 import warnings
+import glob
 
 
 # Dictionary to cache catalogues and plateTargets after being read
@@ -715,3 +716,18 @@ def getNSArow(nsaid):
         return None
     else:
         return row
+
+
+def getAllDrilledTargets():
+    """Returns a stacked table with the plateTargets for all targets."""
+
+    allPlateTargets = glob.glob(
+        os.path.join(
+            readPath(config['mangacore']), 'platedesign/platetargets/',
+            'plateTargets-*.par'))
+
+    requiredColumns = getRequiredPlateTargetsColumns()
+    tables = [table.Table(yanny.yanny(pT)['PLTTRGT'])[requiredColumns]
+              for pT in allPlateTargets]
+
+    return table.vstack(tables)
