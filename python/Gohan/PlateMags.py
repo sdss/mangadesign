@@ -496,6 +496,10 @@ class PlateMagsIFU(object):
             return None
 
         nsaid = plateTargetsRow['nsa_id'][0]
+        if nsaid == 0:
+            warnings.warn('nsa_id not set in plateTargets', GohanUserWarning)
+            return None
+
         nsaRow = getNSArow(nsaid)
         if nsaRow is None:
             return None
