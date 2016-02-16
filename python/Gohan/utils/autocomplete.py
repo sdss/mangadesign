@@ -84,12 +84,14 @@ def autocomplete(targets, centre, **kwargs):
         # Tries first the MaNGA sample catalogue.
         if MaNGATargets is not None:
             target = _getOptimalTarget(targets, MaNGATargets,
-                                       bundleSize, centre, **kwargs)
+                                       bundleSize, centre, mode='MaNGA',
+                                       **kwargs)
 
         if target is None and NSATargets is not None:
             # If no targets can be found in the MaNGA sample, uses NSA.
             target = _getOptimalTarget(targets, NSATargets,
-                                       bundleSize, centre, **kwargs)
+                                       bundleSize, centre,
+                                       mode='NSA', **kwargs)
 
         if target is not None:
             targets = addTarget(targets, target, bundleSize, centre)
@@ -109,20 +111,21 @@ def autocomplete(targets, centre, **kwargs):
 
 
 def _getOptimalTarget(targets, candidateTargets, bundleSize, centre,
-                      useReff=True, **kwargs):
+                      useReff=True, mode='MaNGA', **kwargs):
 
     reffField = config['plateMags']['reffField'].upper()
     if reffField in candidateTargets.colnames and useReff:
         return _getOptimalTargetSize(targets, candidateTargets, bundleSize,
-                                     centre)
+                                     centre, mode=mode)
     else:
         for target in candidateTargets:
-            if _checkNSATarget(targets, target, centre):
+            if _checkTarget(targets, target, centre, mode=mode):
                 return target
         return None
 
 
-def _getOptimalTargetSize(targets, candidateTargets, bundleSize, centre):
+def _getOptimalTargetSize(targets, candidateTargets, bundleSize,
+                          centre, mode='MaNGA'):
 
     if 'IFUDESIGNSIZE' not in candidateTargets.colnames:
         candidateTargets.add_column(
@@ -134,7 +137,7 @@ def _getOptimalTargetSize(targets, candidateTargets, bundleSize, centre):
         # First we try to use the IFUDESIGNSIZE column. Not that if all values
         # in IFUDESIGNSIZE are -999, all targets will be skipped.
         if (target['IFUDESIGNSIZE'] >= bundleSize and
-                _checkNSATarget(targets, target, centre)):
+                _checkTarget(targets, target, centre, mode=mode)):
             target['IFUDESIGNSIZE'] = bundleSize
             return target
 
@@ -160,7 +163,7 @@ def _getOptimalTargetSize(targets, candidateTargets, bundleSize, centre):
 
     for target in candidateTargets:
         if (target[reffField] >= minSize and
-                _checkNSATarget(targets, target, centre)):
+                _checkTarget(targets, target, centre, mode=mode)):
             target['IFUDESIGNSIZE'] = bundleSize
             return target
 
@@ -171,7 +174,7 @@ def _getOptimalTargetSize(targets, candidateTargets, bundleSize, centre):
              'Trying to find a suitable target.')
 
     for target in candidateTargets:
-            if _checkNSATarget(targets, target, centre):
+            if _checkTarget(targets, target, centre, mode=mode):
                 return target
 
     return None
@@ -255,7 +258,7 @@ def getMaNGATargets(targets, centre):
 
     raCen, decCen = centre
 
-    coords = coo.SkyCoord(MaNGACat['RA'], MaNGACat['DEC'], unit='deg')
+    coords = coo.SkyCoord(MaNGACat['IFU_RA'], MaNGACat['IFU_DEC'], unit='deg')
     separation = coords.separation(
         coo.SkyCoord(ra=raCen, dec=decCen, unit='deg')).deg
 
@@ -281,7 +284,14 @@ def getMaNGATargets(targets, centre):
         return None
 
 
-def _checkNSATarget(targets, target, centre):
+def _checkTarget(targets, target, centre, mode='MaNGA'):
+
+    if mode == 'MaNGA':
+        raCoordLabel = 'IFU_RA'
+        decCoordLabel = 'IFU_DEC'
+    else:
+        raCoordLabel = 'RA'
+        decCoordLabel = 'DEC'
 
     # Gets mangaids with bad photometry
     badPhotometry = getBadPhotometry()
@@ -299,7 +309,8 @@ def _checkNSATarget(targets, target, centre):
     targetAvoid = config['decollision']['targetAvoid']
 
     centralPost = coo.SkyCoord(centre[0], centre[1], unit='deg')
-    targetCoords = coo.SkyCoord(target['RA'], target['DEC'], unit='deg')
+    targetCoords = coo.SkyCoord(target[raCoordLabel],
+                                target[decCoordLabel], unit='deg')
 
     if targetCoords.separation(centralPost).deg < centreAvoid:
         return False
@@ -308,7 +319,8 @@ def _checkNSATarget(targets, target, centre):
 
     for inputTarget in targets:
 
-        inputCoords = coo.SkyCoord(inputTarget['RA'], inputTarget['DEC'],
+        inputCoords = coo.SkyCoord(inputTarget['IFU_RA'],
+                                   inputTarget['IFU_DEC'],
                                    unit='deg')
 
         if inputCoords.separation(targetCoords).deg < targetAvoid:
