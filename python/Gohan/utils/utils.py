@@ -25,7 +25,6 @@ import numpy as np
 from astropy import table
 from astropy import time
 import warnings
-import glob
 
 
 # Dictionary to cache catalogues and plateTargets after being read
