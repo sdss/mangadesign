@@ -34,62 +34,68 @@
 # 3) manga_tileid: the MaNGA-specific tile (field) identifier
 # 4) ifudesign: The IFU (e.g., 12701) meant to be used
 # 5) mangaid: The XX-XXXX format mangaid
-# 6) neverobserve: if set to 1, this target won't be observed and will be ignored by
-#                  the reduction pipeline.
-# 7) iauname: The accepted IAU name
-# 8) ifu_ra: RA of the IFU center in decimal degrees
-# 9) ifu_dec: DEC of the IFU center in decimal degrees
-# 10) object_ra: RA of the target center (usually same as ifu_ra, unless offset)
-# 11) object_dec: DEC of the target center (usually same as ifu_dec, unless offset)
-# 12) catalog_ra: RA of the target in its parent catalogue (usually same as ifu_ra and object_ra
-#                 unless offset)
-# 13) catalog_ra: DEC of the target in its parent catalogue (usually same as ifu_ra and object_dec
-#                 unless offset)
-# 14) racen: RA of the plate center
-# 15) deccen: DEC of the plate center
-# 16) xfocal: xfocal location of the IFU hole in the plate
-# 17) yfocal: yfocal location of the IFU hole in the plate
-# 18) epoch: Epoch of the coordinates
-# 19) manga_target1: Primary target bitmask. To be used for galaxies.
-# 20) manga_target2: Secondary target bitmask. To be used for stars, standards and sky positions.
-# 21) manga_target3: Tertiary target bitmask. To be used for ancillary programs.
-# 22) ifudesignsize: The size of the IFU assigned to the target.
-# 23) ifutargetsize: The size of the IFU that was meant to be assigned.
-#                    Same as ifudesignsize unless changed during the plate
-#                    design process.
-# 24) ifudesignwrongsize: 1 if the IFU assigned is of the wrong size (for
-#                         instance, if it does not cover 1.5Reff).
+# 6) neverobserve: if set to 1, this target won't be observed and will be
+#                  ignored by the reduction pipeline.
+# 7) ifu_ra: RA of the IFU center in decimal degrees
+# 8) ifu_dec: DEC of the IFU center in decimal degrees
+# 9) object_ra: RA of the target center (usually same as ifu_ra, unless offset)
+# 10) object_dec: DEC of the target center (usually same as ifu_dec, unless offset)
+# 11) catalog_ra: RA of the target in its parent catalogue
+#                 (usually same as ifu_ra and object_ra, unless offset).
+# 12) catalog_ra: DEC of the target in its parent catalogue
+#                 (usually same as ifu_ra and object_dec, unless offset).
+# 13) racen: RA of the plate center
+# 14) deccen: DEC of the plate center
+# 15) xfocal: xfocal location of the IFU hole in the plate
+# 16) yfocal: yfocal location of the IFU hole in the plate
+# 17) epoch: Epoch of the coordinates
+# 18) manga_target1: Primary target bitmask. To be used for galaxies.
+# 19) manga_target2: Secondary target bitmask. To be used for stars,
+#                    standards and sky positions.
+# 20) manga_target3: Tertiary target bitmask. To be used for ancillary programs.
+# 21) ifudesignsize: The size of the IFU assigned to the target.
+# 22) ifutargetsize: The size of the IFU that was meant to be assigned. Same as
+#                    ifudesignsize unless changed during the plate design process.
+# 23) ifudesignwrongsize: 1 if the IFU assigned is of the wrong size
+#                         (for instance, if it does not cover 1.5Reff).
 # ---- These columns may vary between typeids ----
-# 25) field: The SDSS field covering the target.
-# 26) run: The SDSS run covering the target.
-# 27) nsa_ba: Axis ratio b/a from the elliptical Petrosian apertures.
-# 28) nsa_phi: Angle (E of N) of major axis from the elliptical Petrosian apertures.
-# 29) nsa_redshift: Heliocentric redshift from NSA.
-# 30) nsa_zdist: Distance estimate using peculiar velocity model of
-#                Willick et al. (1997); multiply by c/H0 for Mpc. From NSA.
-# 31) nsa_mstar: Stellar mass from K-correction fit, in h-2 solar masses. From NSA.
-# 32) nsa_mstar_el: As nsa_mstar, but using the elliptical Petrosian flux.
-# 33) nsa_petro_th50: Petrosian 50% light radius (derived from r band), in arcsec. From NSA.
-# 34) nsa_petro_th50_el: Elliptical Petrosian 50% light radius, in arcsec.
-# 35) nsa_petroflux: Azimuthally-averaged SDSS-style Petrosian flux in FNugriz
-#                    (GALEX-SDSS photometric systems). In nanomaggies. Taken from NSA.
-# 36) nsa_petroflux_ivar: Inverse variance of petroflux in nanomaggies-2, from NSA.
-# 37) nsa_petroflux_el: As nsa_petroflux but using elliptical Petrosian apertures.
-# 38) nsa_petroflux_el_ivar: As nsa_petroflux_ivar but using the elliptical Petrosian apertures.
-# 39) nsa_sersic_ba: Axis ratio b/a from 2D Sersic fit. From NSA.
-# 40) nsa_sersic_n: 2D Sersic index from fit. From NSA.
-# 41) nsa_sersic_phi: Angle (E of N, degrees) of major axis in 2D Sersic fit. From NSA.
-# 42) nsa_sersic_th50: 50% light radius of 2D Sersic fit (along major axis), in arcsec. From NSA
-# 43) nsa_sersicflux: 2D Sersic fit flux in FNugriz (GALEX-SDSS photometric systems)
-#                     in nanommagies. From NSA.
-# 44) nsa_sersicflux_ivar: Inverse variance of sersicflux in nanomaggies-2, from NSA.
-# 45) nsa_absmag: Absolute magnitude estimates for FNugriz from K-corrections
-#                 (Ωm=0.3, ΩΛ=0.7, h=1). From NSA.
-# 46) nsa_absmag_el: As nsa_absmag but using elliptical Petrosian apertures.
-# 47) nsa_amivar_el: Inverse variance on absolute magnitudes in FNugriz for nsa_absmag_el.
-# 48) nsa_extinction: Galactic extinction in FNugriz from Schlegel, Finkbeiner & Davis (1997).
+# 23) nsa_iauname: The accepted IAU name
+# 24) nsa_field: The SDSS field covering the target.
+# 25) nsa_run: The SDSS run covering the target.
+# 26) nsa_camcol: The SDSS camcol covering catalog position.
+# 27) nsa_elpetro_ba: Axis ratio b/a from the elliptical Petrosian apertures.
+# 28) nsa_elpetro_phi: Angle (E of N) of the major axis from the elliptical
+#                      Petrosian apertures.
+# 29) nsa_z: Heliocentric redshift.
+# 30) nsa_zdist: Distance estimate using pecular velocity model of
+#                Willick et al. (1997); multiply by c/H0 for Mpc.
+# 31) nsa_sersic_mass: Sersic photometry stellar mass from K-correction fit
+#                      in h-2 solar masses.
+# 32) nsa_elpetro_mass: As nsa_sersic_mass, but from the elliptical Petrosian flux.
+# 33) nsa_petro_th50: Petrosian 50% light radius (derived from r band), in arcsec.
+# 34) nsa_elpetro_th50_r: Elliptical Petrosian 50% light radius (r-band), in arcsec.
+# 35) nsa_petro_flux[7]: Azimuthally-averaged SDSS-style Petrosian flux in FNugriz
+#                        (GALEX-SDSS photometric systems). In nanomaggies.
+# 36) nsa_petro_flux_ivar[7]: Inverse variance of petroflux in nanomaggies-2.
+# 37) nsa_elpetro_flux[7]: As nsa_petroflux but from elliptical Petrosian apertures.
+# 38) nsa_elpetro_flux_ivar[7]: As nsa_petroflux_ivar but from the elliptical
+#                               Petrosian apertures.
+# 39) nsa_sersic_ba: Axis ratio b/a from 2D Sersic fit.
+# 40) nsa_sersic_n: 2D Sersic index from fit.
+# 41) nsa_sersic_phi: Angle (E of N, degrees) of major axis in 2D Sersic fit
+# 42) nsa_sersic_th50: 50% light radius of 2D Sersic fit (along major axis), in arcsec.
+# 43) nsa_sersic_flux[7]: 2D Sersic fit flux in FNugriz (GALEX-SDSS photometric
+#                         systems) in nanommagies.
+# 44) nsa_sersic_flux_ivar[7]: Inverse variance of sersicflux in nanomaggies-2.
+# 45) nsa_sersic_absmag[7]: Absolute magnitude estimates for FNugriz from
+#                           K-corrections (Omatter=0.3, Olambda=0.7, h=1).
+# 46) nsa_elpetro_absmag[7]: As nsa_sersic_absmag but from elliptical Petrosian apertures.
+# 47) nsa_elpetro_amivar[7]: Inverse variance on absolute magnitudes in FNugriz
+#                            for nsa_absmag_el.
+# 48) nsa_extinction[7]: Galactic extinction in FNugriz from Schlegel, Finkbeiner & Davis (1997).
 # 49) nsa_version: The version of the NSA catalogue used to select these targets.
-# 50) nsa_id: The NSAID field in the NSA catalogue referenced in nsa_version.
+# 50) nsa_nsaid: The NSAID field in the NSA catalogue v1.
+# 51) nsa_nsaid_v0: The NSAID of the target in the NSA v0_1_2 catalogue (if applicable).
 
 typeid 1
 
@@ -100,7 +106,6 @@ typedef struct {
     long ifudesign;
     char mangaid[10];
     long neverobserve;
-    char iauname[25];
     double ifu_ra;
     double ifu_dec;
     double object_ra;
@@ -118,32 +123,35 @@ typedef struct {
     int ifudesignsize;
     int ifutargetsize;
     int ifudesignwrongsize;
-    long field;
-    long run;
-    float nsa_ba;
-    float nsa_phi;
-    float nsa_redshift;
+    char nsa_iauname[25];
+    long nsa_field;
+    long nsa_run;
+    int nsa_camcol;
+    float nsa_elpetro_ba;
+    float nsa_elpetro_phi;
+    float nsa_z;
     float nsa_zdist;
-    float nsa_mstar;
-    float nsa_mstar_el;
+    float nsa_sersic_mass;
+    float nsa_elpetro_mass;
     float nsa_petro_th50;
-    float nsa_petro_th50_el;
-    float nsa_petroflux[7];
-    float nsa_petroflux_ivar[7];
-    float nsa_petroflux_el[7];
-    float nsa_petroflux_el_ivar[7];
+    float nsa_elpetro_th50_r;
+    float nsa_petro_flux[7];
+    float nsa_petro_flux_ivar[7];
+    float nsa_elpetro_flux[7];
+    float nsa_elpetro_flux_ivar[7];
     float nsa_sersic_ba;
     float nsa_sersic_n;
     float nsa_sersic_phi;
     float nsa_sersic_th50;
-    float nsa_sersicflux[7];
-    float nsa_sersicflux_ivar[7];
-    float nsa_absmag[7];
-    float nsa_absmag_el[7];
-    float nsa_amivar_el[7];
+    float nsa_sersic_flux[7];
+    float nsa_sersic_flux_ivar[7];
+    float nsa_sersic_absmag[7];
+    float nsa_elpetro_absmag[7];
+    float nsa_elpetro_amivar[7];
     float nsa_extinction[7];
     char nsa_version[20];
-    long nsa_id;
+    long nsa_nsaid;
+    long nsa_nsaid_v0;
 } PLTTRGT;
 
-PLTTRGT 0000 0000 0000 0000 1-000000 0 15h/p40/J152554.88+415435 231.478756028 41.9097725983 231.478756028 41.9097725983 231.478756028 41.9097725983 230.99167 42.68736 78.935912 -169.09538 2014.07 2 0 0 37 -999 -999 224 3918 0.0 0.0 0.0226546 6.49071e+08 6.49071e+08 -999.0 50.4463 2.54327 {18.0174 22.1203 54.5087 128.257 185.835 229.213 255.979} {0.132904 6.57025 0.190638 1.59099 1.04681 0.319301 0.0163769} {0.132904 6.57025 0.190638 1.59099 1.04681 0.319301 0.0163769} {0.132904 6.57025 0.190638 1.59099 1.04681 0.319301 0.0163769} 0.482523 1.5851 62.1492 3.19605 {21.7792 26.0488 52.4875 132.169 193.079 235.423 259.846} {0.143117 3.81636 1.07508 5.37342 2.69955 1.27748 0.0982024} {-15.2445 -15.4517 -16.228 -17.1187 -17.5194 -17.6736 -17.757} {-15.2445 -15.4517 -16.228 -17.1187 -17.5194 -17.6736 -17.757} {-15.2445 -15.4517 -16.228 -17.1187 -17.5194 -17.6736 -17.757} {-15.2445 -15.4517 -16.228 -17.1187 -17.5194 -17.6736 -17.757} vb_0_0 102195
+PLTTRGT 0000 0000 0000 0000 1-000000 0 231.478756028 41.9097725983 231.478756028 41.9097725983 231.478756028 41.9097725983 230.99167 42.68736 78.935912 -169.09538 2014.07 2 0 0 37 -999 -999 "J1234-1234" 224 3918 0 0.0 0.0 0.0226546 6.49071e+08 6.49071e+08 -999.0 50.4463 2.54327 {18.0174 22.1203 54.5087 128.257 185.835 229.213 255.979} {0.132904 6.57025 0.190638 1.59099 1.04681 0.319301 0.0163769} {0.132904 6.57025 0.190638 1.59099 1.04681 0.319301 0.0163769} {0.132904 6.57025 0.190638 1.59099 1.04681 0.319301 0.0163769} 0.482523 1.5851 62.1492 3.19605 {21.7792 26.0488 52.4875 132.169 193.079 235.423 259.846} {0.143117 3.81636 1.07508 5.37342 2.69955 1.27748 0.0982024} {-15.2445 -15.4517 -16.228 -17.1187 -17.5194 -17.6736 -17.757} {-15.2445 -15.4517 -16.228 -17.1187 -17.5194 -17.6736 -17.757} {-15.2445 -15.4517 -16.228 -17.1187 -17.5194 -17.6736 -17.757} {-15.2445 -15.4517 -16.228 -17.1187 -17.5194 -17.6736 -17.757} v1_0_1 102195 102195

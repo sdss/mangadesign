@@ -34,32 +34,30 @@
 # 3) manga_tileid: the MaNGA-specific tile (field) identifier
 # 4) ifudesign: The IFU (e.g., 12701) meant to be used
 # 5) mangaid: The XX-XXXX format mangaid
-# 6) neverobserve: if set to 1, this target won't be observed and will be ignored by
-#                  the reduction pipeline.
-# 7) iauname: The accepted IAU name
-# 8) ifu_ra: RA of the IFU center in decimal degrees
-# 9) ifu_dec: DEC of the IFU center in decimal degrees
-# 10) object_ra: RA of the target center (usually same as ifu_ra, unless offset)
-# 11) object_dec: DEC of the target center (usually same as ifu_dec, unless offset)
-# 12) catalog_ra: RA of the target in its parent catalogue (usually same as ifu_ra and object_ra
-#                 unless offset)
-# 13) catalog_ra: DEC of the target in its parent catalogue (usually same as ifu_ra and object_dec
-#                 unless offset)
-# 14) racen: RA of the plate center
-# 15) deccen: DEC of the plate center
-# 16) xfocal: xfocal location of the IFU hole in the plate
-# 17) yfocal: yfocal location of the IFU hole in the plate
-# 18) epoch: Epoch of the coordinates
-# 19) manga_target1: Primary target bitmask. To be used for galaxies.
-# 20) manga_target2: Secondary target bitmask. To be used for stars, standards and sky positions.
-# 21) manga_target3: Tertiary target bitmask. To be used for ancillary programs.
-# 22) ifudesignsize: The size of the IFU assigned to the target.
-# 23) ifutargetsize: The size of the IFU that was meant to be assigned.
-#                    Same as ifudesignsize unless changed during the plate
-#                    design process.
-# 24) ifudesignwrongsize: 1 if the IFU assigned is of the wrong size (for
-#                         instance, if it does not cover 1.5Reff).
-#
+# 6) neverobserve: if set to 1, this target won't be observed and will be
+#                  ignored by the reduction pipeline.
+# 7) ifu_ra: RA of the IFU center in decimal degrees
+# 8) ifu_dec: DEC of the IFU center in decimal degrees
+# 9) object_ra: RA of the target center (usually same as ifu_ra, unless offset)
+# 10) object_dec: DEC of the target center (usually same as ifu_dec, unless offset)
+# 11) catalog_ra: RA of the target in its parent catalogue
+#                 (usually same as ifu_ra and object_ra, unless offset).
+# 12) catalog_ra: DEC of the target in its parent catalogue
+#                 (usually same as ifu_ra and object_dec, unless offset).
+# 13) racen: RA of the plate center
+# 14) deccen: DEC of the plate center
+# 15) xfocal: xfocal location of the IFU hole in the plate
+# 16) yfocal: yfocal location of the IFU hole in the plate
+# 17) epoch: Epoch of the coordinates
+# 18) manga_target1: Primary target bitmask. To be used for galaxies.
+# 19) manga_target2: Secondary target bitmask. To be used for stars,
+#                    standards and sky positions.
+# 20) manga_target3: Tertiary target bitmask. To be used for ancillary programs.
+# 21) ifudesignsize: The size of the IFU assigned to the target.
+# 22) ifutargetsize: The size of the IFU that was meant to be assigned. Same as
+#                    ifudesignsize unless changed during the plate design process.
+# 23) ifudesignwrongsize: 1 if the IFU assigned is of the wrong size
+#                         (for instance, if it does not cover 1.5Reff).
 # ---- These columns may vary between typeids ----
 #
 # For ancillary-based plateTargets, the column list will be automatically completed
@@ -78,7 +76,6 @@ typedef struct {
     long ifudesign;
     char mangaid[10];
     long neverobserve;
-    char iauname[25];
     double ifu_ra;
     double ifu_dec;
     double object_ra;
@@ -98,5 +95,4 @@ typedef struct {
     int ifudesignwrongsize;
 } PLTTRGT;
 
-PLTTRGT 0000 0000 0000 0000 1-000000 0 J213418.49+111251.6 323.577092837 11.2143239831 323.577092837 11.2143239831 323.577092837 11.2143239831 324.49449707 11.5765455462 -195.98829 -78.573101 2014.07 128 0 0 127 127 0
-
+PLTTRGT 0000 0000 0000 0000 1-000000 0 323.577092837 11.2143239831 323.577092837 11.2143239831 323.577092837 11.2143239831 324.49449707 11.5765455462 -195.98829 -78.573101 2014.07 128 0 0 127 127 0
