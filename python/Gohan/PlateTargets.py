@@ -395,24 +395,12 @@ class PlateTargets(object):
 
         designid = int(plateHolesSortedPairs['designid'])
 
-        # Reads the NSA v1b to v1 match
-        # nsaV1bToV1 = table.Table.read(readPath('+etc/NSA_v1b_to_v1.dat'),
-        #                               format='ascii.fixed_width',
-        #                               delimiter='|')
-
         if self.catalogid == 12:
             nsaV1bCat = _toLowerCase(
                 table.Table.read(readPath('+etc/targets-12.fits')))
 
         for mangaid in mangaids:
             result[mangaid] = {}
-
-            # if self.catalogid == 12:
-            #     nsaV1bToV1_row = nsaV1bToV1[nsaV1bToV1['MaNGAID'] == mangaid]
-            #     indexID_100 = nsaV1bToV1_row['catid'][0]
-            #     nsa100_mangaid = '1-{0}'.format(indexID_100)
-            # else:
-            #     nsa100_mangaid = mangaid
 
             # We get the appropriate row in mangaScience
             assert mangaid in mangaScienceData['mangaid'], \
@@ -463,8 +451,8 @@ class PlateTargets(object):
                     result[mangaid][column] = plateHolesSortedRow[column]
                     continue
 
-                # Now uses mangaScience, the targeting catalogue, and
-                # plateHolesSorted to complete the information.
+                # Now uses plateHolesSorted, the targeting catalogue, and
+                # mangaScience, in that order, to complete the information.
                 if (plateHolesSortedPairs is not None and
                         column in plateHolesSortedPairs):
                     result[mangaid][column] = plateHolesSortedPairs[column]
@@ -473,7 +461,7 @@ class PlateTargets(object):
                     result[mangaid][column] = plateHolesSortedRow[column]
                 elif column in mangaSciencePairs:
                     result[mangaid][column] = mangaSciencePairs[column]
-                elif (targetRow is not None and column in targetRow.colnames):
+                elif targetRow is not None and column in targetRow.colnames:
                     result[mangaid][column] = targetRow[column][0]
                 elif column in mangaScienceRow.colnames:
                     result[mangaid][column] = mangaScienceRow[column][0]
@@ -513,15 +501,6 @@ class PlateTargets(object):
 
         if targetRow is not None:
             return targetRow[column]
-            # elif 'object_' in column:
-            #     mangaTarget3 = targetRow['manga_target3']
-            #     if mangaTarget3 != 0:
-            #         return targetRow[baseCoord][0]
-            #     else:
-            #         return targetRow['ifu_' + baseCoord][0]
-            # else:
-            #     raise GohanPlateTargetsError(
-            #         'unknown coordinate {0}'.format(column))
         else:
             return mangaScienceRow[baseCoord]
 
@@ -532,19 +511,6 @@ class PlateTargets(object):
         specific to plateTargets-1.par. It also handles plateTargets-12.par.
 
         """
-
-        # First we open the petrosian catalogues for NSA v1.
-        inputsPath = readPath(config['catalogues']['inputs'])
-
-        petroPath = os.path.join(inputsPath, 'petro_v1_0_0_a4.fits')
-        petroKCorrPath = os.path.join(inputsPath,
-                                      'petro_kcorrect_v1_0_0_a3.fits')
-
-        assert os.path.exists(petroPath)
-        assert os.path.exists(petroKCorrPath)
-
-        petro = table.Table.read(petroPath)
-        petroKCorr = table.Table.read(petroKCorrPath)
 
         # Reads the NSA v1b to v1 match
         nsaV1bToV1 = table.Table.read(readPath('+etc/NSA_v1b_to_v1.dat'),
@@ -561,100 +527,58 @@ class PlateTargets(object):
 
             nsaCatPath = utils.getCataloguePath(self.catalogid)
 
-            # We want to get the right row from NSA v1_0_0. If catalogid=1, we
+            # We want to get the right row from NSA v1_0_1. If catalogid=1, we
             # just use utils.getCatalogueRow with the mangaid. If catalogid=12
-            # we create a mock mangaid with the format 1-{indexID_100} taking
-            # NSAID_v100 from the list of conversions in nsaV1bToV1.
+            # we create a mock mangaid with the format 1-{indexID_101} taking
+            # NSAID_v101 from the list of conversions in nsaV1bToV1.
 
             if self.catalogid == 1:
-                nsa100_mangaid = mangaid
-                indexID_100 = targetID
+                nsa101_mangaid = mangaid
+                indexID_101 = targetID
             elif self.catalogid == 12:
                 nsaV1bToV1_row = nsaV1bToV1[nsaV1bToV1['MaNGAID'] == mangaid]
-                indexID_100 = nsaV1bToV1_row['catid'][0]
-                nsa100_mangaid = '1-{0}'.format(indexID_100)
+                indexID_101 = nsaV1bToV1_row['catid'][0]
+                nsa101_mangaid = '1-{0}'.format(indexID_101)
 
-            nsaRow = utils.getCatalogueRow(nsa100_mangaid)
+            nsaRow = utils.getCatalogueRow(nsa101_mangaid)
 
             # If this is from catalogid=12, let's make a quick check and make
             # sure we have selected the right column.
             if self.catalogid == 12:
                 assert nsaRow['nsaid'] == nsaV1bToV1_row['NSAID_v1_0_0'][0], \
-                    ('row selected from NSA v1_0_0 foes not match the '
+                    ('row selected from NSA v1_0_1 foes not match the '
                      'value expected for NSAID ({0} != {1})'.format(
-                         nsaRow['nsaid'], nsaV1bToV1_row['NSAID_v1_0_0'][0]))
+                         nsaRow['nsaid'], nsaV1bToV1_row['NSAID_v1_0_1'][0]))
 
             if nsaRow is None:
                     raise GohanPlateTargetsError(
                         'mangaid={0} cannot be found in catalogue {1}'
                         .format(mangaid, nsaCatPath))
 
-            petroRow = petro[indexID_100]
-            petroKCorrRow = petroKCorr[indexID_100]
-
             for field in fields:
 
-                if field == 'field':
-                    mangaidDict[field] = nsaRow[field]
-                elif field == 'run':
-                    mangaidDict[field] = nsaRow[field]
-                elif field == 'nsa_ba':
-                    mangaidDict[field] = petroRow['ba']
-                elif field == 'nsa_phi':
-                    mangaidDict[field] = petroRow['phi']
-                elif field == 'nsa_redshift':
-                    mangaidDict[field] = nsaRow['z']
-                elif field == 'nsa_zdist':
-                    mangaidDict[field] = nsaRow['zdist']
-                elif field == 'nsa_mstar':
-                    mangaidDict[field] = nsaRow['mass']
-                elif field == 'nsa_mstar_el':
-                    mangaidDict[field] = petroKCorrRow['MASS']
-                elif field == 'nsa_petro_th50':
-                    mangaidDict[field] = nsaRow['petroth50']
-                elif field == 'nsa_petro_th50_el':
-                    mangaidDict[field] = petroRow['petroth50_r']
-                elif field == 'nsa_petroflux':
-                    mangaidDict[field] = nsaRow['petroflux']
-                elif field == 'nsa_petroflux_ivar':
-                    mangaidDict[field] = nsaRow['petroflux_ivar']
-                elif field == 'nsa_petroflux_el':
-                    mangaidDict[field] = petroRow['petroflux']
-                elif field == 'nsa_petroflux_el_ivar':
-                    mangaidDict[field] = petroRow['petroivar']
-                elif field == 'nsa_sersic_ba':
-                    mangaidDict[field] = nsaRow['sersic_ba']
-                elif field == 'nsa_sersic_n':
-                    mangaidDict[field] = nsaRow['sersic_n']
-                elif field == 'nsa_sersic_phi':
-                    mangaidDict[field] = nsaRow['sersic_phi']
-                elif field == 'nsa_sersic_th50':
-                    mangaidDict[field] = nsaRow['sersic_th50']
-                elif field == 'nsa_sersicflux':
-                    mangaidDict[field] = nsaRow['sersicflux']
-                elif field == 'nsa_sersicflux_ivar':
-                    mangaidDict[field] = nsaRow['sersicflux_ivar']
-                elif field == 'nsa_absmag':
-                    mangaidDict[field] = nsaRow['absmag']
-                elif field == 'nsa_absmag_el':
-                    mangaidDict[field] = petroKCorrRow['ABSMAG']
-                elif field == 'nsa_amivar_el':
-                    mangaidDict[field] = petroKCorrRow['AMIVAR']
-                elif field == 'nsa_extinction':
-                    mangaidDict[field] = petroKCorrRow['EXTINCTION']
-                elif field == 'nsa_version':
+                if field == 'nsa_version':
                     mangaidDict[field] = self._getNSAVersion()
-                elif field == 'nsa_id':
-                    mangaidDict[field] = nsaRow['nsaid']
-                elif field == 'nsa_id100':
-                    if self.catalogid == 1:
-                        mangaidDict[field] = nsaRow['nsaid']
+
+                elif field == 'nsa_nsaid_v1b':
+                    # For commissioning targets, we also include the nsaid
+                    # in the nsa_v1b catalogue.
+                    if self.catalogid == 12:
+                        mangaidDict[field] = utils.getCatalogueRow(
+                            mangaid)['nsaid']
                     else:
-                        mangaidDict[field] = nsaV1bToV1_row['NSAID_v1_0_0'][0]
+                        mangaidDict[field] = -999
+
+                elif 'nsa_' in field:
+                    nsaField = field[4:].lower()
+                    mangaidDict[field] = nsaRow[nsaField]
+
                 else:
                     raise GohanPlateTargetsError(
                         'unexpected field {0} when compiling data for '
-                        'plateTargets-{1}'.format(field, self.catalogid))
+                        'plateTargets-{1}. Could not find field {2} in '
+                        'NSA catalogue'
+                        .format(field, self.catalogid, field))
 
         return result
 
@@ -739,9 +663,9 @@ class PlateTargets(object):
         """Returns the version of the NSA catalogue used."""
 
         if self.catalogid == 1:
-            return 'v1_0_0'
+            return 'v1_0_1'
         elif self.catalogid == 12:
-            return 'v1_0_0'
+            return 'v1_0_1'
         else:
             return '-999'
 
