@@ -1,4 +1,4 @@
-import Gohan.utils.pywcsgrid2 as pywcsgrid2
+import pywcsgrid2 as pywcsgrid2
 from Gohan.utils.getSDSSRun import getSDSSRun
 from Gohan.utils.sortTargets import sortTargets
 from Gohan.utils.assignIFUDesigns import assignIFUDesigns
