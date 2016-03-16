@@ -490,14 +490,15 @@ class PlateMagsIFU(object):
             warnings.warn('target not found in plateTargets', GohanUserWarning)
             return None
 
-        if 'nsa_id' not in plateTargetsRow.colnames:
-            warnings.warn('nsa_id column not found in plateTargets',
+        if 'nsa_nsaid' not in plateTargetsRow.colnames:
+            warnings.warn('nsa_nsaid column not found in plateTargets',
                           GohanUserWarning)
             return None
 
-        nsaid = plateTargetsRow['nsa_id'][0]
+        nsaid = plateTargetsRow['nsa_nsaid'][0]
         if nsaid == 0:
-            warnings.warn('nsa_id not set in plateTargets', GohanUserWarning)
+            warnings.warn('nsa_nsaid not set in plateTargets',
+                          GohanUserWarning)
             return None
 
         nsaRow = getNSArow(nsaid)
