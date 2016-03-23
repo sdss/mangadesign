@@ -23,6 +23,7 @@ from numbers import Number
 from collections import OrderedDict
 import numpy as np
 from astropy import table
+from astropy.io import fits
 from astropy import time
 import warnings
 
@@ -420,7 +421,8 @@ def getCatalogueRow(mangaid, catalogue=None):
             if cataloguePath is None:
                 return None
 
-            catalogue = table.Table.read(cataloguePath)
+            fData = fits.open(cataloguePath)
+            catalogue = table.Table(fData[1].data)
 
             # Changes all columns to lowercase
             for col in catalogue.colnames:
@@ -706,8 +708,8 @@ def getNSArow(nsaid):
     if 1 in cachedCatalogues:
         cat = cachedCatalogues[1]
     else:
-        cat = table.Table.read(getCataloguePath(1))
-        cachedCatalogues[1] = cat
+        cat = fits.open(getCataloguePath(1))
+        cachedCatalogues[1] = cat[1].data
 
     row = cat[cat['NSAID'] == nsaid]
 
