@@ -189,7 +189,7 @@ class yanny(OrderedDict):
         --------
         """
         dtmap = {'i2':'short','i4':'int','i8':'long','f4':'float',
-            'f8':'double'}
+            'f8':'double', 'u1': 'short'}
         returnenums = list()
         for e in enums:
             lines = list()
@@ -1077,4 +1077,3 @@ def main():
 #
 if __name__ == '__main__':
     main()
-
