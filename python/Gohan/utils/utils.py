@@ -708,8 +708,9 @@ def getNSArow(nsaid):
     if 1 in cachedCatalogues:
         cat = cachedCatalogues[1]
     else:
-        cat = fits.open(getCataloguePath(1))
-        cachedCatalogues[1] = cat[1].data
+        ff = fits.open(getCataloguePath(1))
+        cat = table.Table(ff[1].data)
+        cachedCatalogues[1] = cat
 
     row = cat[cat['NSAID'] == nsaid]
 
