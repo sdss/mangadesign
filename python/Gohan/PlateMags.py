@@ -807,7 +807,7 @@ class PlateMagsIFU(object):
         """Creates a temporary file and returns its filename."""
 
         tmpFile = tempfile.NamedTemporaryFile(
-            dir=dir, suffix='.fits.bz2', delete=True)
+            dir=dir, suffix=suffix, delete=True)
         filename = tmpFile.name
         tmpFile.close()
         return filename
