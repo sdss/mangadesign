@@ -44,7 +44,7 @@
 #                         instance, if it does not cover 1.5Reff).
 # ---- These columns may vary between typeids ----
 # 25) psfmag: the optimal measure of the total flux is determined by fitting a PSF model to the object
-#             in (u, g, t, i, z) bands.
+#             in (u, g, r, i, z) bands.
 # 26) extinction: Galactic extinction in (u, g, r, i, z) for the target.
 # 27) logg: The logarithm of the surface gravity of the star.
 # 28) teff: The effective temperature of the star.
