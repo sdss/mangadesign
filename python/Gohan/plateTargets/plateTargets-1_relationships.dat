@@ -1,50 +1,53 @@
 designid  ->  mangaScience
 plateid  ->  plateHolesSorted
-manga_tileid  ->  MaNGA_targets_extNSA
-ifudesign  ->  MaNGA_targets_extNSA
-mangaid  ->  MaNGA_targets_extNSA
+manga_tileid  ->  MaNGA_targets_extNSA_tiled_ancillary
+ifudesign  ->  MaNGA_targets_extNSA_tiled_ancillary
+mangaid  ->  MaNGA_targets_extNSA_tiled_ancillary
 neverobserve  ->  Gohan
-iauname  ->  MaNGA_targets_extNSA
-ifu_ra  ->  MaNGA_targets_extNSA
-ifu_dec  ->  MaNGA_targets_extNSA
-object_ra  ->  MaNGA_targets_extNSA
-object_dec  ->  MaNGA_targets_extNSA
-catalog_ra  ->  MaNGA_targets_extNSA
-catalog_dec  ->  MaNGA_targets_extNSA
-racen  ->  MaNGA_targets_extNSA
-deccen  ->  MaNGA_targets_extNSA
+iauname  ->  MaNGA_targets_extNSA_tiled_ancillary
+ifu_ra  ->  MaNGA_targets_extNSA_tiled_ancillary
+ifu_dec  ->  MaNGA_targets_extNSA_tiled_ancillary
+object_ra  ->  MaNGA_targets_extNSA_tiled_ancillary
+object_dec  ->  MaNGA_targets_extNSA_tiled_ancillary
+catalog_ra  ->  MaNGA_targets_extNSA_tiled_ancillary
+catalog_dec  ->  MaNGA_targets_extNSA_tiled_ancillary
+racen  ->  MaNGA_targets_extNSA_tiled_ancillary
+deccen  ->  MaNGA_targets_extNSA_tiled_ancillary
 xfocal  ->  plateHolesSorted[STRUCT1]
 yfocal  ->  plateHolesSorted[STRUCT1]
 epoch  ->  plateHolesSorted[STRUCT1]
-manga_target1  ->  MaNGA_targets_extNSA
-manga_target2  ->  MaNGA_targets_extNSA
-manga_target3  ->  MaNGA_targets_extNSA
-ifudesignsize  ->  MaNGA_targets_extNSA
-ifutargetsize  ->  MaNGA_targets_extNSA
-ifudesignwrongsize  ->  MaNGA_targets_extNSA
-field  ->  NSA v1 [FIELD]
-run  ->  NSA v1 [RUN]
-nsa_ba  ->  petro_v1_0_0_a4.fits [ba]
-nsa_phi  ->  petro_v1_0_0_a4.fits [phi]
-nsa_redshift  ->  NSA v1 [Z]
-nsa_zdist  ->  NSA v1 [ZDIST]
-nsa_mstar  ->  NSA v1 [MASS]
-nsa_mstar_el  ->  petro_kcorrect_v1_0_0_a3.fits [MASS]
-nsa_petro_th50  ->  NSA v1 [PETROTH50]
-nsa_petro_th50_el  ->  petro_v1_0_0_a4.fits [petroth50_r]
-nsa_petroflux  ->  NSA v1 [PETROFLUX]
-nsa_petroflux_ivar  ->  NSA v1 [PETROFLUX_IVAR]
-nsa_petroflux_el  ->  petro_v1_0_0_a4.fits [petroflux]
-nsa_petroflux_el_ivar  ->  petro_v1_0_0_a4.fits [petroivar]
-nsa_sersic_ba  ->  NSA v1 [SERSIC_BA]
-nsa_sersic_n  ->  NSA v1 [SERSIC_N]
-nsa_sersic_phi  ->  NSA v1 [SERSIC_PHI]
-nsa_sersic_th50  ->  NSA v1 [SERSIC_TH50]
-nsa_sersicflux  ->  NSA v1 [SERSICFLUX]
-nsa_sersicflux_ivar  ->  NSA v1 [SERSICFLUX_IVAR]
-nsa_absmag  ->  NSA v1 [ABSMAG]
-nsa_absmag_el  ->  petro_kcorrect_v1_0_0_a3.fits [ABSMAG]
-nsa_amivar_el  ->  petro_kcorrect_v1_0_0_a3.fits [AMIVAR]
-nsa_extinction  ->  petro_kcorrect_v1_0_0_a3.fits [EXTINCTION]
-nsa_version  ->  "v1_0_0"
-nsa_id  ->  NSA v1 [NSAID]
+manga_target1  ->  MaNGA_targets_extNSA_tiled_ancillary
+manga_target2  ->  MaNGA_targets_extNSA_tiled_ancillary
+manga_target3  ->  MaNGA_targets_extNSA_tiled_ancillary
+ifudesignsize  ->  MaNGA_targets_extNSA_tiled_ancillary
+ifutargetsize  ->  MaNGA_targets_extNSA_tiled_ancillary
+ifudesignwrongsize  ->  MaNGA_targets_extNSA_tiled_ancillary
+nsa_iauname  ->  nsa_v1_0_1
+nsa_field  ->  nsa_v1_0_1
+nsa_run  ->  nsa_v1_0_1
+nsa_camcol  ->  nsa_v1_0_1
+nsa_elpetro_ba  ->  nsa_v1_0_1
+nsa_elpetro_phi  ->  nsa_v1_0_1
+nsa_z  ->  nsa_v1_0_1
+nsa_zdist  ->  nsa_v1_0_1
+nsa_sersic_mass  ->  nsa_v1_0_1
+nsa_elpetro_mass  ->  nsa_v1_0_1
+nsa_petro_th50  ->  nsa_v1_0_1
+nsa_elpetro_th50_r  ->  nsa_v1_0_1
+nsa_petro_flux  ->  nsa_v1_0_1
+nsa_petro_flux_ivar  ->  nsa_v1_0_1
+nsa_elpetro_flux  ->  nsa_v1_0_1
+nsa_elpetro_flux_ivar  ->  nsa_v1_0_1
+nsa_sersic_ba  ->  nsa_v1_0_1
+nsa_sersic_n  ->  nsa_v1_0_1
+nsa_sersic_phi  ->  nsa_v1_0_1
+nsa_sersic_th50  ->  nsa_v1_0_1
+nsa_sersic_flux  ->  nsa_v1_0_1
+nsa_sersic_flux_ivar  ->  nsa_v1_0_1
+nsa_sersic_absmag  ->  nsa_v1_0_1
+nsa_elpetro_absmag  ->  nsa_v1_0_1
+nsa_elpetro_amivar  ->  nsa_v1_0_1
+nsa_extinction  ->  nsa_v1_0_1
+nsa_version  ->  "v1_0_1"
+nsa_nsaid  ->  nsa_v1_0_1
+nsa_nsaid_v1b  ->  nsa_v1b  [only for plateTargets-12, -999 for plateTargets-1]
