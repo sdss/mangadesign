@@ -546,7 +546,7 @@ class PlateTargets(object):
             # sure we have selected the right column.
             if self.catalogid == 12:
                 assert nsaRow['nsaid'] == nsaV1bToV1_row['NSAID_v1_0_0'][0], \
-                    ('row selected from NSA v1_0_1 foes not match the '
+                    ('row selected from NSA v1_0_1 does not match the '
                      'value expected for NSAID ({0} != {1})'.format(
                          nsaRow['nsaid'], nsaV1bToV1_row['NSAID_v1_0_1'][0]))
 
