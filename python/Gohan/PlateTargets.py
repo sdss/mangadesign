@@ -115,6 +115,9 @@ class PlateTargets(object):
         if self.template:
             self.structure.remove_row(0)
 
+        log.debug('using targeting catalogue {0}'.format(
+            os.path.realpath(readPath(config['catalogues']['science']))))
+
     def _getComments(self, data):
         """Gets the comments in the Yanny file."""
 
@@ -541,6 +544,8 @@ class PlateTargets(object):
                 nsa101_mangaid = '1-{0}'.format(indexID_101)
 
             nsaRow = utils.getCatalogueRow(nsa101_mangaid)
+            targetRow = mangaTargetsExtNSA[
+                mangaTargetsExtNSA['mangaid'] == nsa101_mangaid.strip()]
 
             # If this is from catalogid=12, let's make a quick check and make
             # sure we have selected the right column.
@@ -568,6 +573,12 @@ class PlateTargets(object):
                             mangaid)['nsaid']
                     else:
                         mangaidDict[field] = -999
+
+                elif field in ['zmin', 'zmax']:
+                    if len(targetRow) == 0:
+                        mangaidDict[field] = -999.
+                    else:
+                        mangaidDict[field] = targetRow[field][0]
 
                 elif 'nsa_' in field:
                     nsaField = field[4:].lower()
