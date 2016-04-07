@@ -59,47 +59,47 @@
 # 23) ifudesignwrongsize: 1 if the IFU assigned is of the wrong size
 #                         (for instance, if it does not cover 1.5Reff).
 # ---- These columns may vary between typeids ----
-# 23) zmin: The minimum redshift at which the galaxy could still have been
+# 24) zmin: The minimum redshift at which the galaxy could still have been
 #           included in the Primary sample.
-# 24) zmax: The maximum redshift at which the galaxy could still have been
+# 25) zmax: The maximum redshift at which the galaxy could still have been
 #           included in the Primary sample.
-# 25) nsa_iauname: The accepted IAU name
-# 26) nsa_field: The SDSS field covering the target.
-# 27) nsa_run: The SDSS run covering the target.
-# 28) nsa_camcol: The SDSS camcol covering catalog position.
-# 29) nsa_elpetro_ba: Axis ratio b/a from the elliptical Petrosian apertures.
-# 30) nsa_elpetro_phi: Angle (E of N) of the major axis from the elliptical
+# 26) nsa_iauname: The accepted IAU name
+# 27) nsa_field: The SDSS field covering the target.
+# 28) nsa_run: The SDSS run covering the target.
+# 29) nsa_camcol: The SDSS camcol covering catalog position.
+# 30) nsa_elpetro_ba: Axis ratio b/a from the elliptical Petrosian apertures.
+# 31) nsa_elpetro_phi: Angle (E of N) of the major axis from the elliptical
 #                      Petrosian apertures.
-# 31) nsa_z: Heliocentric redshift.
-# 32) nsa_zdist: Distance estimate using pecular velocity model of
+# 32) nsa_z: Heliocentric redshift.
+# 33) nsa_zdist: Distance estimate using pecular velocity model of
 #                Willick et al. (1997); multiply by c/H0 for Mpc.
-# 33) nsa_sersic_mass: Sersic photometry stellar mass from K-correction fit
+# 34) nsa_sersic_mass: Sersic photometry stellar mass from K-correction fit
 #                      in h-2 solar masses.
-# 34) nsa_elpetro_mass: As nsa_sersic_mass, but from the elliptical Petrosian flux.
-# 35) nsa_petro_th50: Petrosian 50% light radius (derived from r band), in arcsec.
-# 36) nsa_elpetro_th50_r: Elliptical Petrosian 50% light radius (r-band), in arcsec.
-# 37) nsa_petro_flux[7]: Azimuthally-averaged SDSS-style Petrosian flux in FNugriz
+# 35) nsa_elpetro_mass: As nsa_sersic_mass, but from the elliptical Petrosian flux.
+# 36) nsa_petro_th50: Petrosian 50% light radius (derived from r band), in arcsec.
+# 37) nsa_elpetro_th50_r: Elliptical Petrosian 50% light radius (r-band), in arcsec.
+# 38) nsa_petro_flux[7]: Azimuthally-averaged SDSS-style Petrosian flux in FNugriz
 #                        (GALEX-SDSS photometric systems). In nanomaggies.
-# 38) nsa_petro_flux_ivar[7]: Inverse variance of petroflux in nanomaggies-2.
-# 39) nsa_elpetro_flux[7]: As nsa_petroflux but from elliptical Petrosian apertures.
-# 40) nsa_elpetro_flux_ivar[7]: As nsa_petroflux_ivar but from the elliptical
+# 39) nsa_petro_flux_ivar[7]: Inverse variance of petroflux in nanomaggies-2.
+# 40) nsa_elpetro_flux[7]: As nsa_petroflux but from elliptical Petrosian apertures.
+# 41) nsa_elpetro_flux_ivar[7]: As nsa_petroflux_ivar but from the elliptical
 #                               Petrosian apertures.
-# 41) nsa_sersic_ba: Axis ratio b/a from 2D Sersic fit.
-# 42) nsa_sersic_n: 2D Sersic index from fit.
-# 43) nsa_sersic_phi: Angle (E of N, degrees) of major axis in 2D Sersic fit
-# 44) nsa_sersic_th50: 50% light radius of 2D Sersic fit (along major axis), in arcsec.
-# 45) nsa_sersic_flux[7]: 2D Sersic fit flux in FNugriz (GALEX-SDSS photometric
+# 42) nsa_sersic_ba: Axis ratio b/a from 2D Sersic fit.
+# 43) nsa_sersic_n: 2D Sersic index from fit.
+# 44) nsa_sersic_phi: Angle (E of N, degrees) of major axis in 2D Sersic fit
+# 45) nsa_sersic_th50: 50% light radius of 2D Sersic fit (along major axis), in arcsec.
+# 46) nsa_sersic_flux[7]: 2D Sersic fit flux in FNugriz (GALEX-SDSS photometric
 #                         systems) in nanommagies.
-# 46) nsa_sersic_flux_ivar[7]: Inverse variance of sersicflux in nanomaggies-2.
-# 47) nsa_sersic_absmag[7]: Absolute magnitude estimates for FNugriz from
+# 47) nsa_sersic_flux_ivar[7]: Inverse variance of sersicflux in nanomaggies-2.
+# 48) nsa_sersic_absmag[7]: Absolute magnitude estimates for FNugriz from
 #                           K-corrections (Omatter=0.3, Olambda=0.7, h=1).
-# 48) nsa_elpetro_absmag[7]: As nsa_sersic_absmag but from elliptical Petrosian apertures.
-# 49) nsa_elpetro_amivar[7]: Inverse variance on absolute magnitudes in FNugriz
+# 49) nsa_elpetro_absmag[7]: As nsa_sersic_absmag but from elliptical Petrosian apertures.
+# 50) nsa_elpetro_amivar[7]: Inverse variance on absolute magnitudes in FNugriz
 #                            for nsa_absmag_el.
-# 50) nsa_extinction[7]: Galactic extinction in FNugriz from Schlegel, Finkbeiner & Davis (1997).
-# 51) nsa_version: The version of the NSA catalogue used to select these targets.
-# 52) nsa_nsaid: The NSAID field in the NSA catalogue v1.
-# 53) nsa_nsaid_v1b: The NSAID of the target in the NSA v1b_0_0_v2 catalogue (if applicable).
+# 51) nsa_extinction[7]: Galactic extinction in FNugriz from Schlegel, Finkbeiner & Davis (1997).
+# 52) nsa_version: The version of the NSA catalogue used to select these targets.
+# 53) nsa_nsaid: The NSAID field in the NSA catalogue v1.
+# 54) nsa_nsaid_v1b: The NSAID of the target in the NSA v1b_0_0_v2 catalogue (if applicable).
 
 typeid 1
 
