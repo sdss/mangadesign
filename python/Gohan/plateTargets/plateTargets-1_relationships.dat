@@ -24,6 +24,10 @@ ifutargetsize  ->  MaNGA_targets_extNSA_tiled_ancillary
 ifudesignwrongsize  ->  MaNGA_targets_extNSA_tiled_ancillary
 zmin  ->  MaNGA_targets_extNSA_tiled_ancillary
 zmax  ->  MaNGA_targets_extNSA_tiled_ancillary
+szmin  ->  MaNGA_targets_extNSA_tiled_ancillary
+szmax  ->  MaNGA_targets_extNSA_tiled_ancillary
+ezmin  ->  MaNGA_targets_extNSA_tiled_ancillary
+ezmax  ->  MaNGA_targets_extNSA_tiled_ancillary
 nsa_iauname  ->  nsa_v1_0_1
 nsa_field  ->  nsa_v1_0_1
 nsa_run  ->  nsa_v1_0_1

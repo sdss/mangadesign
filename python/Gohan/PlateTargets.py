@@ -574,7 +574,7 @@ class PlateTargets(object):
                     else:
                         mangaidDict[field] = -999
 
-                elif field in ['zmin', 'zmax']:
+                elif 'zmin' in field or 'zmax' in field:
                     if len(targetRow) == 0:
                         mangaidDict[field] = -999.
                     else:
