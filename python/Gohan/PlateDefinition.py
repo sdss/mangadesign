@@ -26,7 +26,7 @@ from astropy.coordinates import SkyCoord
 
 from Gohan import log, config, readPath
 from Gohan.exceptions import GohanError
-from Gohan.utils import getPlateTemperature
+# from Gohan.utils import getPlateTemperature
 
 
 platePlansTemplate = """PLATEPLANS {plateID} {designID} {locationID} -1
@@ -245,8 +245,8 @@ class PlateDefinition(object):
 
         if temp is None:
             # Calculates year fraction from the epoch.
-            yearFraction = epoch - int(epoch)
-            plansDic['temp'] = getPlateTemperature(yearFraction)
+            # yearFraction = epoch - int(epoch)
+            plansDic['temp'] = 5  # getPlateTemperature(yearFraction)
         else:
             plansDic['temp'] = temp
 
