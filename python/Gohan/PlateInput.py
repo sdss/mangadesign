@@ -244,11 +244,19 @@ class PlateInput(object):
     def _selectTargets(self, data):
         """Selects targets from a catalogue that are within the FOV."""
 
+        nData = len(data)
+
         coords = coo.SkyCoord(data['RA'], data['DEC'], unit='deg')
         separation = coords.separation(
             coo.SkyCoord(ra=self.raCen, dec=self.decCen, unit='deg')).deg
 
         data = data[np.where(separation <= config['decollision']['FOV'])]
+
+        if len(data) < nData:
+            warnings.warn('{0} targets rejected because '
+                          'they are out of the FOV of the design.'
+                          .format(nData - len(data)),
+                          exceptions.GohanUserWarning)
 
         return data
 
