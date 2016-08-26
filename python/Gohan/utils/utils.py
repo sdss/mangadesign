@@ -362,8 +362,8 @@ def getPlateDefinition(designID):
 
     path = os.path.join(
         readPath(config['platelist']),
-        'definitions/00{0}XX/plateDefinition-{1:06d}.par'
-        .format('{0:04d}'.format(designID)[0:2], designID))
+        'definitions/{0}/plateDefinition-{1:06d}.par'
+        .format('{0:06d}'.format(designID)[0:4] + 'XX', designID))
 
     if os.path.exists(path):
         return path
