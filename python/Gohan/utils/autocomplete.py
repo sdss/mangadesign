@@ -220,6 +220,11 @@ def getNSATargets(targets, centre):
         table.Column([-999] * len(NSATargets),
                      name='IFUDESIGN', dtype=int))
 
+    NSATargets.add_column(
+        table.Column(NSATargets['RA'], name='IFU_RA', dtype=float))
+    NSATargets.add_column(
+        table.Column(NSATargets['DEC'], name='IFU_DEC', dtype=float))
+
     return _getValidNSATargets(targets, NSATargets)
 
 
@@ -276,7 +281,7 @@ def getMaNGATargets(targets, centre):
             removeIdx.append(nn)
     MaNGATargets.remove_rows(removeIdx)
 
-    MaNGATargets.sort('Z')
+    MaNGATargets.sort('NSA_Z')
 
     if len(MaNGATargets) > 0:
         return MaNGATargets
@@ -318,7 +323,6 @@ def _checkTarget(targets, target, centre, mode='MaNGA'):
         return False
 
     for inputTarget in targets:
-
         inputCoords = coo.SkyCoord(inputTarget['IFU_RA'],
                                    inputTarget['IFU_DEC'],
                                    unit='deg')
