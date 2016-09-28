@@ -75,7 +75,7 @@ sdssImaging:
 
 platelist: $PLATELIST_DIR
 mangacore: $MANGACORE_DIR
-preimaging: $PREIMAGING_DIR
+preimaging: $MANGAPREIM_DIR
 cataloguePath: $MANGA_CATALOGUE_DIR
 sdssMaskBits: $IDLUTILS_DIR/data/sdss/sdssMaskbits.par
 
