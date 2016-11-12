@@ -817,13 +817,14 @@ class PlateInput(object):
 
             if np.any(separations < targetAvoid):
                 targetsToReject.append(ii)
-                collisions = np.where(separations < targetAvoid)[0]
+                idx_min_sep = np.argmin(separations)
                 self.logCollision(
                     'mangaid={0} '.format(targets['MANGAID'][ii]) +
                     'rejected: collides with ' +
-                    'RA={0:.5f}, Dec={1:.5f}'.format(
-                        skyCoords[collisions[0]].ra.deg,
-                        skyCoords[collisions[0]].dec.deg), silent=silent)
+                    'RA={0:.5f}, Dec={1:.5f}. Separation={2:.1f} arcsec.'.format(
+                        skyCoords[idx_min_sep].ra.deg,
+                        skyCoords[idx_min_sep].dec.deg,
+                        separations[idx_min_sep] * 3600.), silent=silent)
 
         targets.remove_rows(targetsToReject)
 
