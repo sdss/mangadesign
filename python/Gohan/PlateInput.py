@@ -291,10 +291,14 @@ class PlateInput(object):
                     ifuCol = table.Column(data=data['IFU_' + col].data,
                                           name=col)
                     data.add_column(ifuCol)
+                elif 'IFU' + col in data.colnames:
+                    ifuCol = table.Column(data=data['IFU' + col].data,
+                                          name=col)
+                    data.add_column(ifuCol)
                 else:
                     raise exceptions.GohanPlateInputError(
                         'input catalogue does not contain a column {0} or '
-                        'IFU_{0}'.format(col))
+                        'IFU_{0} or IFU{0}'.format(col))
 
         return data
 
