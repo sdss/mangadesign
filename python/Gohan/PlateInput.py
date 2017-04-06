@@ -564,13 +564,13 @@ class PlateInput(object):
             newCoords, order = sortTargets(
                 targetCoords, (self.raCen, self.decCen),
                 plot=False,  # kwargs.get('plotSorted', True),
-                limitTo=limitTargets,
+                limitTo=int(limitTargets),
                 plotFilename=('sortedTargets_{0:d}_{1}.pdf'
                               .format(self.designid,
                                       self.targettype[0:3].upper())))
             targets = targets[order]
         else:
-            targets = targets[0:limitTargets]
+            targets = targets[0:int(limitTargets)]
 
         for col in targets.colnames:
             if col.lower() == 'priority':
