@@ -59,11 +59,11 @@ class PlateDefinition(object):
     def _addPlateInput(self, lines, plateInput, path):
         """Adds a plateInput to the lines of a new plateDefinition."""
 
-        fullPath = os.path.join(
-            readPath(config['platelist']), 'inputs', path)
+        # fullPath = os.path.join(
+        #     readPath(config['platelist']), 'inputs', path)
 
-        if not os.path.exists(fullPath):
-            raise GohanError('input {0} does not exist'.format(path))
+        # if not os.path.exists(fullPath):
+        #     raise GohanError('input {0} does not exist'.format(path))
 
         # If plateInput does not include the id, uses the following to the
         # existing ones.
