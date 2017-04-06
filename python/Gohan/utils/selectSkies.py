@@ -119,7 +119,7 @@ def decollide(aa, bb, distance=config['decollision']['targetAvoid']):
     return validCoords
 
 
-def selectSkies(skyCat, designID, fieldName, raCen, decCen):
+def selectSkies(skyCat, designID, fieldName, raCen, decCen, use_apogee=True):
     """Writes a list of skies for each one of the IFUs in a design."""
 
     allSkies = table.Table.read(skyCat)
@@ -153,9 +153,11 @@ def selectSkies(skyCat, designID, fieldName, raCen, decCen):
     mangaCoords[:, 0] = mangaTargets['ra']
     mangaCoords[:, 1] = mangaTargets['dec']
 
-    apogeeCoords = getInfoFromAPOGEE(designID)
-
-    coords = np.concatenate((mangaCoords, apogeeCoords), axis=0)
+    if use_apogee:
+        apogeeCoords = getInfoFromAPOGEE(designID)
+        coords = np.concatenate((mangaCoords, apogeeCoords), axis=0)
+    else:
+        coords = mangaCoords
 
     skyTable = table.Table(
         None, names=['MANGAID', 'RA', 'DEC', 'MANGA_TARGET2', 'IFUID'],
