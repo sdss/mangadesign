@@ -26,7 +26,7 @@ def copyPreImaging(designID, preImage):
 
     path = os.path.join(
         readPath(config['preImaging']),
-        'D00{0:s}XX'.format('{0:04d}'.format(designID)[0:2]),
+        'D{0:s}XX'.format('0:06d'.format(designID)[0:4]),
         '{0:04d}'.format(designID))
 
     if not os.path.exists(path):
@@ -55,7 +55,7 @@ def createPlateMags(input, mode='drillRun', plot=False, debug=False,
 
         if mode == 'drillRun':
             log.info('Creating plateMags for designID={0:d} ({1}/{2})'
-                     .format(designID, nn+1, nDesigns))
+                     .format(designID, nn + 1, nDesigns))
 
         mangaScience = getMangaSciencePath(designID)
 
