@@ -299,8 +299,8 @@ class PlateMags(list):
             plateMagsPath = os.path.join(
                 readPath(repoPath),
                 'platedesign/platemags/'
-                'D00{0:s}XX/plateMags-{1:04d}{2}').format(
-                    str(self.designid)[0:2], self.designid, extension)
+                'D{0:s}XX/plateMags-{1:04d}{2}').format(
+                    '{0:06d}'.format(self.designid)[0:4], self.designid, extension)
         else:
             if filename is not None:
                 plateMagsPath = filename
