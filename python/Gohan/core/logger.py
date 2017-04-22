@@ -27,6 +27,7 @@ logging.addLevelName(IMPORTANT, 'IMPORTANT')
 def important(self, message, *args, **kws):
     self._log(IMPORTANT, message, args, **kws)
 
+
 logging.Logger.important = important
 
 
@@ -139,7 +140,7 @@ class GohanLogger(Logger):
 
         record.message = '{0}'.format(record.msg)
         if record.levelno == logging.WARN:
-            record.message = '{0}'.format(record.msg[record.msg.find(':')+2:])
+            record.message = '{0}'.format(record.msg[record.msg.find(':') + 2:])
 
         # if not hasattr(record, 'origin') or record.origin == '':
         #     record.message = '{0}'.format(record.msg)
@@ -149,7 +150,7 @@ class GohanLogger(Logger):
         if len(record.message) > 80:
             tw = TextWrapper()
             tw.width = 80
-            tw.subsequent_indent = ' ' * (len(record.levelname)+2)
+            tw.subsequent_indent = ' ' * (len(record.levelname) + 2)
             tw.break_on_hyphens = False
             msg = '\n'.join(tw.wrap(record.message))
             print(': ' + msg)
