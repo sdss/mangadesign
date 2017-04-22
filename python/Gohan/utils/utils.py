@@ -500,7 +500,7 @@ def getPlateTargetsTemplate(catalogid):
         return None
 
 
-def getPlateTemperature(date):
+def getAPOGEEPlateTemperature(date):
     """Returns the drilling temperature for a plate.
 
     Calculated the optimal temperature for which a plate must be drilled if it
