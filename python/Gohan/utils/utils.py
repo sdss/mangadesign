@@ -552,13 +552,43 @@ def getAPOGEEPlateTemperature(date):
     return temperature
 
 
-def getStellarLibraryTargets(designid=None):
-    """Returns a plateTargets-like table with all the stellar library targets
-    for a certain list of designids. If designid is None, all the stellar
-    library plates are returned."""
+def getStellarLibraryTargets(designid=None, reject_neverobserved=True, reject_saturated=True):
+    """Returns a plateTargets-like table with stellar library targets.
+
+    Parameters:
+        designid (list or None):
+            If a list, only the targets for those designids will be returned.
+            If None, targets for all stellar library plates are returned.
+        reject_neverobserved (bool):
+            If True, targets in plates listed in ``stellibtargets/etc/neverobserved.txt``
+            are not included.
+        reject_saturated (bool):
+            targets that meet the condition that
+            ``(psfmag[:, 3] < 12.7 ) and (psfmag[:, 3] > 0) and
+              (abs(ifu_dec - object_dec) < 0.1 / 3600.)``
+            are not returned.
+
+    Returns:
+        targets (astropy.table.Table object):
+            A Astropy table, with the same format as the ``PLTTRGT`` structure in
+            starPlateTargets, but filtered to include only the desired targets.
+
+    """
 
     starPlateTargetsPath = getPlateTargetsPath('MaStar')
-    starPlateTargets = yanny.yanny(starPlateTargetsPath, np=True)['PLTTRGT']
+    starPlateTargets = table.Table(yanny.yanny(starPlateTargetsPath, np=True)['PLTTRGT'])
+
+    if reject_neverobserved:
+        neverobserved = getMaStarNeverobserved()
+        for plateid in neverobserved:
+            starPlateTargets.remove_rows(np.where(starPlateTargets['plateid'] == plateid))
+
+    if reject_saturated:
+        idx_remove = np.where((starPlateTargets['psfmag'][:, 3] < 12.7) &
+                              (starPlateTargets['psfmag'][:, 3] > 0) &
+                              (np.abs((starPlateTargets['ifu_dec'] -
+                                       starPlateTargets['object_dec'])) < 0.1 / 3600))
+        starPlateTargets.remove_rows(idx_remove)
 
     if designid is None:
         return starPlateTargets
