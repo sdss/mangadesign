@@ -1,3 +1,10 @@
+from astropy.wcs import FITSFixedWarning
+
+import os
+import warnings
+
+from Gohan.exceptions import GohanWarning
+
 
 def readPath(path):
     """Get a Totoro-formatted path and returns the real path.
@@ -19,23 +26,15 @@ def readPath(path):
         return os.path.realpath(os.path.expanduser(os.path.expandvars(path)))
 
 
-from astropy.wcs import FITSFixedWarning
-# from astropy.io import fits
-
-import warnings
 # warnings.simplefilter('ignore', fits.file.AstropyUserWarning)
 # warnings.simplefilter('ignore', AstropyDeprecationWarning)
 warnings.simplefilter('ignore', FITSFixedWarning)
-warnings.filterwarnings(
-    'ignore',
-    'This figure includes Axes that are not compatible with tight_layout')
+warnings.filterwarnings('ignore',
+                        'This figure includes Axes that are not compatible with tight_layout')
 warnings.filterwarnings('ignore', 'Module argparse was already imported')
 
-from Gohan.exceptions import GohanWarning
 warnings.filterwarnings('always', category=GohanWarning)
 
-# from .utils.readPath import readPath
-import os
 
 __DEFAULT_CONFIG_FILE__ = readPath('+defaults.yaml')
 __GOHAN_CONFIG_PATH__ = readPath('~/.gohan/gohan.yaml')
@@ -61,8 +60,8 @@ try:
     from Gohan.StandardPlateTargets import StandardPlateTargets
 except:
     warnings.warn('one or more modules failed to load. '
-                  'This is probably due to incorrect configuration.'
-                  'The modules can be loaded by importing the complete route,',
+                  'This is probably due to incorrect configuration. '
+                  'The modules can be loaded by importing the complete route.',
                   GohanWarning)
 
 __all__ = ['PlateInput', 'PlateMags', 'PlateTargets',
