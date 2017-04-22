@@ -1,7 +1,0 @@
-# This file contains the las locationid used during MaNGA-led plate design.
-
-# Remember that locationids for MaNGA designs must be in the range 2000-3999
-# and that two designs (even if they have different targets or paraments) with
-# the same field centre must have the same locationid.
-
-2465
