@@ -6,15 +6,19 @@ The module is heavily based on the astropy logging system.
 
 from __future__ import print_function
 
-import os
-import sys
 import logging
 from logging import FileHandler
-import warnings
-from . import colourPrint
+
+import os
+import re
 import shutil
+import sys
+import warnings
+
 from textwrap import TextWrapper
-import shutil as sh
+
+from . import colourPrint
+
 
 # Initialize by calling initLog()
 log = None
@@ -22,6 +26,8 @@ log = None
 # Adds custom log level for important messages
 IMPORTANT = 25
 logging.addLevelName(IMPORTANT, 'IMPORTANT')
+
+ansi_escape = re.compile(r'\x1b[^m]*m')
 
 
 def important(self, message, *args, **kws):
@@ -123,7 +129,7 @@ class GohanLogger(Logger):
         else:
             self.warning(message)
 
-    def _stream_formatter(self, record):
+    def _stream_formatter(self, record, wrap=False):
         """The formatter for standard output."""
         if record.levelno < logging.DEBUG:
             print(record.levelname, end='')
@@ -138,6 +144,8 @@ class GohanLogger(Logger):
         else:
             colourPrint(record.levelname, 'red', end='')
 
+        record.msg = ansi_escape.sub('', record.msg)
+
         record.message = '{0}'.format(record.msg)
         if record.levelno == logging.WARN:
             record.message = '{0}'.format(record.msg[record.msg.find(':') + 2:])
@@ -147,7 +155,7 @@ class GohanLogger(Logger):
         # else:
         #     record.message = '{0} [{1:s}]'.format(record.msg, record.origin)
 
-        if len(record.message) > 80:
+        if self.wrap is True and len(record.message) > 80:
             tw = TextWrapper()
             tw.width = 80
             tw.subsequent_indent = ' ' * (len(record.levelname) + 2)
@@ -161,7 +169,8 @@ class GohanLogger(Logger):
                       logLevel='WARNING',
                       logFileLevel='INFO',
                       logFilePath='~/.gohan/gohan.log',
-                      logFileMode='w'):
+                      logFileMode='w',
+                      wrap=False):
         """Reset logger to its initial state."""
 
         # Remove all previous handlers
@@ -174,6 +183,7 @@ class GohanLogger(Logger):
         # Set up the stdout handler
         sh = logging.StreamHandler()
         sh.emit = self._stream_formatter
+        self.wrap = wrap
         self.addHandler(sh)
         sh.setLevel(logLevel)
 
@@ -223,6 +233,6 @@ class GohanLogger(Logger):
         if not os.path.exists(inputPath):
             os.makedirs(inputPath)
 
-        sh.copy(self.logFilename, os.path.join(inputPath, plateRun + '.log'))
+        shutil.copy(self.logFilename, os.path.join(inputPath, plateRun + '.log'))
 
         self.info(self.logFilename + ' copied $PLATELIST/inputs.')
