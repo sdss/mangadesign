@@ -1,4 +1,3 @@
-import pywcsgrid2 as pywcsgrid2
 from Gohan.utils.getSDSSRun import getSDSSRun
 from Gohan.utils.sortTargets import sortTargets
 from Gohan.utils.assignIFUDesigns import assignIFUDesigns
@@ -12,4 +11,4 @@ except:
     #     colorama.Fore.YELLOW, colorama.Style.RESET_ALL)
     Staralt = None
 
-# __all__ = ['Staralt', 'pywcsgrid2', 'getSDSSRun']
+__all__ = ['Staralt', 'pywcsgrid2', 'getSDSSRun']
