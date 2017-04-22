@@ -566,6 +566,25 @@ def getStellarLibraryTargets(designid=None):
         return starPlateTargets[starPlateTargets['designid'] == designid]
 
 
+def getMaStarNeverobserved():
+    """Returns a list of plates that will never be observed by MaStar."""
+
+    if ('STELLIBTARGETS_DIR' not in os.environ or
+            not os.path.exists(os.environ['STELLIBTARGETS_DIR'])):
+        raise ValueError('$STELLIBTARGETS_DIR is undefined or missing.')
+
+    neverobserved_path = os.path.join(os.environ['STELLIBTARGETS_DIR'],
+                                      'etc/neverobserved.txt')
+
+    if not os.path.exists(neverobserved_path):
+        raise ValueError('cannot find file {0}'.format(neverobserved_path))
+
+    neverobserved = table.Table.read(neverobserved_path,
+                                     format='ascii.commented_header')
+
+    return neverobserved['Plate'].tolist()
+
+
 def getStellarLibraryDesigns():
     """Returns, from apodb, all the designids for stellar library plates."""
 
