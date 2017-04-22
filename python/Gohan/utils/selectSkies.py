@@ -119,7 +119,7 @@ def decollide(aa, bb, distance=config['decollision']['targetAvoid']):
     return validCoords
 
 
-def selectSkies(skyCat, designID, fieldName, raCen, decCen, use_apogee=True):
+def selectSkies(skyCat, designID, fieldName, raCen, decCen, use_apogee=True, raise_error=True):
     """Writes a list of skies for each one of the IFUs in a design."""
 
     allSkies = table.Table.read(skyCat)
@@ -173,17 +173,22 @@ def selectSkies(skyCat, designID, fieldName, raCen, decCen, use_apogee=True):
         decollidedSkies = decollide(candidateSkies, coords)
 
         if decollidedSkies is False:
-            raise GohanError('target {0} ({1}) has not enough skies'.format(
-                             target['mangaid'], ifuDesign))
+            err_msg = 'target {0} ({1}) has not enough skies'.format(target['mangaid'], ifuDesign)
+            if raise_error:
+                raise GohanError(err_msg)
+            else:
+                return False, err_msg, target['mangaid'], ifuDesign
 
         ifuDesignSize = int(str(ifuDesign)[0:-2])
 
         if nSkies[ifuDesignSize] > len(decollidedSkies):
-            raise GohanError('target {0} ({1}) has not enough skies '
-                             '({2} when {3} are needed)'
-                             .format(target['mangaid'], ifuDesign,
-                                     len(decollidedSkies),
-                                     nSkies[ifuDesignSize]))
+            err_msg = 'target {0} ({1}) has not enough skies ({2} when {3} are needed)'.format(
+                target['mangaid'], ifuDesign, len(decollidedSkies), nSkies[ifuDesignSize])
+
+            if raise_error:
+                raise GohanError(err_msg)
+            else:
+                return False, err_msg, target['mangaid'], ifuDesign
 
         ifuSkies = decollidedSkies[:nSkies[ifuDesignSize], :]
 
@@ -195,7 +200,7 @@ def selectSkies(skyCat, designID, fieldName, raCen, decCen, use_apogee=True):
     if len(skyTable) < 92:
         raise GohanError('not enough targets ({0})'.format(len(skyTable)))
 
-    fileName = 'selectedSkies_{0}_{1}.fits'.format(fieldName, designID)
-    skyTable.write(fileName)
+    # fileName = 'selectedSkies_{0}_{1}.fits'.format(fieldName, designID)
+    # skyTable.write(fileName)
 
     return skyTable
