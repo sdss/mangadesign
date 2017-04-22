@@ -5,15 +5,24 @@ logging:
     logFilePath: '~/.gohan/gohan.log'
     logFileMode: 'w'
 
+platelist: $PLATELIST_DIR
+mangacore: $MANGACORE_DIR
+preimaging: $MANGAPREIM_DIR
+mangawork: $MANGAWORK_DIR
+sdssMaskBits: $IDLUTILS_DIR/data/sdss/sdssMaskbits.par
+
+targets:
+    path: $MANGAWORK_DIR/manga/target
+    version: v1_2_24
+    mangaTargets: MaNGA_targets_extNSA_tiled_ancillary.fits
+
+skiesPath: $MANGAWORK_DIR/manga/platedesign/skies
+
 catalogues:
-    catalogueDir: $MANGA_CATALOGUE_DIR
-    science: $MANGASAMPLE_SCIENCE_CATALOGUE
-    standard: $MANGASAMPLE_STANDARD_CATALOGUE
-    stelLib: $MANGASAMPLE_STELLIB_CATALOGUE
-    APASS: $MANGASAMPLE_APASS_CATALOGUE
-    sky: None
-    NSA: $MANGASAMPLE_NSA_CATALOGUE
-    inputs: $MANGAWORK_DIR/target/inputs/
+    path: $MANGAWORK_DIR/manga/target/catalogues
+    NSA: $MANGAWORK_DIR/manga/target/catalogues/1-nsa_v1_0_1.fits
+    standard: $MANGAWORK_DIR/manga/target/catalogues/5-manga_stds_v1_01.fits
+    APASS: $MANGAWORK_DIR/manga/target/catalogues/6-APASS_DR7.fits
 
 decollision:
     FOV: 1.49
@@ -33,10 +42,6 @@ plateMags:
     reffField: PETROTH50
     DPI: 72
     nPix: 50
-
-plateTargets:
-    neverobserve: +etc/neverobserve.dat
-    templates: +etc/
 
 plateTypes:
     mangaLead:
@@ -68,16 +73,10 @@ plateTypes:
 
 sdssImaging:
     baseURL: https://data.sdss.org/sas/
-    username: sdss
-    password: 2.5-meters
+    username: NONE
+    password: NONE
     scale: 0.396
     preimagingVersion: v2
-
-platelist: $PLATELIST_DIR
-mangacore: $MANGACORE_DIR
-preimaging: $MANGAPREIM_DIR
-cataloguePath: $MANGA_CATALOGUE_DIR
-sdssMaskBits: $IDLUTILS_DIR/data/sdss/sdssMaskbits.par
 
 anchorBlocks:
     anchors: [NE, SE, NW, SW]
