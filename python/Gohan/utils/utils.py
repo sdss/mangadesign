@@ -70,7 +70,7 @@ def getPlateTargetsPath(catID):
     plateTargetsPath = os.path.join(
         readPath(config['mangacore']), 'platedesign/platetargets/')
 
-    if catID == 'MaSTAR':
+    if catID == 'MaStar':
         plateTargetsPath = os.path.join(plateTargetsPath,
                                         'starPlateTargets.par')
     elif catID == 'standards':
@@ -557,7 +557,7 @@ def getStellarLibraryTargets(designid=None):
     for a certain list of designids. If designid is None, all the stellar
     library plates are returned."""
 
-    starPlateTargetsPath = getPlateTargetsPath('MaSTAR')
+    starPlateTargetsPath = getPlateTargetsPath('MaStar')
     starPlateTargets = yanny.yanny(starPlateTargetsPath, np=True)['PLTTRGT']
 
     if designid is None:
