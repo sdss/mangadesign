@@ -10,37 +10,50 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
 
-import argparse
-import os
-import sys
-
-from Gohan.scripts.generate_designs import generate_designs
+import click
 
 
-def main():
+@click.group()
+def gohan():
+    """Performs task related to MaNGa plate design."""
+    pass
 
-    parser = argparse.ArgumentParser(prog=os.path.basename(sys.argv[0]))
 
-    subparsers = parser.add_subparsers(title='actions')
+@gohan.command()
+@click.argument('platerun', type=str)
+@click.argument('platedata', type=str)
+def design(platerun, platedata):
+    """Designs a platerun.
 
-    parser_design = subparsers.add_parser('design', help='designs a platerun',
-                                          description='Designs a platerun')
+    Requieres specifying a PLATERUN and the location of the PLATEDATA file
+    that contains the list of plates to run.
 
-    parser_design.add_argument('PLATERUN', type=str, help='The platerun to be designed.')
-    parser_design.add_argument('PLATE_DATA', type=str, help='The file with the plate data.')
+    """
 
-    parser_design.set_defaults(func=generate_designs)
+    from Gohan.scripts.generate_designs import generate_designs
 
-    args = parser.parse_args()
+    generate_designs(platerun, platedata)
 
-    funcKwargs = {}
-    for key in vars(args).keys():
-        if key == 'func':
-            continue
-        funcKwargs[key.lower()] = getattr(args, key)
 
-    args.func(**funcKwargs)
+@gohan.group()
+def cmm():
+    """Handles CMM files."""
+    pass
+
+
+@cmm.command()
+@click.argument('PATH', type=str)
+def load(path):
+    """Checks PATH and loads CMM files to the DB. PATH can be a directory,
+    that will be checked recursively for files not already loaded, or the
+    path for a single CMM file.
+
+    """
+
+    from Gohan.scripts.update_cmm import update_cmm
+
+    update_cmm(path)
 
 
 if __name__ == '__main__':
-    main()
+    gohan()
