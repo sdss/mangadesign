@@ -22,7 +22,6 @@ import fnmatch
 import itertools
 import numpy
 import os
-import warnings
 
 
 def getCmmMeas(plate, pm, session):
