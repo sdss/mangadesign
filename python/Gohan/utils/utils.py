@@ -782,3 +782,12 @@ def getAllDrilledTargets():
               for pT in allPlateTargets]
 
     return table.vstack(tables)
+
+
+def get_manga_targets_path():
+    """Returns the full MaNGA_targets path from the configuration file."""
+
+    path = os.path.expandvars(os.path.join(config['targets']['path'], config['targets']['version'],
+                                           config['targets']['mangaTargets']))
+
+    return path
