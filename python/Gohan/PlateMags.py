@@ -30,9 +30,9 @@ from urlparse import urlparse
 
 from Gohan.exceptions import GohanUserWarning, GohanError
 from Gohan import log, config, readPath
-from Gohan.utils import pywcsgrid2 as pw2
 from Gohan.utils import getSDSSRun
-from Gohan.utils.utils import getNSArow, getPlateTargetsRow
+from Gohan.utils.utils import (getNSArow, getPlateTargetsRow,
+                               get_manga_targets_path)
 from Gohan.utils.yanny import yanny, write_ndarray_to_yanny
 
 from astropy import wcs
@@ -51,6 +51,8 @@ from matplotlib.patches import Ellipse
 from matplotlib.collections import EllipseCollection
 from matplotlib.backends.backend_pdf import PdfPages
 
+import pywcsgrid2 as pw2
+
 
 __ALL__ = ['PlateMags']
 
@@ -63,7 +65,7 @@ NFILTERS = len(FILTERS)
 NSAFILTERPOS = {'u': 0, 'g': 1, 'r': 2, 'i': 3, 'z': 4}
 
 try:
-    MANGA_SAMPLE = table.Table.read(readPath(config['catalogues']['science']))
+    MANGA_SAMPLE = table.Table.read(get_manga_targets_path())
 except:
     MANGA_SAMPLE = None
     warnings.warn('no MaNGA sample file loaded', GohanUserWarning)
