@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 # encoding: utf-8
 """
 createStarPlateTargets.py
@@ -55,8 +55,8 @@ def createStarPlateTargets(plateids, overwrite=False):
 
     log.info('Identifying mangaids ... ')
 
-    starPlateTargets = StarPlateTargets()
-    standardPlateTargets = StandardPlateTargets()
+    starPlateTargets = StarPlateTargets.StarPlateTargets()
+    standardPlateTargets = StandardPlateTargets.StandardPlateTargets()
     for plateid in plateids:
 
         log.info('Adding targets for plate_id={0}'.format(plateid))
