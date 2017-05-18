@@ -50,12 +50,16 @@ conversions = {
 }
 
 
-neverobserve = map(int, open(readPath(config['plateTargets']['neverobserve']),
+neverobserve = map(int, open(os.path.join(os.environ['MANGAWORK_DIR'],
+                                          'manga/platedesign/etc/neverobserve.dat'),
                              'r').read().splitlines()[1:])
 
 try:
     mangaTargetsExtNSA = table.Table.read(
-        readPath(config['catalogues']['science']))
+        os.path.join(os.environ['MANGAWORK_DIR'],
+                     'manga/target/', config['targets']['version'],
+                     config['targets']['mangaTargets']))
+
     mangaTargetsExtNSA['MANGAID'] = map(lambda xx: xx.strip(),
                                         mangaTargetsExtNSA['MANGAID'])
     mangaTargetsExtNSA = _toLowerCase(mangaTargetsExtNSA)
