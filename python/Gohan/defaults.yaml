@@ -36,7 +36,7 @@ plateInputs:
 
 plateMags:
     filters : [g, r, i, z]
-    BOSS_SN: +etc/BOSS_SNvsFibMag2.dat
+    BOSS_SN: $MANGAWORK_DIR/manga/platedesign/etc/BOSS_SNvsFibMag2.dat
     simbmap: $MANGACORE_DIR/metrology/fiducial/manga_simbmap_127.par
     targetSeeing: 2
     reffField: PETROTH50
