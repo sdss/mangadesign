@@ -13,8 +13,6 @@ from __future__ import absolute_import
 from Gohan import log
 
 from sdss.common import addPlateHoles2db
-from sdss.internal.database.connections import APODatabaseAdminLocalConnection as db
-from sdss.internal.database.apo.platedb import ModelClasses as plateDB
 
 from fitPlugPlateMeas.cmmPlateMeas import PlateMeas
 
@@ -24,7 +22,7 @@ import numpy
 import os
 
 
-def getCmmMeas(plate, pm, session):
+def getCmmMeas(plate, pm, session, plateDB):
     """Returns a CMM Measurement object that can be loaded to the DB.
 
     Modified from Petunia. ``pm`` is a fitPlugPlateMeas.PlateMeas object
@@ -102,13 +100,24 @@ def getCmmMeas(plate, pm, session):
     return cmmMeas, holeMeasList
 
 
-def update_cmm(path):
+def update_cmm(path, remote=False):
     """Ingests new CMM files into the DB.
 
     Recursively checks whether there are new CMM files in ``path`` that have
-    not been ingested to the DB and loads them.
+    not been ingested to the DB and loads them. If ``remote=True``, it uses the
+    ``APODatabaseUserTunnelConnection``, otherwise it uses
+    ``APODatabaseAdminLocalConnection``
 
     """
+
+    os.environ['PLATEDB_USER'] = 'sdssdb_admin'
+
+    if remote:
+        from sdss.internal.database.connections import APODatabaseAdminTunnelConnection as db
+    else:
+        from sdss.internal.database.connections import APODatabaseAdminLocalConnection as db
+
+    from sdss.internal.database.apo.platedb import ModelClasses as plateDB
 
     session = db.Session()
 
@@ -156,7 +165,7 @@ def update_cmm(path):
 
         with session.begin(subtransactions=True):
 
-            cmm_meas, holeMeasList = getCmmMeas(plate, pm, session)
+            cmm_meas, holeMeasList = getCmmMeas(plate, pm, session, plateDB)
 
             for holeMeas in holeMeasList:
                 session.add(holeMeas)

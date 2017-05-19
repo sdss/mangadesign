@@ -11,6 +11,9 @@ from __future__ import print_function
 from __future__ import absolute_import
 
 import click
+import warnings
+
+from Gohan.exceptions import GohanUserWarning
 
 
 @click.group()
@@ -43,16 +46,21 @@ def cmm():
 
 @cmm.command()
 @click.argument('PATH', type=str)
-def load(path):
+@click.option('--remote', is_flag=True, help='uses the tunnel connection to the DB')
+def load(path, remote):
     """Checks PATH and loads CMM files to the DB. PATH can be a directory,
     that will be checked recursively for files not already loaded, or the
     path for a single CMM file.
 
     """
-
+    print(remote)
     from Gohan.scripts.update_cmm import update_cmm
 
-    update_cmm(path)
+    if remote:
+        warnings.warn('using tunnel connection to apodb. Did you create the tunnel?',
+                      GohanUserWarning)
+
+    update_cmm(path, remote=remote)
 
 
 if __name__ == '__main__':
