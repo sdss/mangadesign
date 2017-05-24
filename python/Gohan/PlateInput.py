@@ -425,6 +425,8 @@ class PlateInput(object):
         inputsPath = os.path.join(readPath(config['platelist']), 'inputs')
 
         plateDefinitionPath = getPlateDefinition(self.designid)
+        if not os.path.exists(plateDefinitionPath):
+            raise ValueError('plateDefinition {0} not found'.format(plateDefinitionPath))
 
         plateDefinition = yanny.yanny(plateDefinitionPath, np=True)
         nInputs = int(plateDefinition['nInputs'])
@@ -444,6 +446,10 @@ class PlateInput(object):
         assert map(os.path.exists, [scienceInput, stdInput]), \
             'one or more of the plateInput paths in plateDefinition does ' + \
             'not exist.'
+
+        if not os.path.exists(scienceInput) or not os.path.exists(stdInput):
+            raise ValueError('cannot find APOGEE science or standard input file.')
+
 
         sciData = yanny.yanny(scienceInput, np=True)
         stdData = yanny.yanny(stdInput, np=True)
