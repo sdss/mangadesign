@@ -53,7 +53,7 @@ def load(path, remote):
     path for a single CMM file.
 
     """
-    print(remote)
+
     from Gohan.scripts.update_cmm import update_cmm
 
     if remote:
