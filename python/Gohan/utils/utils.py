@@ -791,3 +791,52 @@ def get_manga_targets_path():
                                            config['targets']['mangaTargets']))
 
     return path
+
+
+def calculate_special_targets(plate_input_path, input_path):
+    """Determines how many special MaStar targets survived decollision.
+
+    Parameters:
+        plate_input_path (str):
+            The path to the generated plateInput file/
+        input_path (str):
+            The path to the original FITS table containing all the potential
+            targets. The table should contain a ``CATALOG`` column. Targets for
+            which ``CATALOG='Special'`` will be compared to determined whether
+            they are also include in ``plate_input_path``.
+
+    Returns:
+        output:
+            Either ``None`` if ``input_path`` does not contain a ``CATALOG``
+            column, or a tuple of two elements, the first being the number of
+            special targets in ``plate_input_path``, and the second the total
+            number of original targets in ``input_path``.
+
+    """
+
+    assert os.path.exists(plate_input_path)
+    assert os.path.exists(input_path)
+
+    plate_input = table.Table(yanny.yanny(plate_input_path, np=True)['MANGAINPUT'])
+    input_data = table.Table.read(input_path)
+
+    if 'CATALOG' not in input_data.colnames:
+        return None
+
+    # Strips some columns for good measure
+    input_data['MANGAID'] = list(map(lambda xx: xx.strip(), input_data['MANGAID']))
+    input_data['CATALOG'] = list(map(lambda xx: xx.strip(), input_data['CATALOG']))
+
+    special_targets = input_data[input_data['CATALOG'] == 'Special']
+    n_special = len(special_targets)
+
+    if n_special == 0:
+        return (0, 0)
+
+    n_survive = 0
+
+    for m_id in special_targets['MANGAID']:
+        if m_id in plate_input['mangaid']:
+            n_survive += 1
+
+    return (n_survive, n_special)
