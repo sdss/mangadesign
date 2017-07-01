@@ -27,6 +27,8 @@ import warnings
 import fnmatch
 from collections import OrderedDict
 
+import six
+
 from astropy import coordinates as coo
 from astropy import table
 
@@ -264,7 +266,7 @@ class PlateInput(object):
         """Makes sure that the catalogue format is uniform. Reads it if
         `catalogue` is a path"""
 
-        if isinstance(catalogue, basestring):
+        if isinstance(catalogue, six.string_types):
             data = table.Table.read(catalogue, format='fits')
         elif isinstance(catalogue, table.Table):
             data = catalogue
@@ -363,10 +365,9 @@ class PlateInput(object):
     def _parseCatalogues(self, catalogues, leadSurvey='manga'):
         """Returns a list of astropy tables with the catalogues to be used."""
 
-        assert leadSurvey in ['apogee', 'manga'], \
-            'leadSurvey must be apogee or manga'
+        assert leadSurvey in ['apogee', 'manga'], 'leadSurvey must be apogee or manga'
 
-        if catalogues == []:
+        if not isinstance(catalogues, six.string_types) and len(catalogues) == 0:
             catalogues = None
 
         if catalogues is None:
@@ -376,8 +377,7 @@ class PlateInput(object):
                     catalogues = [readPath(config['catalogues']['stelLib'])]
                 else:
                     catalogues = [readPath(config['catalogues']['science'])]
-                    warnings.warn('using parent science catalogue',
-                                  exceptions.GohanUserWarning)
+                    warnings.warn('using parent science catalogue', exceptions.GohanUserWarning)
 
             elif self.targettype == 'standard':
                 if leadSurvey == 'apogee':
@@ -385,22 +385,21 @@ class PlateInput(object):
                                   readPath(config['catalogues']['APASS'])]
                 else:
                     catalogues = readPath(config['catalogues']['standard'])
-                    warnings.warn('using parent standard catalogue',
-                                  exceptions.GohanUserWarning)
+                    warnings.warn('using parent standard catalogue', exceptions.GohanUserWarning)
 
             else:
                 raise exceptions.GohanPlateInputError(
                     'no default catalogue for skies.')
 
         else:
-            if isinstance(catalogues, (basestring, table.Table)):
+            if isinstance(catalogues, (six.string_types, table.Table)):
                 catalogues = [catalogues]
             for ii in range(len(catalogues)):
-                if isinstance(catalogues[ii], basestring):
+                if isinstance(catalogues[ii], six.string_types):
                     catalogues[ii] = readPath(catalogues[ii])
 
         cataloguePaths = [cat for cat in catalogues
-                          if isinstance(cat, basestring)]
+                          if isinstance(cat, six.string_types)]
         catalogueTables = [cat for cat in catalogues
                            if isinstance(cat, table.Table)]
 
@@ -410,9 +409,9 @@ class PlateInput(object):
             log.debug('catalogue tables: {0}'.format(len(catalogueTables)))
 
         for ii in range(len(catalogues)):
-            if isinstance(catalogues[ii], basestring):
+            if isinstance(catalogues[ii], six.string_types):
                 assert os.path.exists(catalogues[ii]), \
-                    'catalogue {0} does not exist'.format(cat)
+                    'catalogue {0} does not exist'.format(catalogues[ii])
                 catalogues[ii] = table.Table.read(catalogues[ii],
                                                   format='fits')
 
@@ -449,7 +448,6 @@ class PlateInput(object):
 
         if not os.path.exists(scienceInput) or not os.path.exists(stdInput):
             raise ValueError('cannot find APOGEE science or standard input file.')
-
 
         sciData = yanny.yanny(scienceInput, np=True)
         stdData = yanny.yanny(stdInput, np=True)
@@ -515,7 +513,7 @@ class PlateInput(object):
                 targetsInField = catalogue
                 # self._selectSkies(catalogue, **kwargs)
 
-            if isinstance(catalogue, basestring):
+            if isinstance(catalogue, six.string_types):
                 log.debug('{0} targets selected from catalogue {1}'
                           .format(len(targetsInField), catalogue))
             else:
@@ -611,7 +609,7 @@ class PlateInput(object):
             targetsInField = self._selectTargets(catalogue)
             targetsInField = self._rejectTargets(targetsInField, rejectTargets)
 
-            if isinstance(catalogue, basestring):
+            if isinstance(catalogue, six.string_types):
                 log.debug('{0} targets selected from catalogue {1}'
                           .format(len(targetsInField), catalogue))
             else:
@@ -1001,7 +999,7 @@ class PlateInput(object):
         for col in target.colnames:
             if (np.isscalar(target[col]) and
                     (target[col] == -999 or
-                     (isinstance(target[col], basestring) and
+                     (isinstance(target[col], six.string_types) and
                       '-999' in target[col]))):
                 fill = True
                 break
@@ -1031,7 +1029,7 @@ class PlateInput(object):
                 continue
             if (np.isscalar(target[col]) and
                     (target[col] == -999 or
-                     (isinstance(target[col], basestring) and
+                     (isinstance(target[col], six.string_types) and
                       '-999' in target[col]))):
                 target[col] = catalogueData[col][0]
             elif np.any(np.array(target[col] == -999)):
