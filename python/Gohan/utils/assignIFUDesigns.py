@@ -158,7 +158,12 @@ def assignFerrulesAnchorBlock(targets, centre, reassignAll=False):
     if struct1ToKeep is None:
         return struct1ToAssign
     else:
-        return table.vstack((struct1ToKeep, struct1ToAssign))
+        if len(struct1ToKeep) == 0:
+            return struct1ToAssign
+        elif len(struct1ToAssign) == 0:
+            return struct1ToKeep
+        else:
+            return table.vstack((struct1ToKeep, struct1ToAssign))
 
 
 def _getAssignOrder(struct, raCen, decCen):
@@ -316,7 +321,7 @@ def plotIFUs(structures, centre=None, filename='ifuPlot.pdf', **kwargs):
 
     plate = Ellipse((raCen, decCen),
                     height=3.,
-                    width=3/np.cos(decCen*np.pi/180.),
+                    width=3 / np.cos(decCen * np.pi / 180.),
                     linewidth=2,
                     edgecolor='k', facecolor='None')
     ax.add_patch(plate)
@@ -346,16 +351,16 @@ def plotIFUs(structures, centre=None, filename='ifuPlot.pdf', **kwargs):
         else:
             color = 'r'
 
-        ax.scatter(ra, dec, s=ifuSize/2, marker='o',
+        ax.scatter(ra, dec, s=ifuSize / 2, marker='o',
                    edgecolor=color, facecolor='None', zorder=10)
 
-        ax.text(ra, dec-0.06,
+        ax.text(ra, dec - 0.06,
                 '{0} ({1})'.format(ifuDesign, anchorName),
                 horizontalalignment='center',
                 verticalalignment='center',
                 fontsize=8, color=color, zorder=10)
 
-        ax.text(ra, dec+0.05, r'{0}'.format(mangaID),
+        ax.text(ra, dec + 0.05, r'{0}'.format(mangaID),
                 horizontalalignment='center',
                 verticalalignment='center',
                 fontsize=6, color=color, zorder=10)
@@ -364,8 +369,8 @@ def plotIFUs(structures, centre=None, filename='ifuPlot.pdf', **kwargs):
         ax.scatter(skyStruct1['ra'], skyStruct1['dec'], marker='x', s=6,
                    edgecolor='0.8', zorder=0)
 
-    ax.set_xlim(raCen + 1.6/np.cos(decCen*np.pi/180.),
-                raCen - 1.6/np.cos(decCen*np.pi/180.))
+    ax.set_xlim(raCen + 1.6 / np.cos(decCen * np.pi / 180.),
+                raCen - 1.6 / np.cos(decCen * np.pi / 180.))
     ax.set_ylim(decCen - 1.6, decCen + 1.6)
 
     ax.set_xlabel(r'$\alpha_{2000}$')
