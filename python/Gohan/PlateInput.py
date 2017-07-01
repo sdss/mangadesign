@@ -488,11 +488,11 @@ class PlateInput(object):
         log.debug('locationid={0}'.format(self.locationid))
 
         if self.targettype == 'science':
-            nBundlesToAllocate = np.sum(config['IFUs'].values())
+            nBundlesToAllocate = sum(config['IFUs'].values())
         elif self.targettype == 'standard':
-            nBundlesToAllocate = np.sum(config['miniBundles'].values())
+            nBundlesToAllocate = sum(config['miniBundles'].values())
         elif self.targettype == 'sky':
-            nBundlesToAllocate = np.sum(config['skies'].values())
+            nBundlesToAllocate = sum(config['skies'].values())
 
         targetCats = []
 
@@ -768,13 +768,13 @@ class PlateInput(object):
         centralPostCollisions = np.where(separationToPost < centreAvoid)[0]
         for ii in centralPostCollisions:
             self.logCollision(
-                'mangaid={0} '.format(targets[ii]['MANGAID']) +
+                'mangaid={0} '.format(targets[ii]['MANGAID'].strip()) +
                 'rejected: collides with central post', silent=silent)
 
         outOfField = np.where(separationToPost > FOV)[0]
         for ii in outOfField:
             self.logCollision(
-                'mangaid={0} '.format(targets[ii]['MANGAID']) +
+                'mangaid={0} '.format(targets[ii]['MANGAID'].strip()) +
                 'rejected: outside FOV', silent=silent)
         targets.remove_rows(
             np.concatenate((centralPostCollisions, outOfField)))
@@ -827,7 +827,7 @@ class PlateInput(object):
                 targetsToReject.append(ii)
                 idx_min_sep = np.argmin(separations)
                 self.logCollision(
-                    'mangaid={0} '.format(targets['MANGAID'][ii]) +
+                    'mangaid={0} '.format(targets['MANGAID'][ii].strip()) +
                     'rejected: collides with ' +
                     'RA={0:.5f}, Dec={1:.5f}. Separation={2:.1f} arcsec.'.format(
                         skyCoords[idx_min_sep].ra.deg,
@@ -849,8 +849,10 @@ class PlateInput(object):
         """Makes sure all mandatory columns are present, adds necessary but
         autofillable columns and tidies up the target list."""
 
-        # Makes column names low case.
+        # Makes column names low case and strips strings.
         for colname in targets.colnames:
+            if targets[colname].dtype.kind in ['U', 'S']:
+                targets[colname] = list(map(lambda xx: xx.strip(), targets[colname]))
             if colname.lower() != colname:
                 targets.rename_column(colname, colname.lower())
 

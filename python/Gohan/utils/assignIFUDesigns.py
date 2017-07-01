@@ -67,22 +67,21 @@ def assignIFUDesigns(targets, centre, targettype='science',
             if failOnIFUDesignSize:
                 raise GohanError('at least one target found with '
                                  'ifudesignsize < 0')
-            for size in bundleSizes:
+            for size in sorted(bundleSizes):
                 if bundleSizes[size] > 0:
                     target['ifudesignsize'] = size
                     target['ifudesign'] = -999
                     ifuDesignSizeAssigned = True
                     bundleSizes[size] -= 1
                     log.debug(
-                        'mangaid={0} has been automatically '.format(
-                            target['mangaid']) +
-                        'assigned an ifudesignsize={0}'.format(
-                            target['ifudesignsize']))
+                        'mangaid={0} has been automatically '
+                        'assigned an ifudesignsize={1}'.format(
+                            target['mangaid'], target['ifudesignsize']))
                     break
 
-    if np.sum(bundleSizes.values()) > 0:
+    if sum(bundleSizes.values()) > 0:
         raise GohanError('some bundles have not been assigned.')
-    elif np.sum(bundleSizes.values()) < 0:
+    elif sum(bundleSizes.values()) < 0:
         raise GohanError('more bundles assigned than available.')
 
     if ifuDesignSizeAssigned:
@@ -184,8 +183,8 @@ def _getAssignOrder(struct, raCen, decCen):
 
     blockPositions = getRADecAnchorBlocks(raCen, decCen)
     blockPositionsCoo = coo.SkyCoord(
-        ra=list(zip(*blockPositions)[0]),
-        dec=list(zip(*blockPositions)[1]),
+        ra=list(list(zip(*blockPositions))[0]),
+        dec=list(list(zip(*blockPositions))[1]),
         unit='deg')
 
     for nn, row in enumerate(struct):

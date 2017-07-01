@@ -14,10 +14,10 @@ Revision history:
 
 from __future__ import division
 from __future__ import print_function
-from yanny import yanny
+from .yanny import yanny
 from Gohan import config, readPath
-from sortTargets import sortTargets
-from utils import getPlateDefinition
+from .sortTargets import sortTargets
+from .utils import getPlateDefinition
 import os
 import fnmatch
 import numpy as np

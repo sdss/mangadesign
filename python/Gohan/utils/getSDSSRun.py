@@ -14,8 +14,10 @@ Revision history:
 
 import sys
 import numpy as np
-import urllib2
-import HTMLParser
+
+from six.moves.html_parser import HTMLParser
+
+from six.moves.urllib.request import urlopen
 
 
 URL = 'http://data.sdss3.org/fields/raDec?ra={0:.4f}&dec={1:.4f}'
@@ -66,7 +68,7 @@ def getSDSSRun(ra, dec):
 def getPlate(aa, dd):
 
     url = URL.format(aa, dd)
-    ff = urllib2.urlopen(url)
+    ff = urlopen(url)
 
     parser = TableParser()
     parser.feed(ff.read())
@@ -83,19 +85,19 @@ def getPlate(aa, dd):
 def getValue(table, value):
     for ii, td in enumerate(table):
         if td.strip() == value:
-            return table[ii+1]
+            return table[ii + 1]
     return None
 
 
-class TableParser(HTMLParser.HTMLParser):
+class TableParser(HTMLParser):
 
     def __init__(self):
-        HTMLParser.HTMLParser.__init__(self)
+        HTMLParser.__init__(self)
         self.in_td = False
 
     def feed(self, text):
         self._dd = []
-        HTMLParser.HTMLParser.feed(self, text)
+        HTMLParser.feed(self, text)
 
     def handle_starttag(self, tag, attrs):
         if tag == 'dt' or tag == 'dd':

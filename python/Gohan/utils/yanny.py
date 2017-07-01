@@ -1,12 +1,5 @@
-#
-# yanny.py
-#
-# Python library for reading & writing yanny files.
-#
-# B. A. Weaver, NYU, 2008-10-20
-#
-# $Id$
-#
+# Licensed under a 3-clause BSD style license - see LICENSE.rst
+# -*- coding: utf-8 -*-
 """Python library for reading & writing yanny files.
 
 yanny is an object-oriented interface to FTCL/yanny data files following
@@ -15,39 +8,55 @@ these specifications_.
 The format of the returned object is similar to that returned by
 ``read_yanny()`` in the efftickle perl package (in the yannytools product).
 
-Currently multidimensional arrays are only supported for type ``char``, but a
+Currently multidimensional arrays are only supported for type ``char``, and a
 close reading of the specifications indicates that multidimensional arrays
-were only ever intended to be supported for type ``char``.
+were only ever intended to be supported for type ``char``.  So no
+multidimensional arrays, sorry.
 
 .. _specifications: http://www.sdss3.org/dr8/software/par.php
 """
-
-__author__ = 'Benjamin Weaver <benjamin.weaver@nyu.edu>'
-
-# __version__ = '$Revision$'.split(': ')[1].split()[0]
-
-__all__ = [ 'yanny', 'read_yanny', 'write_yanny', 'write_yanny_append' ]
-
-__docformat__ = "restructuredtext en"
-
 #
 # Modules
 #
+from __future__ import print_function
 import re
 import os
 import os.path
 import datetime
 import numpy
+# commented out by parejkoj
+import six
+#from astropy.extern import six
+
 from collections import OrderedDict
+
+if six.PY3:
+    long = int
+
 #
 # Classes
 #
 class yanny(OrderedDict):
     """An object interface to a yanny file.
 
-    Most users will use the convenience functions defined in this package, but
-    this object provides a somewhat more powerful way of reading &
-    writing the data in a yanny file.
+    Create a yanny object using a yanny file, `filename`.  If the file exists,
+    it is read, & the dict structure of the object will be basically the
+    same as that returned by ``read_yanny()`` in the efftickle package.
+
+    If the file does not exist, or if no filename is given, a blank
+    structure is returned.  Other methods allow for subsequent writing
+    to the file.
+
+    Parameters
+    ----------
+    filename : str or file-like, optional
+        The name of a yanny file or a file-like object representing a yanny file.
+    np : bool, optional
+        If ``True``, data in a yanny file will be converted into a NumPy record
+        array. Default is ``False``.
+    debug : bool, optional
+        If ``True``, some simple debugging statements will be turned on. Default
+        is ``False``.
 
     Attributes
     ----------
@@ -56,8 +65,9 @@ class yanny(OrderedDict):
         array.
     debug : bool
         If True, some simple debugging statements will be turned on.
-    _filename : str
-        The name of a yanny parameter file.
+    filename : str
+        The name of a yanny parameter file.  If a file-like object was used
+        to initialize the object, this will have the value 'in_memory.par'.
     _contents : str
         The complete contents of a yanny parameter file.
     _struct_type_caches : dict
@@ -73,16 +83,6 @@ class yanny(OrderedDict):
         the ``isenum()`` method is called.  The keyword is the name of the
         enum type, the value is a list of the possible values of that type.
 
-    Parameters
-    ----------
-    filename : str
-        The name of a yanny file.
-    np : bool, optional
-        If True, data in a yanny file will be converted into a NumPy record
-        array. Default is False
-    debug : bool, optional
-        If True, some simple debugging statements will be turned on. Default
-        is False.
     """
     #
     #
@@ -110,8 +110,9 @@ class yanny(OrderedDict):
 
         Examples
         --------
-        >>> yanny.yanny.get_token("The quick brown fox")
-        ('The','quick brown fox')
+        >>> from pydl.pydlutils.yanny import yanny
+        >>> yanny.get_token("The quick brown fox")
+        ('The', 'quick brown fox')
         """
         if string[0] == '"':
             (word, remainder) = re.search(r'^"([^"]*)"\s*(.*)',
@@ -148,11 +149,17 @@ class yanny(OrderedDict):
 
         Examples
         --------
-        >>> yanny.yanny.protect('This string contains whitespace.')
+        >>> from pydl.pydlutils.yanny import yanny
+        >>> yanny.protect('This string contains whitespace.')
         '"This string contains whitespace."'
+        >>> yanny.protect('This string contains a #hashtag.')
+        '"This string contains a #hashtag."'
         """
-        s = str(x)
-        if len(s) == 0 or re.search(r'\s+',s) is not None:
+        if isinstance(x,numpy.bytes_):
+            s = x.decode()
+        else:
+            s = str(x)
+        if len(s) == 0 or s.find('#') >= 0 or re.search(r'\s+',s) is not None:
             return '"' + s + '"'
         else:
             return s
@@ -160,7 +167,59 @@ class yanny(OrderedDict):
     #
     #
     @staticmethod
-    def dtype_to_struct(dt,structname='mystruct',enums=dict()):
+    def trailing_comment(line):
+        """Identify a trailing comment and strip it.
+
+        This routine works on the theory that a properly quoted comment mark
+        will be surrounted by an odd number of double quotes, & we can
+        skip to searching for the last one in the line.
+
+        Parameters
+        ----------
+        line : str
+            A line from a yanny file potentially containing trailing comments.
+
+        Returns
+        -------
+        trailing_comment : str
+            The line with any trailing comment and any residual white space
+            trimmed off.
+
+        Bugs
+        ----
+        This may fail in certain pathological cases, for example if a
+        real trailing comment contains a single double-quote::
+
+            # a 'pathological" trailing comment
+
+        or if someone is over-enthusiastically commenting::
+
+            # # # # # I like # characters.
+
+        Examples
+        --------
+        >>> from pydl.pydlutils.yanny import yanny
+        >>> yanny.trailing_comment('mystruct 1234 "#hashtag" # a comment.')
+        'mystruct 1234 "#hashtag"'
+        >>> yanny.trailing_comment('mystruct 1234 "#hashtag" # a "comment".')
+        'mystruct 1234 "#hashtag"'
+        """
+        lastmark = line.rfind('#')
+        if lastmark >= 0:
+            #
+            # Count the number of double quotes in the remainder of the line
+            #
+            if (len([c for c in line[lastmark:] if c == '"']) % 2) == 0:
+                #
+                # Even number of quotes
+                #
+                return line[0:lastmark].rstrip()
+        return line
+    #
+    #
+    #
+    @staticmethod
+    def dtype_to_struct(dt,structname='mystruct',enums=None):
         """Convert a NumPy dtype object describing a record array to
         a typedef struct statement.
 
@@ -189,17 +248,18 @@ class yanny(OrderedDict):
         --------
         """
         dtmap = {'i2':'short','i4':'int','i8':'long','f4':'float',
-            'f8':'double', 'u1': 'short'}
+            'f8':'double'}
         returnenums = list()
-        for e in enums:
-            lines = list()
-            lines.append('typedef enum {')
-            for n in enums[e][1]:
-                lines.append("    {0},".format(n))
-            lines[-1] = lines[-1].strip(',')
-            lines.append('}} {0};'.format(enums[e][0].upper()))
-            returnenums.append("\n".join(lines))
-            #lines.append('')
+        if enums is not None:
+            for e in enums:
+                lines = list()
+                lines.append('typedef enum {')
+                for n in enums[e][1]:
+                    lines.append("    {0},".format(n))
+                lines[-1] = lines[-1].strip(',')
+                lines.append('}} {0};'.format(enums[e][0].upper()))
+                returnenums.append("\n".join(lines))
+                #lines.append('')
         lines = list()
         lines.append('typedef struct {')
         for c in dt.names:
@@ -212,7 +272,7 @@ class yanny(OrderedDict):
                 l = 0
                 s = dt[c].itemsize
             line = '    '
-            if t[0] == 'S':
+            if t[0] in ['S', 'U']:
                 if c in enums:
                     line += enums[c][0].upper()
                 else:
@@ -222,7 +282,7 @@ class yanny(OrderedDict):
             line += ' {0}'.format(c)
             if l > 0:
                 line += "[{0:d}]".format(l)
-            if t[0] == 'S' and c not in enums:
+            if t[0] in ['S', 'U'] and c not in enums:
                 line += "[{0:d}]".format(s)
             line += ';'
             lines.append(line)
@@ -231,27 +291,26 @@ class yanny(OrderedDict):
     #
     #
     #
-    def __init__(self,filename=None,np=False,debug=False):
+    def __init__(self,filename=None,string=None,np=False,debug=False):
         """Create a yanny object using a yanny file.
 
-        Create a yanny object using a yanny file, filename.  If the file exists,
-        it is read, & the dict structure of the object will be basically the
-        same as that returned by ``read_yanny()`` in the efftickle package.
-
-        If the file does not exist, or if no filename is given, a blank
-        structure is returned.  Other methods allow for subsequent writing
-        to the file.
+        @filename Contents of file will be read from provided filename.
+        @string Object will be created from provided string.
+        @np Convert numeric data into NumPy arrays?
+        @debug Turn on simple debugging?
         """
+
+        super(yanny, self).__init__()
+
         #
         # The symbol hash is inherited from the old read_yanny
         #
-        super(yanny, self).__init__()
         self['symbols'] = OrderedDict()
         #
         # Create special attributes that contain the internal status of the object
         # this should prevent overlap with keywords in the data files
         #
-        self._filename = ''
+        self.filename = ''
         self._contents = ''
         #
         # Since the re is expensive, cache the structure types keyed by the field.
@@ -268,15 +327,40 @@ class yanny(OrderedDict):
         # Turn on simple debugging
         #
         self.debug = debug
+
+        if all([filename, string]):
+            raise Exception("A yanny object can only be initialized with a filename OR string.")
+
         #
         # If the file exists, read it
         #
         if filename is not None:
-            if os.access(filename,os.R_OK):
-                self._filename = filename
-                with open(filename,'r') as f:
-                    self._contents = f.read()
+            #
+            # Handle file-like objects
+            #
+            if isinstance(filename, six.string_types):
+                if os.access(filename,os.R_OK):
+                    self.filename = filename
+                    with open(filename,'r') as f:
+                        self._contents = f.read()
+            else:
+                #
+                # Assume file-like
+                #
+                self.filename = 'in_memory.par'
+                self._contents = filename.read()
+            self._parse()
+        elif string is not None:
+            #
+            # Handle content passed in as string
+            #
+            if isinstance(string, six.string_types):
+                self.filename = 'in_memory.par'
+                self._contents = string
                 self._parse()
+            else:
+                raise Exception("The value passed in for 'string' is not a string ({0})."\
+                               .format(type(string)))
         return
     #
     #
@@ -312,12 +396,18 @@ class yanny(OrderedDict):
     #
     #
     #
-    def __nonzero__(self):
+    def __bool__(self):
         """Give a yanny object a definite truth value.
 
         A yanny object is considered ``True`` if its contents are non-zero.
         """
         return len(self._contents) > 0
+
+    # `__nonzero__` is needed for Python 2.
+    # Python 3 uses `__bool__`.
+    # http://stackoverflow.com/a/2233850/498873
+    __nonzero__=__bool__
+
     #
     #
     #
@@ -325,21 +415,23 @@ class yanny(OrderedDict):
         """Returns the type of a variable defined in a structure.
 
         Returns ``None`` if the structure or the variable is undefined.
+
+        Parameters
+        ----------
+        structure : str
+            The name of the structure that contains `variable`.
+        variable : str
+            The name of the column whose type you want.
+
+        Returns
+        -------
+        type : str
+            The type of the variable.
         """
         if structure not in self:
             return None
         if variable not in self.columns(structure):
             return None
-        defl = filter(lambda x: x.find(structure.lower()) > 0,
-            self['symbols']['struct'])
-        defu = filter(lambda x: x.find(structure.upper()) > 0,
-            self['symbols']['struct'])
-        if len(defl) != 1 and len(defu) != 1:
-            return None
-        elif len(defl) == 1:
-            definition = defl
-        else:
-            definition = defu
         #
         # Added code to cache values to speed up parsing large files.
         # 2009.05.11 / Demitri Muna, NYU
@@ -348,7 +440,7 @@ class yanny(OrderedDict):
         try:
             cache = self._struct_type_caches[structure]
         except KeyError:
-            self._struct_type_caches[structure] = dict()
+            self._struct_type_caches[structure] = OrderedDict()
             cache = self._struct_type_caches[structure] # cache for one struct type
         #
         # Lookup (or create) the value for this variable
@@ -358,6 +450,14 @@ class yanny(OrderedDict):
         except KeyError:
             if self.debug:
                 print(variable)
+            defl = [ x for x in self['symbols']['struct'] if x.find(structure.lower()) > 0 ]
+            defu = [ x for x in self['symbols']['struct'] if x.find(structure.upper()) > 0 ]
+            if len(defl) != 1 and len(defu) != 1:
+                return None
+            elif len(defl) == 1:
+                definition = defl
+            else:
+                definition = defu
             typere = re.compile(r'(\S+)\s+{0}([[<].*[]>]|);'.format(variable))
             (typ,array) = typere.search(definition[0]).groups()
             var_type = typ + array.replace('<','[').replace('>',']')
@@ -367,8 +467,20 @@ class yanny(OrderedDict):
     #
     #
     def basetype(self,structure,variable):
-        """Returns the bare type of a variable, stripping off any array
-        information."""
+        """Returns the bare type of a variable, stripping off any array information.
+
+        Parameters
+        ----------
+        structure : str
+            The name of the structure that contains `variable`.
+        variable : str
+            The name of the column whose type you want.
+
+        Returns
+        -------
+        basetype : str
+            The type of the variable, stripped of array information.
+        """
         typ = self.type(structure,variable)
         if self.debug:
             print(variable, typ)
@@ -380,15 +492,27 @@ class yanny(OrderedDict):
     #
     #
     def isarray(self,structure,variable):
-        """Returns True if the variable is an array type.
+        """Returns ``True`` if the variable is an array type.
 
         For character types, this means a two-dimensional array,
         *e.g.*: ``char[5][20]``.
+
+        Parameters
+        ----------
+        structure : str
+            The name of the structure that contains `variable`.
+        variable : str
+            The name of the column to check for array type.
+
+        Returns
+        -------
+        isarray : bool
+            ``True`` if the variable is an array.
         """
         try:
             cache = self._struct_isarray_caches[structure]
         except KeyError:
-            self._struct_isarray_caches[structure] = dict()
+            self._struct_isarray_caches[structure] = OrderedDict()
             cache = self._struct_isarray_caches[structure]
         try:
             result = cache[variable]
@@ -408,9 +532,21 @@ class yanny(OrderedDict):
     #
     def isenum(self,structure,variable):
         """Returns true if a variable is an enum type.
+
+        Parameters
+        ----------
+        structure : str
+            The name of the structure that contains `variable`.
+        variable : str
+            The name of the column to check for enum type.
+
+        Returns
+        -------
+        isenum : bool
+            ``True`` if the variable is enum type.
         """
         if self._enum_cache is None:
-            self._enum_cache = dict()
+            self._enum_cache = OrderedDict()
             if 'enum' in self['symbols']:
                 for e in self['symbols']['enum']:
                     m = re.search(r'typedef\s+enum\s*\{([^}]+)\}\s*(\w+)\s*;',e).groups()
@@ -422,11 +558,22 @@ class yanny(OrderedDict):
     #
     #
     def array_length(self,structure,variable):
-        """Returns the length of an array type or 1 if the variable is not
-        an array.
+        """Returns the length of an array type or 1 if the variable is not an array.
 
         For character types, this is the length of a two-dimensional
         array, *e.g.*, ``char[5][20]`` has length 5.
+
+        Parameters
+        ----------
+        structure : str
+            The name of the structure that contains `variable`.
+        variable : str
+            The name of the column to check for array length.
+
+        Returns
+        -------
+        array_length : int
+            The length of the array variable
         """
         if self.isarray(structure,variable):
             typ = self.type(structure,variable)
@@ -443,6 +590,18 @@ class yanny(OrderedDict):
         Returns ``None`` if the variable is not a character type. If the
         length is not specified, *i.e.* ``char[]``, it returns the length of
         the largest string.
+
+        Parameters
+        ----------
+        structure : str
+            The name of the structure that contains `variable`.
+        variable : str
+            The name of the column to check for char length.
+
+        Returns
+        -------
+        char_length : int or None
+            The length of the char variable.
         """
         typ = self.type(structure,variable)
         if typ.find('char') < 0:
@@ -451,17 +610,26 @@ class yanny(OrderedDict):
             return int(typ[typ.rfind('[')+1:typ.rfind(']')])
         except ValueError:
             if self.isarray(structure,variable):
-                return max([max(map(len,r)) for r in self[structure][variable]])
+                return max([max([len(x) for x in r]) for r in self[structure][variable]])
             else:
-                return max(map(len,self[structure][variable]))
+                return max([len(x) for x in self[structure][variable]])
     #
     #
     #
     def dtype(self,structure):
-        """Returns a NumPy dtype object suitable for describing a table as
-        a record array.
+        """Returns a NumPy dtype object suitable for describing a table as a record array.
 
         Treats enums as string, which is what the IDL reader does.
+
+        Parameters
+        ----------
+        structure : str
+            The name of the structure.
+
+        Returns
+        -------
+        dtype : numpy.dtype
+            A dtype object suitable for describing the yanny structure as a record array.
         """
         dt = list()
         dtmap = {'short':'i2', 'int':'i4', 'long':'i8', 'float':'f',
@@ -471,7 +639,7 @@ class yanny(OrderedDict):
             if typ == 'char':
                 d = "S{0:d}".format(self.char_length(structure,c))
             elif self.isenum(structure,c):
-                d = "S{0:d}".format(max(map(len,self._enum_cache[typ])))
+                d = "S{0:d}".format(max([len(x) for x in self._enum_cache[typ]]))
             else:
                 d = dtmap[typ]
             if self.isarray(structure,c):
@@ -493,21 +661,35 @@ class yanny(OrderedDict):
 
         There may be further conversions into NumPy types, but this is the
         first stage.
+
+        Parameters
+        ----------
+        structure : str
+            The name of the structure that contains `variable`.
+        variable : str
+            The name of the column undergoing conversion.
+        value : str
+            The value contained in a particular row of `variable`.
+
+        Returns
+        -------
+        convert : int, long, float or str
+            `value` converted to a Python numerical type.
         """
         typ = self.basetype(structure,variable)
         if (typ == 'short' or typ == 'int'):
             if self.isarray(structure,variable):
-                return map(int, value)
+                return [int(v) for v in value]
             else:
                 return int(value)
         if typ == 'long':
             if self.isarray(structure,variable):
-                return map(long, value)
+                return [long(v) for v in value]
             else:
                 return long(value)
         if (typ == 'float' or typ == 'double'):
             if self.isarray(structure,variable):
-                return map(float, value)
+                return [float(v) for v in value]
             else:
                 return float(value)
         return value
@@ -520,18 +702,28 @@ class yanny(OrderedDict):
         This is just the list of keys of the object with the 'internal'
         keys removed.
         """
-        foo = self['symbols'].keys()
-        foo.remove('struct')
-        foo.remove('enum')
+        foo = list()
+        for k in self['symbols'].keys():
+            if k not in ('struct','enum'):
+                foo.append(k)
         return foo
     #
     #
     #
     def columns(self,table):
-        """Returns an ordered list of column names associated with a particular
-        table.
+        """Returns an ordered list of column names associated with a particular table.
 
         The order is the same order as they are defined in the yanny file.
+
+        Parameters
+        ----------
+        table : str
+            The table whose columns are desired.
+
+        Returns
+        -------
+        columns : list
+            The list of column names.
         """
         foo = list()
         if table in self['symbols']:
@@ -542,6 +734,16 @@ class yanny(OrderedDict):
     #
     def size(self,table):
         """Returns the number of rows in a table.
+
+        Parameters
+        ----------
+        table : str
+            The table whose size desired.
+
+        Returns
+        -------
+        size : int
+            The number of rows in `table`.
         """
         foo = self.columns(table)
         return len(self[table][foo[0]])
@@ -557,9 +759,8 @@ class yanny(OrderedDict):
         p = list()
         foo = self.tables()
         for k in self.keys():
-            if k == 'symbols' or k in foo:
-                continue
-            p.append(k)
+            if k != 'symbols' and k not in foo:
+                p.append(k)
         return p
     #
     #
@@ -572,23 +773,25 @@ class yanny(OrderedDict):
         If the yanny object instance is set up for NumPy record arrays, then
         a single row can be obtained with::
 
-            >>> row0 = par['TABLE'][0]
+            row0 = par['TABLE'][0]
+
+        Parameters
+        ----------
+        table : str
+            The table whose row is desired.
+        index : int
+            The number of the row to return.
+
+        Returns
+        -------
+        row : list
+            A row from `table`.
         """
         datarow = list()
         if table in self and index >= 0 and index < self.size(table):
             for c in self.columns(table):
                 datarow.append(self[table][c][index])
         return datarow
-    #
-    #
-    #
-    def set_filename(self,newfile):
-        """Updates the filename associated with the yanny object.
-
-        Use this if the object was created with no filename.
-        """
-        self._filename = newfile
-        return
     #
     #
     #
@@ -602,7 +805,17 @@ class yanny(OrderedDict):
         If the yanny object instance is set up for NumPy record arrays, then
         the same functionality can be obtained with::
 
-            >>> foo = par['TABLE'][0]['column']
+            foo = par['TABLE'][0]['column']
+
+        Parameters
+        ----------
+        table : str
+            The table to convert
+
+        Returns
+        -------
+        list_of_dicts : list
+            A list containing the rows of `table` converted to ``dict``.
         """
         return_list = list()
         d = OrderedDict()
@@ -632,7 +845,13 @@ class yanny(OrderedDict):
 
         Read a yanny file and return only the pairs::
 
-            >>> new_dict = yanny.yanny(file).new_dict_from_pairs()
+            >>> from os.path import dirname
+            >>> from pydl.pydlutils.yanny import yanny
+            >>> new_dict = yanny(dirname(__file__)+'/tests/t/test.par').new_dict_from_pairs()
+            >>> new_dict['mjd']
+            '54579'
+            >>> new_dict['alpha']
+            'beta gamma delta'
 
         added: Demitri Muna, NYU 2009-04-28
         """
@@ -643,7 +862,7 @@ class yanny(OrderedDict):
     #
     #
     #
-    def write(self,*args):
+    def write(self,newfile=None,comments=None):
         """Write a yanny object to a file.
 
         This assumes that the filename used to create the object was not that
@@ -654,17 +873,31 @@ class yanny(OrderedDict):
         especially if the data lines are long.  If the name of a new file is
         given, it will write to the new file (assuming it doesn't exist).
         If the writing is successful, the data in the object will be updated.
+
+        Parameters
+        ----------
+        newfile : str, optional
+            The name of the file to write.
+        comments : str or list of str, optional
+            Comments that will be placed at the head of the file.  If a
+            single string is passed, it will be written out verbatim, so it
+            had better contain '#' characters.  If a list of strings is
+            passed, comment characters will be added and the strings
+            will be joined together.
         """
-        if len(args) > 0:
-            newfile = args[0]
-        else:
-            if len(self._filename) > 0:
-                newfile = self._filename
+        if newfile is None:
+            if len(self.filename) > 0:
+                newfile = self.filename
             else:
                 raise ValueError("No filename specified!")
-        basefile = os.path.basename(newfile)
-        timestamp = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')
-        contents = "#\n# {0}\n#\n# Created by yanny.py\n#\n# {1}\n#\n".format(basefile,timestamp)
+        if comments is None:
+            basefile = os.path.basename(newfile)
+            timestamp = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')
+            comments = "#\n# {0}\n#\n# Created by pydl.pydlutils.yanny.yanny\n#\n# {1}\n#\n".format(basefile,timestamp)
+        else:
+            if not isinstance(comments, str):
+                comments = "\n".join(["# {0}".format(c) for c in comments]) + "\n"
+        contents = comments
         #
         # Print any key/value pairs
         #
@@ -691,7 +924,7 @@ class yanny(OrderedDict):
                 line.append(sym)
                 for col in columns:
                     if self.isarray(sym,col):
-                        datum = '{' + ' '.join(map(self.protect,self[sym][col][k])) + '}'
+                        datum = '{' + ' '.join([self.protect(x) for x in self[sym][col][k]]) + '}'
                     else:
                         datum = self.protect(self[sym][col][k])
                     line.append(datum)
@@ -707,7 +940,7 @@ class yanny(OrderedDict):
             with open(newfile,'w') as f:
                 f.write(contents)
             self._contents = contents
-            self._filename = newfile
+            self.filename = newfile
             self._parse()
         return
     #
@@ -721,10 +954,15 @@ class yanny(OrderedDict):
         yanny object, but it is not necessary to reproduce the 'symbols'
         dictionary.  It will not try to append data to a file that does not
         exist.  If the append is successful, the data in the object will be updated.
+
+        Parameters
+        ----------
+        datatable : dict
+            The data to append.
         """
-        if len(self._filename) == 0:
-            raise ValueError("No filename is set for this object. Use the set_filename method to set the filename!")
-        if type(datatable) not in [OrderedDict, dict]:
+        if len(self.filename) == 0:
+            raise ValueError("No filename is set for this object. Use the filename attribute to set the filename!")
+        if not isinstance(OrderedDict, dict):
             raise ValueError("Data to append is not of the correct type. Use a dict!")
         timestamp = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')
         contents = ''
@@ -750,7 +988,7 @@ class yanny(OrderedDict):
                     line.append(sym)
                     for col in columns:
                         if self.isarray(sym,col):
-                            datum = '{' + ' '.join(map(self.protect,datatable[datasym][col][k])) + '}'
+                            datum = '{' + ' '.join([self.protect(x) for x in datatable[datasym][col][k]]) + '}'
                         else:
                             datum = self.protect(datatable[datasym][col][k])
                         line.append(datum)
@@ -759,21 +997,18 @@ class yanny(OrderedDict):
         # Actually write the data to file
         #
         if len(contents) > 0:
-            # contents = ("# Appended by yanny.py at {0}.\n".format(timestamp)) + contents
-            if os.access(self._filename,os.W_OK):
-                with open(self._filename,'a') as f:
+            contents = ("# Appended by yanny.py at {0}.\n".format(timestamp)) + contents
+            if os.access(self.filename,os.W_OK):
+                with open(self.filename,'a') as f:
                     f.write(contents)
                 self._contents += contents
                 self._parse()
             else:
-                raise IOError(
-                    "{0} does not exist, aborting append!"
-                    .format(self._filename))
-                # print("For reference, here's what would have been written:")
-                # print(contents)
+                print("{0} does not exist, aborting append!".format(self.filename))
+                print("For reference, here's what would have been written:")
+                print(contents)
         else:
-            # print("Nothing to be appended!")
-            pass
+            print("Nothing to be appended!")
         return
     #
     #
@@ -853,7 +1088,11 @@ class yanny(OrderedDict):
                 self[name.upper()][column] = list()
         comments = re.compile(r'^\s*#') # Remove lines containing only comments
         blanks = re.compile(r'^\s*$') # Remove lines containing only whitespace
-        trailing_comments = re.compile(r'\s*\#.*$') # Remove trailing comments
+        #
+        # Remove trailing comments, but not if they are enclosed in quotes.
+        #
+        #trailing_comments = re.compile(r'\s*\#.*$')
+        #trailing_comments = re.compile(r'\s*\#[^"]+$')
         double_braces = re.compile(r'\{\s*\{\s*\}\s*\}') # Double empty braces get replaced with empty quotes
         if len(lines) > 0:
             for line in lines.split('\n'):
@@ -869,7 +1108,8 @@ class yanny(OrderedDict):
                 # Remove leading & trailing blanks & comments
                 #
                 line = line.strip()
-                line = trailing_comments.sub('',line)
+                line = self.trailing_comment(line)
+                #line = trailing_comments.sub('',line)
                 line = double_braces.sub('""',line)
                 #
                 # Now if the first word on the line does not match a
@@ -924,90 +1164,10 @@ class yanny(OrderedDict):
                     record[c] = self[t][c]
                 self[t] = record
         return
-#
-# Functions
-#
-def read_yanny(filename):
-    """Reads the contents of an FTCL/yanny file & returns the data in a dictionary.
 
-    This is just a convenience wrapper on a yanny object, for use when a
-    user is not interested in changing the contents of a yanny object.
 
-    Parameters
-    ----------
-    filename : str
-        The name of a parameter file.
-
-    Returns
-    -------
-    par : dict
-        A copy of the yanny object.
-
-    Examples
-    --------
-    """
-    par = yanny(filename)
-    return par.copy()
-#
-#
-#
-def write_yanny(filename,datatable):
-    """Writes the contents of a dictionary to an FTCL/yanny file.
-
-    Ideally used in conjunction with read_yanny() to create an initial
-    dictionary of the appropriate format.
-
-    Parameters
-    ----------
-    filename : str
-        The name of a parameter file.
-    datatable : dict
-        A dictionary containing data that can be copied into a yanny object.
-
-    Returns
-    -------
-    par : yanny.yanny
-        The yanny object resulting from writing the file.
-
-    Examples
-    --------
-    """
-    par = yanny(filename)
-    for key in datatable:
-        par[key] = datatable[key]
-    par.write(filename)
-    return par
-#
-#
-#
-def write_yanny_append(filename,datatable):
-    """Appends the contents of a dictionary to an existing FTCL/yanny file.
-
-    Ideally used in conjunction with read_yanny() to create an initial
-    dictionary of the appropriate format.
-
-    Parameters
-    ----------
-    filename : str
-        The name of a parameter file.
-    datatable : dict
-        A dictionary containing data that can be copied into a yanny object.
-
-    Returns
-    -------
-    par : yanny.yanny
-        The yanny object resulting from appending the file.
-
-    Examples
-    --------
-    """
-    par = yanny(filename)
-    par.append(datatable)
-    return par
-#
-#
-#
-def write_ndarray_to_yanny(filename,datatable,structname='mystruct',enums=OrderedDict(),hdr=OrderedDict()):
+def write_ndarray_to_yanny(filename, datatable, structname='mystruct',
+                           enums=OrderedDict(),hdr=OrderedDict(), overwrite=False):
     """Converts a NumPy record array into a new FTCL/yanny file.
 
     Returns a new yanny object corresponding to the file.
@@ -1017,13 +1177,16 @@ def write_ndarray_to_yanny(filename,datatable,structname='mystruct',enums=Ordere
     filename : str
         The name of a parameter file.
     datatable : numpy.ndarray
-        A NumPy record array containing data that can be copied into a yanny object.
+        A NumPy record array containing data that can be copied into a
+        yanny object.
     structname : str, optional
-        The name to give the structure in the yanny file.  Defaults to 'MYSTRUCT'.
+        The name to give the structure in the yanny file.  Defaults to
+        'MYSTRUCT'.
     enums : dict, optional
         A dictionary containing enum information.  See details above.
     hdr : dict, optional
-        A dictionary containing keyword/value pairs for the 'header' of the yanny file.
+        A dictionary containing keyword/value pairs for the 'header' of the
+        yanny file.
 
     Returns
     -------
@@ -1033,47 +1196,20 @@ def write_ndarray_to_yanny(filename,datatable,structname='mystruct',enums=Ordere
     Examples
     --------
     """
-    par = yanny(filename,np=True,debug=False)
-    par['symbols'] = par.dtype_to_struct(datatable.dtype,structname=structname,enums=enums)
+
+    par = yanny(filename, np=True, debug=False)
+
+    par['symbols'] = par.dtype_to_struct(
+        datatable.dtype, structname=structname, enums=enums)
+
     par[structname.upper()] = datatable
+
     for key in hdr:
         par[key] = hdr[key]
+
+    if overwrite:
+        os.remove(filename)
+
     par.write(filename)
+
     return par
-#
-#
-#
-def main():
-    """Used to test the yanny class.
-    """
-    par = yanny(os.path.join(os.getenv('YANNYTOOLS_DIR'),'data','test.par'),
-        np=True,debug=True)
-    print(par.pairs())
-    for p in par.pairs():
-        print("{0} => {1}".format(p, par[p]))
-    print(par.keys())
-    print(par['symbols'].keys())
-    print(par['symbols']['struct'])
-    print(par['symbols']['enum'])
-    print(par.tables())
-    for t in par.tables():
-        print(par.dtype(t))
-        print("{0}: {1:d} entries".format(t,par.size(t)))
-        print(par.columns(t))
-        for c in par.columns(t):
-            print("{0}: type {1}".format(c,par.type(t,c)))
-            print(par[t][c])
-    if par.isenum('MYSTRUCT','new_flag'):
-        print(par._enum_cache)
-    par.write() # This should fail, since test.par already exists.
-    datatable = {'status_update': {'state':['SUCCESS', 'SUCCESS'],
-        'timestamp':['2008-06-22 01:27:33','2008-06-22 01:27:36']},
-        'new_keyword':'new_value'}
-    par.set_filename(os.path.join(os.getenv('YANNYTOOLS_DIR'),'data','test_append.par'))
-    par.append(datatable) # This should also fail, because test_append.par does not exist
-    return
-#
-# Testing purposes
-#
-if __name__ == '__main__':
-    main()

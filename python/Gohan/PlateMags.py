@@ -21,12 +21,10 @@ Revision history:
 
 import numpy as np
 import tempfile
-import urllib2
 import os
-import cStringIO
+import io
 import bz2
 import warnings
-from urlparse import urlparse
 
 from Gohan.exceptions import GohanUserWarning, GohanError
 from Gohan import log, config, readPath
@@ -51,7 +49,11 @@ from matplotlib.patches import Ellipse
 from matplotlib.collections import EllipseCollection
 from matplotlib.backends.backend_pdf import PdfPages
 
-import pywcsgrid2 as pw2
+# urllib2 is just annoyin in Python 2/3
+from six.moves.urllib.parse import urlparse
+from six.moves.urllib.request import urlopen, build_opener, install_opener
+from six.moves.urllib.request import HTTPPasswordMgrWithDefaultRealm, HTTPBasicAuthHandler
+from six.moves.urllib.error import HTTPError
 
 
 __ALL__ = ['PlateMags']
@@ -80,23 +82,23 @@ BOSS_SN_DATA = table.Table.read(
 BOSS_SN = interpolate.interp1d(BOSS_SN_DATA['fiber2flux'][::-1],
                                BOSS_SN_DATA['sn_hour'][::-1])
 
-NIFUS = np.sum(config['IFUs'].values())
+NIFUS = np.sum(list(config['IFUs'].values()))
 
 SDSS_BASE_URL = config['sdssImaging']['baseURL']
 SDSS_BASE_URI = '{uri.scheme}://{uri.netloc}/'.format(
     uri=urlparse(SDSS_BASE_URL))
 
 # Creates authentication openers.
-password_mgr = urllib2.HTTPPasswordMgrWithDefaultRealm()
+password_mgr = HTTPPasswordMgrWithDefaultRealm()
 
 if config['sdssImaging']['password'].lower() != 'none':
     password_mgr.add_password(realm=None, uri=SDSS_BASE_URI,
                               user=config['sdssImaging']['username'],
                               passwd=config['sdssImaging']['password'])
 
-auth_handler = urllib2.HTTPBasicAuthHandler(password_mgr)
-opener = urllib2.build_opener(auth_handler)
-urllib2.install_opener(opener)
+auth_handler = HTTPBasicAuthHandler(password_mgr)
+opener = build_opener(auth_handler)
+install_opener(opener)
 
 # Defines some SDSS URLs
 SDSS_FRAME = os.path.join(
@@ -115,7 +117,7 @@ SDSS_FRAME_IRG = os.path.join(
     'photoObj/frames/{rerun:d}/{run:d}/{camcol:d}/frame-irg-{run:06d}-' +
     '{camcol:d}-{field:04d}.jpg')
 
-IFU_MIN_SIZE = np.min(config['IFUs'].keys())
+IFU_MIN_SIZE = np.min(list(config['IFUs'].keys()))
 REFF = config['plateMags']['reffField'].lower()
 
 
@@ -603,8 +605,8 @@ class PlateMagsIFU(object):
             dir=preImageDir, suffix='.fits.gz', delete=False)
 
         try:
-            response = urllib2.urlopen(url)
-        except urllib2.HTTPError:
+            response = urlopen(url)
+        except HTTPError:
             log.debug('...... URL not found.')
             self.removeFile(ff.name)
             return None
@@ -798,7 +800,7 @@ class PlateMagsIFU(object):
     def _downloadImage(self, url, file):
         """Downloads and image to a file."""
 
-        response = urllib2.urlopen(url)
+        response = urlopen(url)
         unit = open(file, 'w')
         unit.write(response.read())
         unit.close()
@@ -1300,11 +1302,9 @@ class PlateMagsIFU(object):
         ww = wcs.WCS(refHeader)
         xx, yy = ww.wcs_world2pix(self.RA, self.Dec, 0)
 
-        ff = urllib2.urlopen(irgURL)
+        ff = urlopen(irgURL)
 
-        data = plt.imread(
-            cStringIO.StringIO(ff.read()),
-            format='jpg')[::-1, :, :]
+        data = plt.imread(io.StringIO(ff.read()), format='jpg')[::-1, :, :]
 
         nPix = config['plateMags']['nPix']
 
