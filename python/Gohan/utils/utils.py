@@ -814,8 +814,8 @@ def calculate_special_targets(plate_input_path, input_path):
 
     """
 
-    assert os.path.exists(plate_input_path)
-    assert os.path.exists(input_path)
+    assert os.path.exists(plate_input_path), 'cannot find file {0}'.format(plate_input_path)
+    assert os.path.exists(input_path), 'cannot find file {0}'.format(input_path)
 
     plate_input = table.Table(yanny.yanny(plate_input_path, np=True)['MANGAINPUT'])
     input_data = table.Table.read(input_path)
@@ -840,3 +840,44 @@ def calculate_special_targets(plate_input_path, input_path):
             n_survive += 1
 
     return (n_survive, n_special)
+
+
+def print_special_summary(plate_data_path):
+    """Prints a table summarising the MaStar special targets that survived decollision.
+
+    This function assumes that the MaStar input files are in a directory called
+    ``input`` in the same path as ``plate_data_path`` and that the target
+    files conform to the MaStar standards.
+
+    Parameters:
+        plate_data_path (str):
+            The path to the APOGEE plate data file.
+
+    """
+
+    fields = table.Table.read(plate_data_path, format='ascii.commented_header')
+
+    special_table = table.Table(None,
+                                names=['design_id', 'field_name', 'special_targets', 'allocated'],
+                                dtype=[int, 'U20', int, int])
+
+    for field in fields:
+
+        designID = int(field['DesignID'])
+        fieldName = field['FieldName']
+
+        plate_input_path = 'mangaScience_{0}_{1}.par'.format(fieldName, designID)
+        input_path = os.path.join(os.path.dirname(plate_data_path),
+                                  'inputs/{0}_target.fits'.format(fieldName))
+
+        special = calculate_special_targets(plate_input_path, input_path)
+
+        if special is None:
+            special_table.add_row((designID, fieldName, 0, 0))
+        else:
+            special_table.add_row((designID, fieldName, special[1], special[0]))
+
+    print()
+    special_table.pprint()
+
+    return special_table
