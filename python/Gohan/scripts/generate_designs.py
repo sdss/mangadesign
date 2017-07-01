@@ -42,12 +42,13 @@ def do_one_apogee2_manga(plateRun, platerun_dir, field, reject_science=[], rejec
     raCen = float(field['RA'])
     decCen = float(field['Dec'])
 
-    sciCat = table.Table.read(os.path.join(platerun_dir,
-                                           'inputs/{0}_target.fits'.format(fieldName)))
+    sciPath = os.path.join(platerun_dir, 'inputs/{0}_target.fits'.format(fieldName))
+
+    sciCat = table.Table.read(sciPath)
     stdCat = table.Table.read(os.path.join(platerun_dir,
                                            'inputs/{0}_standards.fits'.format(fieldName)))
 
-    for column in ['FIELD', 'CATALOG', 'PS_APASS']:
+    for column in ['FIELD', 'PS_APASS']:
         if column in sciCat.colnames:
             sciCat.remove_column(column)
 
@@ -60,6 +61,20 @@ def do_one_apogee2_manga(plateRun, platerun_dir, field, reject_science=[], rejec
                               raCen=raCen, decCen=decCen,
                               rejectTargets=reject_science)
     mangaScience.write(toRepo=False)
+
+    # Checks how many special targets survive
+    try:
+        mangaScience_path = mangaScience.getDefaultFilename()
+        special = utils.calculate_special_targets(mangaScience_path, sciPath)
+        if special is None or special[1] == 0:
+            log.important('no special targets found for this design.')
+        else:
+            survived, total = special
+            log.important('{0} out of {1} special targets survived '
+                          'decollision.'.format(survived, total))
+    except Exception as ee:
+        warnings.warn('failed determining how many special targets '
+                      'survived for {0}: {1}.'.format(mangaScience_path, ee), GohanUserWarning)
 
     mangaStandard = PlateInput(designID, 'standard',
                                catalogues=stdCat,
