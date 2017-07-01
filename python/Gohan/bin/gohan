@@ -23,9 +23,12 @@ def gohan():
 
 
 @gohan.command()
+@click.option('-s', '--special', is_flag=True,
+              help='if set, only prints a summary table of MaStar special targets. '
+                    'This assumes the mangaScience files have already been created.')
 @click.argument('platerun', type=str)
 @click.argument('platedata', type=str)
-def design(platerun, platedata):
+def design(platerun, platedata, special=False):
     """Designs a platerun.
 
     Requieres specifying a PLATERUN and the location of the PLATEDATA file
@@ -35,7 +38,7 @@ def design(platerun, platedata):
 
     from Gohan.scripts.generate_designs import generate_designs
 
-    generate_designs(platerun, platedata)
+    generate_designs(platerun, platedata, special=special)
 
 
 @gohan.group()

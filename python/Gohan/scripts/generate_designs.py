@@ -10,9 +10,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
 
-import argparse
 import os
-import sys
 import warnings
 
 import astropy.table as table
@@ -176,10 +174,15 @@ def update_platedefinition_apogee2manga(field, plateRun, platerun_dir):
     log.important('saved updated plateDefinition as {0}'.format(plateDefinition_path_new))
 
 
-def designs_apogee2manga(platerun, platerun_dir, plate_data_path):
+def designs_apogee2manga(platerun, platerun_dir, plate_data_path, special=False, **kwargs):
     """Designs an APOGEE2-MaNGA platerun."""
 
     fields = table.Table.read(plate_data_path, format='ascii.commented_header')
+
+    if special is True:
+        log.important('not designing field. Only printing summary of special targets.')
+        utils.print_special_summary(plate_data_path)
+        return False
 
     mastar_targets = utils.getStellarLibraryTargets()
     mastar_mangaid = set(mastar_targets['mangaid'].tolist())
@@ -197,10 +200,10 @@ def designs_apogee2manga(platerun, platerun_dir, plate_data_path):
 
         reject_science = reject_science.union(set(allocated_one))
 
-    return
+    return True
 
 
-def generate_designs(platerun, plate_data):
+def generate_designs(platerun, plate_data, **kwargs):
     """Generates plate inputs, plate definitons, and platePlans lines for a list of plates.
 
     Parameters:
@@ -232,26 +235,11 @@ def generate_designs(platerun, plate_data):
     log.info('Working on platerun directory: {0}'.format(platerun_dir))
 
     if plate_type == 'apogee2-manga':
-        designs_apogee2manga(platerun, platerun_dir, plate_data)
+        keep_log = designs_apogee2manga(platerun, platerun_dir, plate_data, **kwargs)
 
-    log_path = os.path.join(platerun_dir, platerun + '.log')
-    log.info('copying log to {0}'.format(log_path))
-    log.saveLog(log_path)
+    if keep_log:
+        log_path = os.path.join(platerun_dir, platerun + '.log')
+        log.info('copying log to {0}'.format(log_path))
+        log.saveLog(log_path)
 
     return
-
-
-def main():
-
-    parser = argparse.ArgumentParser(prog=os.path.basename(sys.argv[0]))
-
-    parser.add_argument('PLATERUN', type=str, help='The platerun to be designed.')
-    parser.add_argument('PLATEDATA', type=str, help='The file with the plate data.')
-
-    args = parser.parse_args()
-
-    generate_designs(args.PLATERUN, args.PLATEDATA)
-
-
-if __name__ == '__main__':
-    main()
