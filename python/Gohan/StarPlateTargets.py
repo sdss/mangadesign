@@ -173,11 +173,9 @@ class StarPlateTargets(PlateTargets):
                           if field not in requiredFields]
 
         mangaSciencePath = utils.getMangaSciencePath(plateid, format='plateid')
-        mangaScience = table.Table(
-            yanny.yanny(mangaSciencePath, np=True)['MANGAINPUT'])
+        mangaScience = table.Table(yanny.yanny(mangaSciencePath, np=True)['MANGAINPUT'])
         mangaScience = _toLowerCase(mangaScience)
-        mangaScience['mangaid'] = map(lambda xx: xx.strip(),
-                                      mangaScience['mangaid'])
+        mangaScience['mangaid'] = list(map(lambda xx: xx.strip(), mangaScience['mangaid']))
 
         specificData = {}
         for mangaid in mangaids:
@@ -185,6 +183,9 @@ class StarPlateTargets(PlateTargets):
             specificData[mangaid] = {}
 
             row = mangaScience[mangaScience['mangaid'] == mangaid.strip()]
+
+            if len(row) == 0:
+                raise ValueError('cannot find mangaScience row for mangaid={0}'.format(mangaid))
 
             for field in specificFields:
                 if field in mangaScience.colnames:

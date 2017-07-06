@@ -100,9 +100,8 @@ class StandardPlateTargets(PlateTargets):
                                                     format='plateid')
 
         if mangaids is None:
-            mangaStandard = yanny.yanny(mangaStandardPath,
-                                        np=True)['MANGAINPUT']
-            mangaids = map(lambda xx: xx.strip(), mangaStandard['mangaid'])
+            mangaStandard = table.Table(yanny.yanny(mangaStandardPath, np=True)['MANGAINPUT'])
+            mangaids = list(map(lambda xx: xx.strip(), mangaStandard['mangaid']))
 
         addedIndices = []
 
@@ -190,8 +189,7 @@ class StandardPlateTargets(PlateTargets):
         mangaStandard = table.Table(
             yanny.yanny(mangaStandardPath, np=True)['MANGAINPUT'])
         mangaStandard = _toLowerCase(mangaStandard)
-        mangaStandard['mangaid'] = map(lambda xx: xx.strip(),
-                                       mangaStandard['mangaid'])
+        mangaStandard['mangaid'] = list(map(lambda xx: xx.strip(), mangaStandard['mangaid']))
 
         specificData = {}
         for mangaid in mangaids:

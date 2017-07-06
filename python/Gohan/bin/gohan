@@ -14,6 +14,8 @@ import click
 import warnings
 
 from Gohan.exceptions import GohanUserWarning
+from Gohan.scripts.create_starplate_targets import create_starplate_targets
+from Gohan.utils import getStellarLibraryRuns, getFromPlatePlans
 
 
 @click.group()
@@ -39,6 +41,23 @@ def design(platerun, platedata, special=False):
     from Gohan.scripts.generate_designs import generate_designs
 
     generate_designs(platerun, platedata, special=special)
+
+
+@gohan.command()
+@click.option('-a', '--all', is_flag=True, help='runs postdesign for all plateruns.')
+@click.option('-w', '--overwrite', is_flag=True, help='overwrites existing values.')
+@click.argument('plateruns', nargs=-1, metavar='PLATERUN(s)', required=False)
+def postdesign(plateruns, all=False, overwrite=False):
+    """Runs MaNGA postdesign for a series of plateruns. For now it assumes APOGEE-lead."""
+
+    if all is True:
+        plateruns = getStellarLibraryRuns()
+
+    plates = []
+    for platerun in plateruns:
+        plates += list(map(int, getFromPlatePlans(platerun, column='plateid')))
+
+    create_starplate_targets(plates, overwrite=overwrite)
 
 
 @gohan.group()

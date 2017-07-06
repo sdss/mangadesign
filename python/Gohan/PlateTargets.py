@@ -22,6 +22,8 @@ from Gohan import log, readPath, config
 
 from astropy import table
 import numpy as np
+
+import six
 import warnings
 import os
 
@@ -50,9 +52,9 @@ conversions = {
 }
 
 
-neverobserve = map(int, open(os.path.join(os.environ['MANGAWORK_DIR'],
-                                          'manga/platedesign/etc/neverobserve.dat'),
-                             'r').read().splitlines()[1:])
+neverobserve = list(map(int, open(os.path.join(os.environ['MANGAWORK_DIR'],
+                                               'manga/platedesign/etc/neverobserve.dat'),
+                                  'r').read().splitlines()[1:]))
 
 try:
     mangaTargetsExtNSA = table.Table.read(
@@ -60,8 +62,8 @@ try:
                      'manga/target/', config['targets']['version'],
                      config['targets']['mangaTargets']))
 
-    mangaTargetsExtNSA['MANGAID'] = map(lambda xx: xx.strip(),
-                                        mangaTargetsExtNSA['MANGAID'])
+    mangaTargetsExtNSA['MANGAID'] = list(map(lambda xx: xx.strip(),
+                                             mangaTargetsExtNSA['MANGAID']))
     mangaTargetsExtNSA = _toLowerCase(mangaTargetsExtNSA)
 except:
     raise GohanPlateTargetsError('failed loading targeting catalogue')
@@ -82,7 +84,7 @@ class PlateTargets(object):
         self.template = False
         self._nAppended = 0
 
-        if isinstance(input, basestring):
+        if isinstance(input, six.string_types):
             self.path = input
             if not os.path.exists(self.path):
                 raise GohanPlateTargetsError(
@@ -135,7 +137,7 @@ class PlateTargets(object):
                 break
 
         # Strips empty lines
-        header = '\n'.join(map(str, header)).strip() + '\n\n'
+        header = '\n'.join(list(map(str, header))).strip() + '\n\n'
 
         return header
 
@@ -263,19 +265,15 @@ class PlateTargets(object):
 
             if mangaScience is None:
                 # If mangaScience is not defined, we use
-                mangaScience = utils.getMangaSciencePath(plateid,
-                                                         format='plateid')
+                mangaScience = utils.getMangaSciencePath(plateid, format='plateid')
 
-            plateHolesSortedData, plateHolesSortedPairs = \
-                utils.getPlateHolesSortedData(plateid)
+            plateHolesSortedData, plateHolesSortedPairs = utils.getPlateHolesSortedData(plateid)
 
         # Checks mangaScience path
-        assert os.path.exists(mangaScience), ('path {0} does not exist'
-                                              .format(mangaScience))
+        assert os.path.exists(mangaScience), ('path {0} does not exist'.format(mangaScience))
 
         # Gets data from mangaScience structure and pairs
-        mangaScienceData, mangaSciencePairs = \
-            self._readMangaScience(mangaScience)
+        mangaScienceData, mangaSciencePairs = self._readMangaScience(mangaScience)
         mangaScienceData = _toLowerCase(mangaScienceData)
 
         if mangaids is None:
@@ -283,8 +281,7 @@ class PlateTargets(object):
 
         # Makes sure that all the mangaids have the catalogid of the current
         # instance of PlateTargets.
-        catalogids = np.array([int(mangaid.split('-')[0])
-                               for mangaid in mangaids])
+        catalogids = np.array([int(mangaid.split('-')[0]) for mangaid in mangaids])
 
         if self.catalogid not in ['MaSTAR', 'standard']:
             assert np.all(catalogids == self.catalogid), \
@@ -690,7 +687,7 @@ class PlateTargets(object):
         for key in targetData:
 
             # Strips strings
-            if isinstance(targetData[key], basestring):
+            if isinstance(targetData[key], six.string_types):
                 targetData[key] = targetData[key].strip()
 
             # Checks if a value can be converted to float

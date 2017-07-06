@@ -96,7 +96,7 @@ plateListDir = getPlateListDir()
 platePlansFile = os.path.join(plateListDir, 'platePlans.par')
 
 if os.path.exists(platePlansFile):
-    platePlans = yanny.yanny(platePlansFile, np=True)['PLATEPLANS']
+    platePlans = table.Table(yanny.yanny(platePlansFile, np=True)['PLATEPLANS'])
 else:
     platePlans = None
 
@@ -285,9 +285,7 @@ def getPlateHolesSortedData(plateid):
             plateHolesSortedStruct.rename_column(colname, colname.lower())
 
     plateHolesSorted.pop('symbols')
-    for key in plateHolesSorted:
-        if key != key.lower():
-            plateHolesSorted[key.lower()] = plateHolesSorted.pop(key)
+    plateHolesSorted = dict((kk.lower(), vv) for kk, vv in plateHolesSorted.items())
 
     # Strips mangaids
     for row in plateHolesSortedStruct:
@@ -678,8 +676,7 @@ def getAllMaNGAPlateRuns():
 
     plateRuns = np.unique(platePlans['platerun'])
 
-    mangaRuns = [plateRun for plateRun in plateRuns
-                 if 'manga' in plateRun.lower()]
+    mangaRuns = [plateRun for plateRun in plateRuns if 'manga' in plateRun.lower()]
 
     mangaLeadRuns = []
     for mangaRun in mangaRuns:
