@@ -13,10 +13,6 @@ from __future__ import absolute_import
 import click
 import warnings
 
-from Gohan.exceptions import GohanUserWarning
-from Gohan.scripts.create_starplate_targets import create_starplate_targets
-from Gohan.utils import getStellarLibraryRuns, getFromPlatePlans
-
 
 @click.group()
 def gohan():
@@ -44,20 +40,37 @@ def design(platerun, platedata, special=False):
 
 
 @gohan.command()
-@click.option('-a', '--all', is_flag=True, help='runs postdesign for all plateruns.')
+@click.option('-a', '--all', type=click.Choice(['manga', 'mastar']),
+              help='runs postdesign for all plateruns.')
 @click.option('-w', '--overwrite', is_flag=True, help='overwrites existing values.')
+@click.option('--skip-plateHolesSorted', is_flag=True,
+              help='does not copy plateHolesSorted to mangacore.')
 @click.argument('plateruns', nargs=-1, metavar='PLATERUN(s)', required=False)
-def postdesign(plateruns, all=False, overwrite=False):
+def postdesign(plateruns, all=None, overwrite=False, skip_plateholessorted=False):
     """Runs MaNGA postdesign for a series of plateruns. For now it assumes APOGEE-lead."""
 
-    if all is True:
-        plateruns = getStellarLibraryRuns()
+    from Gohan import log
+    from Gohan.scripts import post_design
+    from Gohan.utils import utils
 
-    plates = []
+    if len(plateruns) == 0 and all is None:
+        raise click.exceptions.UsageError('bad combination of parameters. '
+                                          'Specify a platerun or --all.')
+
+    if all == 'mastar':
+        plateruns = utils.getStellarLibraryRuns()
+    elif all == 'manga':
+        plateruns = utils.getAllMaNGAPlateRuns()
+
     for platerun in plateruns:
-        plates += list(map(int, getFromPlatePlans(platerun, column='plateid')))
+        log.important('Running postdesign for platerun {0}'.format(platerun))
+        plates = list(map(int, utils.getFromPlatePlans(platerun, column='plateid')))
 
-    create_starplate_targets(plates, overwrite=overwrite)
+        if utils.platerun_is_mastar(platerun):
+            post_design.post_design_apogee_led(plates, overwrite=overwrite)
+        else:
+            post_design.post_design_manga_led(plates, overwrite=overwrite,
+                                              skipPlateHolesSorted=skip_plateholessorted)
 
 
 @gohan.group()
@@ -76,6 +89,7 @@ def load(path, remote):
 
     """
 
+    from Gohan.exceptions import GohanUserWarning
     from Gohan.scripts.update_cmm import update_cmm
 
     if remote:

@@ -12,20 +12,26 @@ Revision history:
 
 """
 
+from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-import os
-from Gohan import readPath, config, log
+
 import glob
-from Gohan.utils import yanny
-from Gohan.exceptions import GohanError, GohanUserWarning
-from numbers import Number
-from collections import OrderedDict
-import numpy as np
-from astropy import table
-from astropy.io import fits
-from astropy import time
+import os
 import warnings
+
+from collections import OrderedDict
+from numbers import Number
+
+import numpy as np
+
+from astropy import table
+from astropy import time
+from astropy.io import fits
+
+from Gohan import readPath, config, log
+from Gohan.exceptions import GohanError, GohanUserWarning
+from Gohan.utils import yanny
 
 
 # Dictionary to cache catalogues and plateTargets after being read
@@ -878,3 +884,23 @@ def print_special_summary(plate_data_path):
     special_table.pprint()
 
     return special_table
+
+
+def platerun_is_mastar(platerun):
+    """Returns True if the platerun is a MaStar one."""
+
+    manga_runs = getAllMaNGAPlateRuns()
+
+    if platerun in manga_runs:
+        return False
+
+    surveys = platerun.split('.')[3].split('-')
+
+    if len(surveys) == 1:
+        raise ValueError('platerun {0} is not a MaNGA run '
+                         'but is not co-observed.'.format(platerun))
+    else:
+        if 'manga' in surveys and 'apogee' in platerun:
+            return True
+        else:
+            raise ValueError('cannot determine type for platerun {0}'.format(platerun))
