@@ -493,13 +493,13 @@ def getPlateTargetsTemplate(catalogid):
     """Returns the path to the plateTargets template for a given catalogid."""
 
     if catalogid == 1:
-        return readPath('+plateTargets/plateTargets-1.template')
+        return readPath('+templates/plateTargets-1.template')
     elif catalogid == 12:
-        return readPath('+plateTargets/plateTargets-12.template')
+        return readPath('+templates/plateTargets-12.template')
     elif catalogid == 50:
-        return readPath('+plateTargets/plateTargets-50.template')
+        return readPath('+templates/plateTargets-50.template')
     elif catalogid >= 30 or catalogid == 18:
-        return readPath('+plateTargets/plateTargets-Ancillary.template')
+        return readPath('+templates/plateTargets-Ancillary.template')
     else:
         warnings.warn('no template found for catalogid={0}'.format(catalogid),
                       GohanUserWarning)
