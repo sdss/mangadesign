@@ -121,8 +121,7 @@ class PlateTargets(object):
         if self.template:
             self.structure.remove_row(0)
 
-        log.debug('using targeting catalogue {0}'.format(
-            os.path.realpath(readPath(config['catalogues']['science']))))
+        log.debug('using targeting catalogue {0}'.format(utils.get_manga_targets_path()))
 
     def _getComments(self, data):
         """Gets the comments in the Yanny file."""
