@@ -631,15 +631,19 @@ class yanny(OrderedDict):
         dtype : numpy.dtype
             A dtype object suitable for describing the yanny structure as a record array.
         """
+
+        str_dtype_letter = 'U' if six.PY3 else 'S'
+
         dt = list()
         dtmap = {'short':'i2', 'int':'i4', 'long':'i8', 'float':'f',
             'double':'d' }
         for c in self.columns(structure):
             typ = self.basetype(structure,c)
             if typ == 'char':
-                d = "S{0:d}".format(self.char_length(structure,c))
+                d = "{0}{1:d}".format(str_dtype_letter, self.char_length(structure,c))
             elif self.isenum(structure,c):
-                d = "S{0:d}".format(max([len(x) for x in self._enum_cache[typ]]))
+                d = "{0}{1:d}".format(str_dtype_letter,
+                                      max([len(x) for x in self._enum_cache[typ]]))
             else:
                 d = dtmap[typ]
             if self.isarray(structure,c):
