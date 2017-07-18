@@ -156,8 +156,10 @@ def getPlateHolesSortedPath(plateid):
 
 def getMaNGAIDs(plateid):
 
-    ynPlateHolesSorted = yanny.yanny(
-        getPlateHolesSortedPath(plateid), np=True)['STRUCT1']
+    if not os.path.exists(getPlateHolesSortedPath(plateid)):
+        raise ValueError('cannot find file {0}'.format(getPlateHolesSortedPath(plateid)))
+
+    ynPlateHolesSorted = yanny.yanny(getPlateHolesSortedPath(plateid), np=True)['STRUCT1']
 
     return [ynPlateHolesSorted['mangaid'][ii]
             for ii in range(len(ynPlateHolesSorted))
