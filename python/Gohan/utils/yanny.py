@@ -266,11 +266,9 @@ class yanny(OrderedDict):
             if dt[c].kind == 'V':
                 t = dt[c].subdtype[0].str[1:]
                 l = dt[c].subdtype[1][0]
-                s = dt[c].subdtype[0].itemsize
             else:
                 t = dt[c].str[1:]
                 l = 0
-                s = dt[c].itemsize
             line = '    '
             if t[0] in ['S', 'U']:
                 if c in enums:
@@ -283,7 +281,7 @@ class yanny(OrderedDict):
             if l > 0:
                 line += "[{0:d}]".format(l)
             if t[0] in ['S', 'U'] and c not in enums:
-                line += "[{0:d}]".format(s)
+                line += "[{0:d}]".format(int(t[1:]))
             line += ';'
             lines.append(line)
         lines.append('}} {0};'.format(structname.upper()))
