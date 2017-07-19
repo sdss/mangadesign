@@ -278,7 +278,7 @@ def plotIFUs(structures, centre=None, filename='ifuPlot.pdf', **kwargs):
 
     """
 
-    from Gohan import PlateInput  # To avoid circular import
+    from Gohan.PlateInput import PlateInput  # To avoid circular import
 
     skies = []
 
