@@ -639,6 +639,7 @@ def getStellarLibraryRuns():
     apogeeMangaRuns = [plateRun for plateRun in plateRuns
                        if 'apogee2-manga' in plateRun.strip().lower() and
                        plateRun.strip().lower() != '2014.04.f.apogee2-manga']
+    apogeeMangaRuns + ['2016.10.c.manga', '2016.12.a.manga']  # MaStar runs
 
     return apogeeMangaRuns
 
@@ -685,7 +686,8 @@ def getAllMaNGAPlateRuns():
 
     mangaLeadRuns = []
     for mangaRun in mangaRuns:
-        if mangaRun in ['2014.02.f.manga', '2014.04.e.manga-apogee2']:
+        if mangaRun in ['2014.02.f.manga', '2014.04.e.manga-apogee2',
+                        '2016.10.c.manga', '2016.12.a.manga']:
             continue
         year = int(mangaRun.split('.')[0])
         if year < 2014:
