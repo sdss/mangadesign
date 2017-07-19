@@ -28,6 +28,15 @@ szmin  ->  MaNGA_targets_extNSA_tiled_ancillary
 szmax  ->  MaNGA_targets_extNSA_tiled_ancillary
 ezmin  ->  MaNGA_targets_extNSA_tiled_ancillary
 ezmax  ->  MaNGA_targets_extNSA_tiled_ancillary
+pweight  ->  MaNGA_targets_extNSA_tiled_ancillary
+psweight  ->  MaNGA_targets_extNSA_tiled_ancillary
+psrweight  ->  MaNGA_targets_extNSA_tiled_ancillary
+sweight  ->  MaNGA_targets_extNSA_tiled_ancillary
+srweight  ->  MaNGA_targets_extNSA_tiled_ancillary
+eweight  ->  MaNGA_targets_extNSA_tiled_ancillary
+esweight  ->  MaNGA_targets_extNSA_tiled_ancillary
+esrweight  ->  MaNGA_targets_extNSA_tiled_ancillary
+probs  ->  MaNGA_targets_extNSA_tiled_ancillary
 nsa_iauname  ->  nsa_v1_0_1
 nsa_field  ->  nsa_v1_0_1
 nsa_run  ->  nsa_v1_0_1
