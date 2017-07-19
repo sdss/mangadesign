@@ -52,18 +52,13 @@ conversions = {
 }
 
 
-neverobserve = list(map(int, open(os.path.join(os.environ['MANGAWORK_DIR'],
-                                               'manga/platedesign/etc/neverobserve.dat'),
+neverobserve = list(map(int, open(readPath(config['plateTargets']['neverobserve']),
                                   'r').read().splitlines()[1:]))
 
 try:
-    mangaTargetsExtNSA = table.Table.read(
-        os.path.join(os.environ['MANGAWORK_DIR'],
-                     'manga/target/', config['targets']['version'],
-                     config['targets']['mangaTargets']))
+    mangaTargetsExtNSA = table.Table.read(utils.get_manga_targets_path())
 
-    mangaTargetsExtNSA['MANGAID'] = list(map(lambda xx: xx.strip(),
-                                             mangaTargetsExtNSA['MANGAID']))
+    mangaTargetsExtNSA['MANGAID'] = list(map(lambda xx: xx.strip(), mangaTargetsExtNSA['MANGAID']))
     mangaTargetsExtNSA = _toLowerCase(mangaTargetsExtNSA)
 except:
     raise GohanPlateTargetsError('failed loading targeting catalogue')
@@ -399,8 +394,8 @@ class PlateTargets(object):
         designid = int(plateHolesSortedPairs['designid'])
 
         if self.catalogid == 12:
-            nsaV1bCat = _toLowerCase(
-                table.Table.read(readPath('+etc/targets-12.fits')))
+            targets12 = readPath(config['plateTargets']['targets12'])
+            nsaV1bCat = _toLowerCase(table.Table.read(targets12))
 
         for mangaid in mangaids:
             result[mangaid] = {}
@@ -516,7 +511,7 @@ class PlateTargets(object):
         """
 
         # Reads the NSA v1b to v1 match
-        nsaV1bToV1 = table.Table.read(readPath('+etc/NSA_v1b_to_v1.dat'),
+        nsaV1bToV1 = table.Table.read(readPath(config['plateTargets']['NSA_v1b_v1']),
                                       format='ascii.fixed_width',
                                       delimiter='|')
 
@@ -569,12 +564,11 @@ class PlateTargets(object):
                     # For commissioning targets, we also include the nsaid
                     # in the nsa_v1b catalogue.
                     if self.catalogid == 12:
-                        mangaidDict[field] = utils.getCatalogueRow(
-                            mangaid)['nsaid']
+                        mangaidDict[field] = utils.getCatalogueRow(mangaid)['nsaid']
                     else:
                         mangaidDict[field] = -999
 
-                elif 'zmin' in field or 'zmax' in field:
+                elif field in config['plateTargets']['mangaTargetFields']:
                     if len(targetRow) == 0:
                         mangaidDict[field] = -999.
                     else:
