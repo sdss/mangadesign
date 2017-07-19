@@ -458,8 +458,7 @@ def getCataloguePath(catalogid):
 
     catalogid = int(catalogid)
 
-    catalogidsPath = os.path.join(readPath(config['mangacore']),
-                                  'platedesign/catalog_ids.dat')
+    catalogidsPath = os.path.join(readPath(config['mangacore']), 'platedesign/catalog_ids.dat')
     if not os.path.exists(catalogidsPath):
         warnings.warn('catalog_ids.dat could not be found', GohanUserWarning)
         return None
@@ -473,17 +472,15 @@ def getCataloguePath(catalogid):
             break
 
     if cataloguePath is None:
-        warnings.warn('no entry in catalog_ids.dat for catalogid={0}'
-                      .format(catalogid), GohanUserWarning)
+        warnings.warn('no entry in catalog_ids.dat for catalogid={0}'.format(catalogid),
+                      GohanUserWarning)
         return None
 
     cataloguePath = os.path.join(
-        readPath(config['catalogues']['catalogueDir']),
-        '-'.join(cataloguePath.strip().split()))
+        readPath(config['catalogues']['path']), '-'.join(cataloguePath.strip().split()))
 
     if not os.path.exists(cataloguePath):
-        warnings.warn('no catalogue found in {0}'.format(cataloguePath),
-                      GohanUserWarning)
+        warnings.warn('no catalogue found in {0}'.format(cataloguePath), GohanUserWarning)
         return None
 
     return cataloguePath
