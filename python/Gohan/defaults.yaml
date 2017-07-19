@@ -43,6 +43,14 @@ plateMags:
     DPI: 72
     nPix: 50
 
+plateTargets:
+    NSA_v1b_v1: $MANGAWORK_DIR/manga/platedesign/etc/NSA_v1b_to_v1.dat
+    neverobserve: $MANGAWORK_DIR/manga/platedesign/etc/neverobserve.dat
+    mangaTargetFields: [zmin, zmax, szmin, szmax, ezmin, ezmax, probs, pweight, sweight,
+                        srweight, eweight, psrweight, esrweight, psweight,
+                        esweight]
+    targets12: $MANGAWORK_DIR/manga/platedesign/etc/targets-12.fits
+
 plateTypes:
     mangaLead:
         platedesignversion: v1
