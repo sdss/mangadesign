@@ -277,7 +277,7 @@ class PlateInput(object):
             if col != col.upper():
                 data.rename_column(col, col.upper())
             if data[col].dtype.type == np.string_:
-                data[col] = map(lambda xx: xx.strip(), data[col])
+                data[col] = list(map(lambda xx: xx.strip(), data[col]))
 
         if 'MANGAID' not in data.colnames and self.targettype == 'sky':
             mangaidCol = table.Column(['0-{0:d}'.format(targetid)
@@ -308,6 +308,10 @@ class PlateInput(object):
                      minNeightborDist=4, **kwargs):
         """Selects skies near the targets defined in the list of `mangaInputs`
         PlateInput objects."""
+
+        for col in data.colnames:
+            if col != col.upper():
+                data.rename_column(col, col.upper())
 
         try:
             mangaInputs = kwargs.get('mangaInputs')

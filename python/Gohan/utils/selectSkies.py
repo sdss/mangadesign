@@ -124,6 +124,10 @@ def selectSkies(skyCat, designID, fieldName, raCen, decCen, use_apogee=True, rai
 
     allSkies = table.Table.read(skyCat)
 
+    for col in allSkies.colnames:
+        if col != col.upper():
+            allSkies.rename_column(col, col.upper())
+
     skyCoords = SkyCoord(allSkies['ra'], allSkies['dec'], unit='deg')
     plateCentre = SkyCoord(ra=raCen, dec=decCen, unit='deg')
     separationCentre = skyCoords.separation(plateCentre).deg
