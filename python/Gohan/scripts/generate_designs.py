@@ -31,8 +31,6 @@ def do_one_apogee2_manga(plateRun, platerun_dir, field, reject_science=[], rejec
     reject_science = list(reject_science) + exclude
     reject_standard = list(reject_standard) + exclude
 
-    print(reject_science, reject_standard)
-
     designID = int(field['DesignID'])
     fieldName = field['FieldName']
 
