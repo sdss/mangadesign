@@ -883,6 +883,7 @@ def print_special_summary(plate_data_path):
 
     print()
     special_table.pprint()
+    print()
 
     return special_table
 
