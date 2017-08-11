@@ -25,11 +25,13 @@ from Gohan.PlateInput import PlateInput
 
 
 def do_one_apogee2_manga(plateRun, platerun_dir, field, reject_science=[], reject_standard=[],
-                         niter=1):
+                         niter=1, exclude=[]):
     """Does one apogee2-manga design and returns the list of allocated mangaids."""
 
-    reject_science = list(reject_science)
-    reject_standard = list(reject_standard)
+    reject_science = list(reject_science) + exclude
+    reject_standard = list(reject_standard) + exclude
+
+    print(reject_science, reject_standard)
 
     designID = int(field['DesignID'])
     fieldName = field['FieldName']
@@ -174,7 +176,8 @@ def update_platedefinition_apogee2manga(field, plateRun, platerun_dir):
     log.important('saved updated plateDefinition as {0}'.format(plateDefinition_path_new))
 
 
-def designs_apogee2manga(platerun, platerun_dir, plate_data_path, special=False, **kwargs):
+def designs_apogee2manga(platerun, platerun_dir, plate_data_path,
+                         special=False, exclude=[], **kwargs):
     """Designs an APOGEE2-MaNGA platerun."""
 
     fields = table.Table.read(plate_data_path, format='ascii.commented_header')
@@ -194,11 +197,14 @@ def designs_apogee2manga(platerun, platerun_dir, plate_data_path, special=False,
     for field in fields:
 
         allocated_one = do_one_apogee2_manga(platerun, platerun_dir, field,
-                                             reject_science=list(reject_science))
+                                             reject_science=list(reject_science),
+                                             exclude=exclude)
 
         update_platedefinition_apogee2manga(field, platerun, platerun_dir)
 
         reject_science = reject_science.union(set(allocated_one))
+
+    utils.print_special_summary(plate_data_path)
 
     return True
 
