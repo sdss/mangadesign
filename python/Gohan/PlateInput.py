@@ -446,7 +446,7 @@ class PlateInput(object):
 
         assert scienceInput is not None and stdInput is not None, \
             'science or standard input cannot be found in plateDefinition.'
-        assert map(os.path.exists, [scienceInput, stdInput]), \
+        assert all(map(os.path.exists, [scienceInput, stdInput])), \
             'one or more of the plateInput paths in plateDefinition does ' + \
             'not exist.'
 

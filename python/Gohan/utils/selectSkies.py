@@ -99,7 +99,7 @@ def getInfoFromAPOGEE(designID):
 def decollide(aa, bb, distance=config['decollision']['targetAvoid']):
     """Decollides targets."""
 
-    distance = 150 / 3600.
+    distance = 120 / 3600.
     coordsA = SkyCoord(aa[:, 0], aa[:, 1], unit='deg')
     coordsB = SkyCoord(bb[:, 0], bb[:, 1], unit='deg')
 
@@ -125,8 +125,8 @@ def selectSkies(skyCat, designID, fieldName, raCen, decCen, use_apogee=True, rai
     allSkies = table.Table.read(skyCat)
 
     for col in allSkies.colnames:
-        if col != col.upper():
-            allSkies.rename_column(col, col.upper())
+        if col != col.lower():
+            allSkies.rename_column(col, col.lower())
 
     skyCoords = SkyCoord(allSkies['ra'], allSkies['dec'], unit='deg')
     plateCentre = SkyCoord(ra=raCen, dec=decCen, unit='deg')
