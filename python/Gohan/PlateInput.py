@@ -571,11 +571,10 @@ class PlateInput(object):
             log.debug('sorting targets')
             newCoords, order = sortTargets(
                 targetCoords, (self.raCen, self.decCen),
-                plot=False,  # kwargs.get('plotSorted', True),
+                plot=kwargs.get('plotSorted', True),
                 limitTo=int(limitTargets),
-                plotFilename=('sortedTargets_{0:d}_{1}.pdf'
-                              .format(self.designid,
-                                      self.targettype[0:3].upper())))
+                filename=('sortedTargets_{0:d}_{1}.png'.format(self.designid,
+                                                               self.targettype[0:3].upper())))
             targets = targets[order]
         else:
             targets = targets[0:int(limitTargets)]
