@@ -14,23 +14,29 @@ Revision history:
 
 from __future__ import division
 from __future__ import print_function
-from .yanny import yanny
-from Gohan import config, readPath
-from .sortTargets import sortTargets
-from .utils import getPlateDefinition
-import os
+
 import fnmatch
+import os
+import warnings
+
 import numpy as np
+
 from astropy import table
 from astropy.coordinates import SkyCoord
-from Gohan.exceptions import GohanError
+
+from Gohan import config, readPath
+from Gohan.exceptions import GohanError, GohanWarning
+
+from .sortTargets import sortTargets
+from .utils import getPlateDefinition
+from .yanny import yanny
 
 
 nSkies = {127: 8, 91: 6, 61: 4, 37: 2, 19: 2, 7: 1}
 
 
 def getIFUSkies(data, coords, ra, dec, skyPatrolRadius=14 / 60.,
-                minNeightborDist=4):
+                minNeightborDist=4, limitTo=40):
     """Selects skies near the targets defined in the list of `mangaInputs`
     PlateInput objects."""
 
@@ -45,9 +51,13 @@ def getIFUSkies(data, coords, ra, dec, skyPatrolRadius=14 / 60.,
     ifuSkyCoords[:, 0] = ifuSkies['ra']
     ifuSkyCoords[:, 1] = ifuSkies['dec']
 
-    validTargets, assigned = sortTargets(ifuSkyCoords, centre=(ra, dec),
-                                         limitTo=40, radius=skyPatrolRadius,
-                                         plot=False)
+    try:
+        validTargets, assigned = sortTargets(ifuSkyCoords, centre=(ra, dec),
+                                             limitTo=limitTo,
+                                             radius=skyPatrolRadius, plot=False)
+    except Exception as ee:
+        warnings.warn('Error: {0}'.format(ee), GohanWarning)
+        return False
 
     return validTargets
 
@@ -119,7 +129,8 @@ def decollide(aa, bb, distance=config['decollision']['targetAvoid']):
     return validCoords
 
 
-def selectSkies(skyCat, designID, fieldName, raCen, decCen, use_apogee=True, raise_error=True):
+def selectSkies(skyCat, designID, fieldName, raCen, decCen,
+                use_apogee=True, raise_error=True, limitTo=40):
     """Writes a list of skies for each one of the IFUs in a design."""
 
     allSkies = table.Table.read(skyCat)
@@ -172,7 +183,13 @@ def selectSkies(skyCat, designID, fieldName, raCen, decCen, use_apogee=True, rai
         ifuDesign = int(target['ifudesign'])
 
         candidateSkies = getIFUSkies(validSkies, skyCoords,
-                                     target['ra'], target['dec'])
+                                     target['ra'], target['dec'],
+                                     limitTo=limitTo)
+
+        if candidateSkies is False:
+            err_msg = 'target {0} ({1}) has not enough sky candidates'.format(target['mangaid'],
+                                                                              ifuDesign)
+            return False, err_msg, target['mangaid'], ifuDesign
 
         decollidedSkies = decollide(candidateSkies, coords)
 
