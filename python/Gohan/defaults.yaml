@@ -13,7 +13,7 @@ sdssMaskBits: $IDLUTILS_DIR/data/sdss/sdssMaskbits.par
 
 targets:
     path: $MANGAWORK_DIR/manga/target
-    version: v1_2_24
+    version: trunk
     mangaTargets: MaNGA_targets_extNSA_tiled_ancillary.fits
 
 skiesPath: $MANGAWORK_DIR/manga/platedesign/skies
