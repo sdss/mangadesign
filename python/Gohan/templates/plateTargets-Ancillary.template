@@ -58,6 +58,7 @@
 #                    ifudesignsize unless changed during the plate design process.
 # 23) ifudesignwrongsize: 1 if the IFU assigned is of the wrong size
 #                         (for instance, if it does not cover 1.5Reff).
+# 24) z: The redshift, from the MaNGA targetting catalogue (multiple sources).
 # ---- These columns may vary between typeids ----
 #
 # For ancillary-based plateTargets, the column list will be automatically completed
@@ -93,6 +94,7 @@ typedef struct {
     int ifudesignsize;
     int ifutargetsize;
     int ifudesignwrongsize;
+    float z;
 } PLTTRGT;
 
-PLTTRGT 0000 0000 0000 0000 1-000000 0 323.577092837 11.2143239831 323.577092837 11.2143239831 323.577092837 11.2143239831 324.49449707 11.5765455462 -195.98829 -78.573101 2014.07 128 0 0 127 127 0
+PLTTRGT 0000 0000 0000 0000 1-000000 0 323.577092837 11.2143239831 323.577092837 11.2143239831 323.577092837 11.2143239831 324.49449707 11.5765455462 -195.98829 -78.573101 2014.07 128 0 0 127 127 0 0.1

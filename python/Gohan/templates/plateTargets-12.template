@@ -58,79 +58,80 @@
 #                    ifudesignsize unless changed during the plate design process.
 # 23) ifudesignwrongsize: 1 if the IFU assigned is of the wrong size
 #                         (for instance, if it does not cover 1.5Reff).
+# 24) z: The redshift, from the MaNGA targetting catalogue (multiple sources).
 # ---- These columns may vary between typeids ----
-# 24) zmin: The minimum redshift at which the galaxy could still have been
+# 25) zmin: The minimum redshift at which the galaxy could still have been
 #           included in the Primary sample.
-# 25) zmax: The maximum redshift at which the galaxy could still have been
+# 26) zmax: The maximum redshift at which the galaxy could still have been
 #           included in the Primary sample.
-# 26) szmin: The minimum redshift at which the galaxy could still have been
+# 27) szmin: The minimum redshift at which the galaxy could still have been
 #            included in the Secondary sample.
-# 27) szmin: The maximum redshift at which the galaxy could still have been
+# 28) szmin: The maximum redshift at which the galaxy could still have been
 #            included in the Secondary sample.
-# 28) ezmin: The minimum redshift at which the galaxy could still have been
+# 29) ezmin: The minimum redshift at which the galaxy could still have been
 #            included in the Color-Enhanced sample.
-# 29) ezmax: The maximum redshift at which the galaxy could still have been
+# 30) ezmax: The maximum redshift at which the galaxy could still have been
 #            included in the Color-Enhanced sample.
-# 30) probs: The probability that a Secondary sample galaxy is included after
+# 31) probs: The probability that a Secondary sample galaxy is included after
 #            down-sampling. For galaxies not in the Secondary sample PROBS
 #            is set to the mean down-sampling probability.
-# 31) pweight: The volume weight for the Primary sample. Corrects the MaNGA
+# 32) pweight: The volume weight for the Primary sample. Corrects the MaNGA
 #              selection to a volume limited sample.
-# 32) sweight: The volume weight for the full Secondary sample.
+# 33) sweight: The volume weight for the full Secondary sample.
 #              Corrects the MaNGA selection to a volume limited sample.
-# 33) srweight: The volume weight for the down-sampled Secondary sample.
+# 34) srweight: The volume weight for the down-sampled Secondary sample.
 #               Corrects the MaNGA selection to a volume limited sample.
-# 34) eweight: The volume weight for the Primary+ sample.
+# 35) eweight: The volume weight for the Primary+ sample.
 #              Corrects the MaNGA selection to a volume limited sample.
-# 35) psrweight: The volume weight for the combined Primary and down-sampled
+# 36) psrweight: The volume weight for the combined Primary and down-sampled
 #                Secondary samples. Corrects the MaNGA selection to a volume
 #                limited sample.
-# 36) esrweight: The volume weight for the combined Primary+ and down-sampled
+# 37) esrweight: The volume weight for the combined Primary+ and down-sampled
 #                Secondary samples. Corrects the MaNGA selection to a volume
 #                limited sample.
-# 37) psweight: The volume weight for the combined Primary and full Secondary
+# 38) psweight: The volume weight for the combined Primary and full Secondary
 #               samples. Corrects the MaNGA selection to a volume limited
 #               sample.
-# 38) esweight: The volume weight for the combined Primary+ and full Secondary
+# 39) esweight: The volume weight for the combined Primary+ and full Secondary
 #               samples. Corrects the MaNGA selection to a volume limited
 #               sample.
-# 39) nsa_iauname: The accepted IAU name
-# 40) nsa_field: The SDSS field covering the target.
-# 41) nsa_run: The SDSS run covering the target.
-# 42) nsa_camcol: The SDSS camcol covering catalog position.
-# 43) nsa_elpetro_ba: Axis ratio b/a from the elliptical Petrosian apertures.
-# 44) nsa_elpetro_phi: Angle (E of N) of the major axis from the elliptical
+# 40) nsa_iauname: The accepted IAU name
+# 41) nsa_field: The SDSS field covering the target.
+# 42) nsa_run: The SDSS run covering the target.
+# 43) nsa_camcol: The SDSS camcol covering catalog position.
+# 44) nsa_elpetro_ba: Axis ratio b/a from the elliptical Petrosian apertures.
+# 45) nsa_elpetro_phi: Angle (E of N) of the major axis from the elliptical
 #                      Petrosian apertures.
-# 45) nsa_z: Heliocentric redshift.
-# 46) nsa_zdist: Distance estimate using pecular velocity model of
+# 46) nsa_z: Heliocentric redshift.
+# 47) nsa_zdist: Distance estimate using pecular velocity model of
 #                Willick et al. (1997); multiply by c/H0 for Mpc.
-# 47) nsa_sersic_mass: Sersic photometry stellar mass from K-correction fit
+# 48) nsa_sersic_mass: Sersic photometry stellar mass from K-correction fit
 #                      in h-2 solar masses.
-# 48) nsa_elpetro_mass: As nsa_sersic_mass, but from the elliptical Petrosian flux.
-# 49) nsa_petro_th50: Petrosian 50% light radius (derived from r band), in arcsec.
-# 50) nsa_elpetro_th50_r: Elliptical Petrosian 50% light radius (r-band), in arcsec.
-# 51) nsa_petro_flux[7]: Azimuthally-averaged SDSS-style Petrosian flux in FNugriz
+# 49) nsa_elpetro_mass: As nsa_sersic_mass, but from the elliptical Petrosian flux.
+# 50) nsa_petro_th50: Petrosian 50% light radius (derived from r band), in arcsec.
+# 51) nsa_elpetro_th50_r: Elliptical Petrosian 50% light radius (r-band), in arcsec.
+# 52) nsa_petro_flux[7]: Azimuthally-averaged SDSS-style Petrosian flux in FNugriz
 #                        (GALEX-SDSS photometric systems). In nanomaggies.
-# 52) nsa_petro_flux_ivar[7]: Inverse variance of petroflux in nanomaggies-2.
-# 53) nsa_elpetro_flux[7]: As nsa_petroflux but from elliptical Petrosian apertures.
-# 54) nsa_elpetro_flux_ivar[7]: As nsa_petroflux_ivar but from the elliptical
+# 53) nsa_petro_flux_ivar[7]: Inverse variance of petroflux in nanomaggies-2.
+# 54) nsa_elpetro_flux[7]: As nsa_petroflux but from elliptical Petrosian apertures.
+# 55) nsa_elpetro_flux_ivar[7]: As nsa_petroflux_ivar but from the elliptical
 #                               Petrosian apertures.
-# 55) nsa_sersic_ba: Axis ratio b/a from 2D Sersic fit.
-# 56) nsa_sersic_n: 2D Sersic index from fit.
-# 57) nsa_sersic_phi: Angle (E of N, degrees) of major axis in 2D Sersic fit
-# 58) nsa_sersic_th50: 50% light radius of 2D Sersic fit (along major axis), in arcsec.
-# 59) nsa_sersic_flux[7]: 2D Sersic fit flux in FNugriz (GALEX-SDSS photometric
+# 56) nsa_sersic_ba: Axis ratio b/a from 2D Sersic fit.
+# 57) nsa_sersic_n: 2D Sersic index from fit.
+# 58) nsa_sersic_phi: Angle (E of N, degrees) of major axis in 2D Sersic fit
+# 59) nsa_sersic_th50: 50% light radius of 2D Sersic fit (along major axis), in arcsec.
+# 60) nsa_sersic_flux[7]: 2D Sersic fit flux in FNugriz (GALEX-SDSS photometric
 #                         systems) in nanommagies.
-# 60) nsa_sersic_flux_ivar[7]: Inverse variance of sersicflux in nanomaggies-2.
-# 61) nsa_sersic_absmag[7]: Absolute magnitude estimates for FNugriz from
+# 61) nsa_sersic_flux_ivar[7]: Inverse variance of sersicflux in nanomaggies-2.
+# 62) nsa_sersic_absmag[7]: Absolute magnitude estimates for FNugriz from
 #                           K-corrections (Omatter=0.3, Olambda=0.7, h=1).
-# 62) nsa_elpetro_absmag[7]: As nsa_sersic_absmag but from elliptical Petrosian apertures.
-# 63) nsa_elpetro_amivar[7]: Inverse variance on absolute magnitudes in FNugriz
+# 63) nsa_elpetro_absmag[7]: As nsa_sersic_absmag but from elliptical Petrosian apertures.
+# 64) nsa_elpetro_amivar[7]: Inverse variance on absolute magnitudes in FNugriz
 #                            for nsa_absmag_el.
-# 64) nsa_extinction[7]: Galactic extinction in FNugriz from Schlegel, Finkbeiner & Davis (1997).
-# 65) nsa_version: The version of the NSA catalogue used to select these targets.
-# 66) nsa_nsaid: The NSAID field in the NSA catalogue v1.
-# 67) nsa_nsaid_v1b: The NSAID of the target in the NSA v1b_0_0_v2 catalogue (if applicable).
+# 65) nsa_extinction[7]: Galactic extinction in FNugriz from Schlegel, Finkbeiner & Davis (1997).
+# 66) nsa_version: The version of the NSA catalogue used to select these targets.
+# 67) nsa_nsaid: The NSAID field in the NSA catalogue v1.
+# 68) nsa_nsaid_v1b: The NSAID of the target in the NSA v1b_0_0_v2 catalogue (if applicable).
 
 typeid 12
 
@@ -158,6 +159,7 @@ typedef struct {
     int ifudesignsize;
     int ifutargetsize;
     int ifudesignwrongsize;
+    float z;
     float zmin;
     float zmax;
     float szmin;
@@ -204,4 +206,4 @@ typedef struct {
     long nsa_nsaid_v1b;
 } PLTTRGT;
 
-PLTTRGT 0000 0000 0000 0000 1-000000 0 231.478756028 41.9097725983 231.478756028 41.9097725983 231.478756028 41.9097725983 230.99167 42.68736 78.935912 -169.09538 2014.07 2 0 0 37 -999 -999 0.1 0.2 0.1 0.2 0.1 0.2 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 "J1234-1234" 224 3918 0 0.0 0.0 0.0226546 6.49071e+08 6.49071e+08 -999.0 50.4463 2.54327 {18.0174 22.1203 54.5087 128.257 185.835 229.213 255.979} {0.132904 6.57025 0.190638 1.59099 1.04681 0.319301 0.0163769} {0.132904 6.57025 0.190638 1.59099 1.04681 0.319301 0.0163769} {0.132904 6.57025 0.190638 1.59099 1.04681 0.319301 0.0163769} 0.482523 1.5851 62.1492 3.19605 {21.7792 26.0488 52.4875 132.169 193.079 235.423 259.846} {0.143117 3.81636 1.07508 5.37342 2.69955 1.27748 0.0982024} {-15.2445 -15.4517 -16.228 -17.1187 -17.5194 -17.6736 -17.757} {-15.2445 -15.4517 -16.228 -17.1187 -17.5194 -17.6736 -17.757} {-15.2445 -15.4517 -16.228 -17.1187 -17.5194 -17.6736 -17.757} {-15.2445 -15.4517 -16.228 -17.1187 -17.5194 -17.6736 -17.757} v1_0_1 102195 102195
+PLTTRGT 0000 0000 0000 0000 1-000000 0 231.478756028 41.9097725983 231.478756028 41.9097725983 231.478756028 41.9097725983 230.99167 42.68736 78.935912 -169.09538 2014.07 2 0 0 37 -999 -999 0.1 0.1 0.2 0.1 0.2 0.1 0.2 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 "J1234-1234" 224 3918 0 0.0 0.0 0.0226546 6.49071e+08 6.49071e+08 -999.0 50.4463 2.54327 {18.0174 22.1203 54.5087 128.257 185.835 229.213 255.979} {0.132904 6.57025 0.190638 1.59099 1.04681 0.319301 0.0163769} {0.132904 6.57025 0.190638 1.59099 1.04681 0.319301 0.0163769} {0.132904 6.57025 0.190638 1.59099 1.04681 0.319301 0.0163769} 0.482523 1.5851 62.1492 3.19605 {21.7792 26.0488 52.4875 132.169 193.079 235.423 259.846} {0.143117 3.81636 1.07508 5.37342 2.69955 1.27748 0.0982024} {-15.2445 -15.4517 -16.228 -17.1187 -17.5194 -17.6736 -17.757} {-15.2445 -15.4517 -16.228 -17.1187 -17.5194 -17.6736 -17.757} {-15.2445 -15.4517 -16.228 -17.1187 -17.5194 -17.6736 -17.757} {-15.2445 -15.4517 -16.228 -17.1187 -17.5194 -17.6736 -17.757} v1_0_1 102195 102195

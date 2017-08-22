@@ -448,6 +448,12 @@ class PlateTargets(object):
                 if column == 'epoch':
                     result[mangaid][column] = plateHolesSortedRow[column]
                     continue
+                elif column == 'z':
+                    if targetRow is not None:
+                        result[mangaid][column] = targetRow['nsa_z'][0]
+                    else:
+                        result[mangaid][column] = -999.
+                    continue
 
                 # Now uses plateHolesSorted, the targeting catalogue, and
                 # mangaScience, in that order, to complete the information.

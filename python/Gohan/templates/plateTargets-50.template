@@ -58,9 +58,10 @@
 #                    ifudesignsize unless changed during the plate design process.
 # 23) ifudesignwrongsize: 1 if the IFU assigned is of the wrong size
 #                         (for instance, if it does not cover 1.5Reff).
+# 24) z: The redshift, from the MaNGA targetting catalogue (multiple sources).
 # ---- These columns may vary between typeids ----
-# 24) nsa_version: The version of the NSA catalogue used to select these targets.
-# 25) nsa_nsaid: The NSAID field in the NSA catalogue v1.
+# 25) nsa_version: The version of the NSA catalogue used to select these targets.
+# 26) nsa_nsaid: The NSAID field in the NSA catalogue v1.
 
 typeid 50
 
@@ -88,8 +89,9 @@ typedef struct {
     int ifudesignsize;
     int ifutargetsize;
     int ifudesignwrongsize;
+    float z;
     char nsa_version[20];
     long nsa_nsaid;
 } PLTTRGT;
 
-PLTTRGT 0000 0000 0000 0000 1-000000 0 231.478756028 41.9097725983 231.478756028 41.9097725983 231.478756028 41.9097725983 230.99167 42.68736 78.935912 -169.09538 2014.07 2 0 0 37 -999 -999 v1_0_1 102195
+PLTTRGT 0000 0000 0000 0000 1-000000 0 231.478756028 41.9097725983 231.478756028 41.9097725983 231.478756028 41.9097725983 230.99167 42.68736 78.935912 -169.09538 2014.07 2 0 0 37 -999 -999 0.1 v1_0_1 102195
