@@ -351,6 +351,10 @@ class PlateTargets(object):
             # Applies target fixes
             targetData = self._applyTargetFix(targetData)
 
+            # Check that redshift is well populated
+            if targetData['z'] == -999. and 'nsa_z' in targetData:
+                targetData['z'] = targetData['nsa_z']
+
             # Adds the new targets
             if not existing:
                 self.structure.add_row(targetData)
