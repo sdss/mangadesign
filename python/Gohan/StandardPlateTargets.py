@@ -119,6 +119,16 @@ class StandardPlateTargets(PlateTargets):
 
             # We combine both dictionaries
             targetData = commonData[mangaid]
+
+            # Removes columns that are not in the template
+            remove_keys = []
+            for key in targetData:
+                if key not in self.structure.colnames:
+                    remove_keys.append(key)
+
+            for key in remove_keys:
+                targetData.pop(key)
+
             if mangaid in specificData:
                 targetData.update(specificData[mangaid])
 

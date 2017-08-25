@@ -98,8 +98,7 @@ class StarPlateTargets(PlateTargets):
 
         overwrite = kwargs.get('overwrite', False)
 
-        commonData, mangaids, plateid = super(StarPlateTargets,
-                                              self).addTargets(**kwargs)
+        commonData, mangaids, plateid = super(StarPlateTargets, self).addTargets(**kwargs)
 
         specificData = self.getSpecificData(mangaids, plateid)
 
@@ -108,6 +107,16 @@ class StarPlateTargets(PlateTargets):
 
             # We combine both dictionaries
             targetData = commonData[mangaid]
+
+            # Removes columns that are not in the template
+            remove_keys = []
+            for key in targetData:
+                if key not in self.structure.colnames:
+                    remove_keys.append(key)
+
+            for key in remove_keys:
+                targetData.pop(key)
+
             if mangaid in specificData:
                 targetData.update(specificData[mangaid])
 
@@ -169,8 +178,7 @@ class StarPlateTargets(PlateTargets):
                                          'specific data')
 
         requiredFields = utils.getRequiredPlateTargetsColumns()
-        specificFields = [field for field in self.structure.colnames
-                          if field not in requiredFields]
+        specificFields = [field for field in self.structure.colnames if field not in requiredFields]
 
         mangaSciencePath = utils.getMangaSciencePath(plateid, format='plateid')
         mangaScience = table.Table(yanny.yanny(mangaSciencePath, np=True)['MANGAINPUT'])
