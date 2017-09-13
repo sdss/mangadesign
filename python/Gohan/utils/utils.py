@@ -663,7 +663,7 @@ def getLastLocationID():
 
     """
 
-    file = readPath('+etc/lastLocationID.dat')
+    file = readPath(config['mangawork'] + '/manga/platedesign/etc/lastLocationID.dat')
 
     assert os.path.exists(file), 'lastLocationID.dat not found'
 
