@@ -7,38 +7,39 @@ Created by José Sánchez-Gallego on 10 Dec 2013.
 Copyright (c) 2013. All rights reserved.
 Licensed under a 3-clause BSD license.
 
-Includes classes and functions to read and write the configuration
-file for Totoro. Uses a simplified version of the astropy configuration
-system.
-
 """
 
 import yaml
-import os
-from .. import __GOHAN_CONFIG_PATH__, __DEFAULT_CONFIG_FILE__
-from ..exceptions import GohanError
+
+try:
+    import pathlib
+except ImportError:
+    import pathlib2 as pathlib
 
 
-class GohanConfig(dict):
+def merge(user, default):
+    """Merges a user configuration with the default one."""
 
-    def __init__(self, configurationFile):
+    if not user:
+        return default
 
-        if not os.path.exists(configurationFile):
-            raise GohanError('configuration file ' + configurationFile +
-                             ' not found.')
+    if isinstance(user, dict) and isinstance(default, dict):
+        for kk, vv in default.items():
+            if kk not in user:
+                user[kk] = vv
+            else:
+                user[kk] = merge(user[kk], vv)
 
-        yamlData = yaml.load(open(configurationFile))
-        if yamlData is None:
-            yamlData = {}
+    return user
 
-        dict.__init__(self, yamlData)
 
-    def save(self, path=__GOHAN_CONFIG_PATH__):
-        outUnit = open(path, 'w')
-        yaml.dump(dict(self), outUnit, default_flow_style=False)
-        outUnit.close()
+def get_config(user_path):
+    """Returns a dictionary object with configuration options."""
 
-    def createTemplate(self, path=__GOHAN_CONFIG_PATH__):
+    user_path = pathlib.Path(user_path).expanduser()
+    user = user_path.exists() and yaml.load(open(str(user_path), 'r'))
 
-        defaultConfig = GohanConfig(__DEFAULT_CONFIG_FILE__)
-        defaultConfig.save()
+    default_path = pathlib.Path(__file__).parents[0] / '../defaults.yaml'
+    default = yaml.load(open(str(default_path), 'r'))
+
+    return merge(user, default)

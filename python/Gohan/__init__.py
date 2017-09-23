@@ -36,16 +36,9 @@ warnings.filterwarnings('ignore', 'Module argparse was already imported')
 warnings.filterwarnings('always', category=GohanWarning)
 
 
-__DEFAULT_CONFIG_FILE__ = readPath('+defaults.yaml')
-__GOHAN_CONFIG_PATH__ = readPath('~/.gohan/gohan.yaml')
-
 # Reads the configuration file
-from Gohan.core.configuration import GohanConfig
-config = GohanConfig(__DEFAULT_CONFIG_FILE__)
-
-if os.path.exists(__GOHAN_CONFIG_PATH__):
-    # If a custom configuration file exists, updates default values.
-    config.update(GohanConfig(__GOHAN_CONFIG_PATH__))
+from Gohan.core.configuration import get_config
+config = get_config('~/.gohan/gohan.yaml')
 
 # Creates the custom logging system
 from Gohan.core.logger import initLog
