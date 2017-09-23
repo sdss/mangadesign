@@ -158,10 +158,17 @@ class PlateDefinition(object):
                 continue
             elif line.strip()[0] == '#':
                 continue
+
+            delete_keys = []
+
             for key in defDict:
                 if key in line:
                     template[ii] = key + ' ' + str(defDict[key])
-                    defDict.pop(key)
+                    delete_keys.append(key)
+
+            for key in delete_keys:
+                if key in defDict:
+                    del defDict[key]
 
         if len(defDict) > 0:
             if template[-1].strip() != '':
