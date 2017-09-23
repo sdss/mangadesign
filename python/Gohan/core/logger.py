@@ -67,21 +67,27 @@ class MyFormatter(logging.Formatter):
         # when the logger formatter was instantiated
         format_orig = self._fmt
 
+        # Determines what hidden attribute to override depending on PY2/3.
+        if hasattr(self, '_style'):
+            replace_obj = '_style._fmt'
+        else:
+            replace_obj = '_fmt'
+
         # Replace the original format with one customized by logging level
         if record.levelno == logging.DEBUG:
-            self._fmt = MyFormatter.info_fmt
+            setattr(self, replace_obj, MyFormatter.info_fmt)
 
         elif record.levelno == logging.INFO:
-            self._fmt = MyFormatter.info_fmt
+            setattr(self, replace_obj, MyFormatter.info_fmt)
 
         elif record.levelno == logging.ERROR:
-            self._fmt = MyFormatter.info_fmt
+            setattr(self, replace_obj, MyFormatter.info_fmt)
 
         elif record.levelno == logging.WARNING:
-            self._fmt = MyFormatter.warning_fmp
+            setattr(self, replace_obj, MyFormatter.warning_fmp)
 
         elif record.levelno == IMPORTANT:
-            self._fmt = MyFormatter.info_fmt
+            setattr(self, replace_obj, MyFormatter.info_fmt)
 
         # Call the original formatter class to do the grunt work
         result = logging.Formatter.format(self, record)
