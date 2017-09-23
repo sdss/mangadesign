@@ -11,7 +11,13 @@ from __future__ import print_function
 from __future__ import absolute_import
 
 import os
+import re
 import warnings
+
+try:
+    import pathlib
+except ImportError:
+    import pathlib2 as pathlib
 
 import astropy.table as table
 
@@ -21,6 +27,7 @@ from Gohan.exceptions import GohanUserWarning
 from Gohan.utils import utils
 from Gohan.utils.selectSkies import selectSkies
 
+from Gohan.PlateDefinition import PlateDefinition
 from Gohan.PlateInput import PlateInput
 
 
@@ -174,8 +181,8 @@ def update_platedefinition_apogee2manga(field, plateRun, platerun_dir):
     log.important('saved updated plateDefinition as {0}'.format(plateDefinition_path_new))
 
 
-def designs_apogee2manga(platerun, platerun_dir, plate_data_path,
-                         special=False, exclude=[], **kwargs):
+def design_apogee2manga(platerun, platerun_dir, plate_data_path,
+                        special=False, exclude=[], **kwargs):
     """Designs an APOGEE2-MaNGA platerun."""
 
     fields = table.Table.read(plate_data_path, format='ascii.commented_header')
@@ -203,6 +210,87 @@ def designs_apogee2manga(platerun, platerun_dir, plate_data_path,
         reject_science = reject_science.union(set(allocated_one))
 
     utils.print_special_summary(plate_data_path)
+
+    return True
+
+
+def design_manga_apogee2(platerun, platerun_dir, plate_data,
+                         obs_date=None, target_version=None, std_path=None,
+                         **kwargs):
+    """Designs a platerun with MaNGA-led plates."""
+
+    platerun_dir = pathlib.Path(platerun_dir)
+    assert platerun_dir.exists(), 'platerun directory {!s} does not exist'.format(platerun_dir)
+
+    assert obs_date is not None, 'obs_date must be specified for MaNGA-led plateruns.'
+    assert re.match('^[0-9]{4}\-[0-9]{2}\-[0-9]{2}$', obs_date), 'invalid obs_date format.'
+
+    target_version = target_version if target_version is not None else config['targets']['version']
+    target_dir = pathlib.Path(os.path.expandvars(config['targets']['path'])) / target_version
+    assert target_dir.exists(), 'invalid directory {!s}'.format(target_dir)
+
+    if std_path is not None:
+        std_path = pathlib.Path(std_path)
+    else:
+        std_path = platerun_dir / 'stds'
+    assert std_path.exists(), 'invalid directory {!s}'.format(std_path)
+
+    assert pathlib.Path(plate_data).exists()
+    field_list = table.Table.read(plate_data, format='ascii.commented_header')
+
+    platePlans_path = pathlib.Path(platerun_dir) / '{0}-platePlans.dat'.format(platerun)
+    platePlansBlob = open(str(platePlans_path), 'w')
+
+    reject_targets = []
+    reject_standards = []
+
+    for field in field_list:
+
+        mangaTileID = int(field['manga_tileid'])
+        locationID = int(field['location_id'])
+        designID = int(field['design_id'])
+
+        raCen = float(field['ra'])
+        decCen = float(field['dec'])
+
+        # Checks whether the default MaNGA_targets_extNSA file exists, or the replacement file.
+        sci_cat = target_dir / ('MaNGA_targets_extNSA_tiled_ancillary_{0:d}.fits'
+                                .format(mangaTileID))
+        if not sci_cat.exists():
+            sci_cat = target_dir / ('MaNGA_targets_extNSA_tiled_ancillary_{0:d}_ra.fits'
+                                    .format(mangaTileID))
+            assert sci_cat.exists(), \
+                'designID: {0}: neither the MaNGA_targets_extNSA file or the _ra version exist.'
+
+        std_cat = std_path / 'manga_stds_{0}.fit'.format(mangaTileID)
+        assert std_cat.exists(), 'cannot find standard file {!s}'.format(std_cat)
+
+        print(_color_text('\ndesignID: {0}, mangaTileID: {1}'.format(designID, mangaTileID),
+                          'lightred'))
+
+        mangaScience = PlateInput(designID, 'science', catalogues=str(sci_cat),
+                                  surveyMode='mangaLead', plateRun=platerun,
+                                  silentOnCollision=True, sort=False,
+                                  raCen=raCen, decCen=decCen,
+                                  manga_tileid=mangaTileID, locationid=locationID,
+                                  rejectTargets=reject_targets)
+        mangaScience.write()
+        reject_targets += mangaScience.getMangaIDs()
+
+        mangaStandard = PlateInput(designID, 'standard', catalogues=str(std_cat),
+                                   surveyMode='mangaLead', plateRun=platerun,
+                                   silentOnCollision=True, sort=False,
+                                   decollidePlateInputs=[mangaScience],
+                                   raCen=raCen, decCen=decCen,
+                                   manga_tileid=mangaTileID, locationid=locationID,
+                                   rejectTargets=reject_standards)
+        mangaStandard.write()
+
+        plateDefinition = PlateDefinition([mangaScience, mangaStandard])
+        plateDefinition.write()
+
+        platePlans = plateDefinition.getPlatePlans(obs_date)
+        platePlansBlob.write(platePlans + '\n')
 
     return True
 
@@ -239,7 +327,9 @@ def generate_designs(platerun, plate_data, **kwargs):
     log.info('Working on platerun directory: {0}'.format(platerun_dir))
 
     if plate_type == 'apogee2-manga':
-        keep_log = designs_apogee2manga(platerun, platerun_dir, plate_data, **kwargs)
+        keep_log = design_apogee2manga(platerun, platerun_dir, plate_data, **kwargs)
+    elif plate_type == 'manga-apogee2':
+        keep_log = design_manga_apogee2(platerun, platerun_dir, plate_data, **kwargs)
 
     if keep_log:
         log_path = os.path.join(platerun_dir, platerun + '.log')

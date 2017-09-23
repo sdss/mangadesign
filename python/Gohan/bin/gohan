@@ -25,9 +25,18 @@ def gohan():
               help='if set, only prints a summary table of MaStar special targets. '
                     'This assumes the mangaScience files have already been created.')
 @click.option('-x', '--exclude', nargs=1, type=str)
+@click.option('-t', '--targetversion', type=str,
+              help='the version of the targetting catalogue to use. '
+                   'Only for MaNGA lead plateruns. '
+                   'If ommitted, the current version will be used.')
+@click.option('-d', '--stdpath', type=str,
+              help='the path to the standard targets directory.'
+                   'Only for MaNGA lead plateruns.')
 @click.argument('platerun', type=str)
 @click.argument('platedata', type=str)
-def design(platerun, platedata, special=False, exclude=None):
+@click.argument('obs_date', type=str, required=False)
+def design(platerun, platedata, special=False, exclude=None,
+           targetversion=None, obs_date=None, stdpath=None):
     """Designs a platerun.
 
     Requieres specifying a PLATERUN and the location of the PLATEDATA file
@@ -38,7 +47,9 @@ def design(platerun, platedata, special=False, exclude=None):
     from Gohan.scripts.generate_designs import generate_designs
 
     generate_designs(platerun, platedata, special=special,
-                     exclude=[exclude] if exclude is not None else [])
+                     exclude=[exclude] if exclude is not None else [],
+                     target_version=targetversion, obs_date=obs_date,
+                     std_path=stdpath)
 
 
 @gohan.command()
