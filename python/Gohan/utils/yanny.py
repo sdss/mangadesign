@@ -270,7 +270,7 @@ class yanny(OrderedDict):
                 t = dt[c].str[1:]
                 l = 0
             line = '    '
-            if t[0] in ['S', 'U']:
+            if t[0].upper() in ['S', 'U']:
                 if c in enums:
                     line += enums[c][0].upper()
                 else:
@@ -280,7 +280,7 @@ class yanny(OrderedDict):
             line += ' {0}'.format(c)
             if l > 0:
                 line += "[{0:d}]".format(l)
-            if t[0] in ['S', 'U'] and c not in enums:
+            if t[0].upper() in ['S', 'U'] and c not in enums:
                 line += "[{0:d}]".format(int(t[1:]))
             line += ';'
             lines.append(line)
