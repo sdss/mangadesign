@@ -598,11 +598,11 @@ class PlateInput(object):
         log.debug('locationid={0}'.format(self.locationid))
 
         if self.targettype == 'science':
-            nBundlesToAllocate = np.sum(config['IFUs'].values())
+            nBundlesToAllocate = np.sum(list(config['IFUs'].values()))
         elif self.targettype == 'standard':
-            nBundlesToAllocate = np.sum(config['miniBundles'].values())
+            nBundlesToAllocate = np.sum(list(config['miniBundles'].values()))
         elif self.targettype == 'sky':
-            nBundlesToAllocate = np.sum(config['skies'].values())
+            nBundlesToAllocate = np.sum(list(config['skies'].values()))
 
         targetCats = []
         coords = None
