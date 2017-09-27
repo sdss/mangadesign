@@ -611,7 +611,7 @@ class PlateMagsIFU(object):
             self.removeFile(ff.name)
             return None
 
-        ff.write(response.read().decode('utf-8'))
+        ff.write(response.read())
         ff.close()
 
         hduTmp = fits.open(ff.name)
@@ -804,8 +804,8 @@ class PlateMagsIFU(object):
         """Downloads and image to a file."""
 
         response = urlopen(url)
-        unit = open(file, 'w')
-        unit.write(response.read().decode('utf-8'))
+        unit = open(file, 'wb')
+        unit.write(response.read())
         unit.close()
 
         return
