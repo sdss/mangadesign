@@ -805,7 +805,7 @@ class PlateMagsIFU(object):
 
         response = urlopen(url)
         unit = open(file, 'w')
-        unit.write(response.read())
+        unit.write(response.read().decode('utf-8'))
         unit.close()
 
         return
