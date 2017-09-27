@@ -58,8 +58,8 @@ def design(platerun, platedata, special=False, exclude=None,
 @click.option('-w', '--overwrite', is_flag=True, help='overwrites existing values.')
 @click.option('--skip-plateHolesSorted', is_flag=True,
               help='does not copy plateHolesSorted to mangacore.')
-@click.open('--no-platemags', is_flag=True, help='if sets, does not create plateMags.')
-@click.open('--plot', is_flag=True, help='if sets, creates plots along with plateMags.')
+@click.option('--no-platemags', is_flag=True, help='if sets, does not create plateMags.')
+@click.option('--plot', is_flag=True, help='if sets, creates plots along with plateMags.')
 @click.argument('plateruns', nargs=-1, metavar='PLATERUN(s)', required=False)
 def postdesign(plateruns, all=None, overwrite=False, skip_plateholessorted=False,
                no_platemags=False, plot=False):
