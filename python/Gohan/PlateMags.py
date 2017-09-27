@@ -733,11 +733,11 @@ class PlateMagsIFU(object):
 
         else:
 
-            # try:
-            self._getSDSSImage(imageName, run, rerun, camcol, field,
-                               **kwargs)
-            # except:
-            #     raise GohanError('images could not be downloaded.')
+            try:
+                self._getSDSSImage(imageName, run, rerun, camcol, field,
+                                   **kwargs)
+            except:
+                raise GohanError('images could not be downloaded.')
 
         return imageName
 
@@ -910,7 +910,7 @@ class PlateMagsIFU(object):
         for jj in range(0, 3):
             for ii in range(0, nb.size):
                 ecoeff[jj] = ecoeff[jj] + \
-                    cmat[ii / nrow_b, ii % nrow_b, jj] * coeffs[ii]
+                    cmat[int(ii / nrow_b), ii % nrow_b, jj] * coeffs[ii]
 
         psf = pStruct['rrows'][0] * ecoeff[0] + \
             pStruct['rrows'][1] * ecoeff[1] + \
