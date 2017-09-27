@@ -19,6 +19,7 @@ from collections import OrderedDict
 from Gohan import log, config, readPath
 from Gohan.exceptions import GohanPostDesignWarning, GohanPostDesignError
 from Gohan.PlateTargets import PlateTargets
+from Gohan.PlateMags import PlateMags
 from Gohan.utils import utils
 from Gohan.StarPlateTargets import StarPlateTargets
 from Gohan.StandardPlateTargets import StandardPlateTargets
@@ -215,3 +216,31 @@ def post_design_manga_led(plateids, overwrite=False, skipPlateHolesSorted=False)
         log.info('{0} copied to mangacore'.format(os.path.basename(plateHolesSortedPath)))
 
     return returnDict
+
+
+def create_plateMags(input, mode='drill_run', plot=False, debug=True, overwrite=False):
+
+    if mode == 'drill_run':
+        designIDs = utils.getFromPlatePlans(input, column='designid')
+    else:
+        designIDs = [int(input)]
+
+    if debug:
+        for handler in log.handlers:
+            handler.setLevel('DEBUG')
+
+    nDesigns = len(designIDs)
+
+    for nn, designID in enumerate(designIDs):
+
+        if mode == 'drill_run':
+            log.info('Creating plateMags for designID={0:d} ({1}/{2})'
+                     .format(designID, nn + 1, nDesigns))
+
+        mangaScience = utils.getMangaSciencePath(designID)
+
+        plateMags = PlateMags(mangaScience)
+        plateMags.write()
+        plateMags.plot(overwrite=overwrite)
+
+    return

@@ -58,8 +58,11 @@ def design(platerun, platedata, special=False, exclude=None,
 @click.option('-w', '--overwrite', is_flag=True, help='overwrites existing values.')
 @click.option('--skip-plateHolesSorted', is_flag=True,
               help='does not copy plateHolesSorted to mangacore.')
+@click.open('--no-platemags', is_flag=True, help='if sets, does not create plateMags.')
+@click.open('--plot', is_flag=True, help='if sets, creates plots along with plateMags.')
 @click.argument('plateruns', nargs=-1, metavar='PLATERUN(s)', required=False)
-def postdesign(plateruns, all=None, overwrite=False, skip_plateholessorted=False):
+def postdesign(plateruns, all=None, overwrite=False, skip_plateholessorted=False,
+               no_platemags=False, plot=False):
     """Runs MaNGA postdesign for a series of plateruns. For now it assumes APOGEE-lead."""
 
     from Gohan import log
@@ -84,6 +87,10 @@ def postdesign(plateruns, all=None, overwrite=False, skip_plateholessorted=False
         else:
             post_design.post_design_manga_led(plates, overwrite=overwrite,
                                               skipPlateHolesSorted=skip_plateholessorted)
+
+            if no_platemags is False:
+                post_design.create_plateMags(platerun, mode='drill_run', plot=plot,
+                                             overwrite=overwrite)
 
 
 @gohan.group()
