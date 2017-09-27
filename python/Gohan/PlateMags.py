@@ -611,7 +611,7 @@ class PlateMagsIFU(object):
             self.removeFile(ff.name)
             return None
 
-        ff.write(response.read())
+        ff.write(response.read().decode('utf-8'))
         ff.close()
 
         hduTmp = fits.open(ff.name)
@@ -733,11 +733,11 @@ class PlateMagsIFU(object):
 
         else:
 
-            try:
-                self._getSDSSImage(imageName, run, rerun, camcol, field,
-                                   **kwargs)
-            except:
-                raise GohanError('images could not be downloaded.')
+            # try:
+            self._getSDSSImage(imageName, run, rerun, camcol, field,
+                               **kwargs)
+            # except:
+            #     raise GohanError('images could not be downloaded.')
 
         return imageName
 
