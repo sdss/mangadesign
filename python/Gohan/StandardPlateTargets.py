@@ -15,13 +15,13 @@ Revision history:
 from __future__ import division
 from __future__ import print_function
 
-from sdss.utilities import yanny
 from astropy import table
 import numpy as np
 
 from Gohan.exceptions import GohanPlateTargetsError, GohanPlateTargetsWarning
 from Gohan.PlateTargets import PlateTargets, _toLowerCase
 from Gohan.utils import utils
+from Gohan.utils import yanny
 from Gohan import readPath, log
 
 import warnings
