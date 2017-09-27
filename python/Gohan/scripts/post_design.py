@@ -241,6 +241,8 @@ def create_plateMags(input, mode='drill_run', plot=False, debug=True, overwrite=
 
         plateMags = PlateMags(mangaScience)
         plateMags.write()
-        plateMags.plot(overwrite=overwrite)
+
+        if plot:
+            plateMags.plot(overwrite=overwrite)
 
     return

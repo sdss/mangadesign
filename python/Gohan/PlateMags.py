@@ -1156,6 +1156,8 @@ class PlateMagsIFU(object):
 
         """
 
+        import pywcsgrid2 as pw2
+
         plt.cla()
         plt.clf()
 
