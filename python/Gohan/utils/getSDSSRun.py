@@ -71,7 +71,7 @@ def getPlate(aa, dd):
     ff = urlopen(url)
 
     parser = TableParser()
-    parser.feed(ff.read())
+    parser.feed(ff.read().decode('utf-8'))
 
     result = [getValue(parser._dd, value)
               for value in ['run', 'rerun', 'camcol', 'field']]

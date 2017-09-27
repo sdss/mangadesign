@@ -586,7 +586,7 @@ class PlateMagsIFU(object):
 
         fullHDU = self.concatenateNSAHDUs(hdus)
 
-        fullHDU.writeto(imageName, clobber=True)
+        fullHDU.writeto(imageName, overwrite=True)
         fullHDU.close()
 
         for ii in hdus:
@@ -674,10 +674,13 @@ class PlateMagsIFU(object):
             ww = wcs.WCS(newHDU[imgIdx].header)
             xx, yy = ww.wcs_world2pix(ra, dec, 0)
 
+            xx = int(xx)
+            yy = int(yy)
+
             nPix = config['plateMags']['nPix']
-            xmin = int(xx) - nPix
+            xmin = xx - nPix
             # xmax = int(xx) + nPix
-            ymin = int(yy) - nPix
+            ymin = yy - nPix
             # ymax = int(yy) + nPix
 
             for nn in [imgIdx, varIdx, psfIdx]:
@@ -1302,9 +1305,12 @@ class PlateMagsIFU(object):
         ww = wcs.WCS(refHeader)
         xx, yy = ww.wcs_world2pix(self.RA, self.Dec, 0)
 
+        xx = int(xx)
+        yy = int(yy)
+
         ff = urlopen(irgURL)
 
-        data = plt.imread(io.StringIO(ff.read()), format='jpg')[::-1, :, :]
+        data = plt.imread(io.BytesIO(ff.read()), format='jpg')[::-1, :, :]
 
         nPix = config['plateMags']['nPix']
 
