@@ -1,4 +1,4 @@
-# Licensed under a 3-clause BSD style license - see LICENSE.rst
+# Licensed under a 3-clause BSD style license - see https://github.com/weaverba137/pydl/blob/master/licenses/LICENSE.rst
 # -*- coding: utf-8 -*-
 """Python library for reading & writing yanny files.
 
@@ -12,6 +12,14 @@ Currently multidimensional arrays are only supported for type ``char``, and a
 close reading of the specifications indicates that multidimensional arrays
 were only ever intended to be supported for type ``char``.  So no
 multidimensional arrays, sorry.
+
+This file is a modified version of pydl's yanny reader. See original file at
+
+https://github.com/weaverba137/pydl/blob/master/pydl/pydlutils/yanny.py
+
+and the license at
+
+https://github.com/weaverba137/pydl/blob/master/licenses/LICENSE.rst
 
 .. _specifications: http://www.sdss3.org/dr8/software/par.php
 """
