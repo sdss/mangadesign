@@ -84,10 +84,11 @@ def do_one_apogee2_manga(plateRun, platerun_dir, field, reject_science=[], rejec
     mangaStandard = PlateInput(designID, 'standard',
                                catalogues=stdCat,
                                surveyMode='apogeeLead', plateRun=plateRun,
-                               silentOnCollision=False, sort=False,
+                               silentOnCollision=False, sort=True,
                                decollidePlateInputs=[mangaScience],
                                raCen=raCen, decCen=decCen,
-                               rejectTargets=reject_standard)
+                               rejectTargets=reject_standard,
+                               plotIFUs=True)
     mangaStandard.write(toRepo=False)
 
     result = selectSkies(skyRaw, designID, fieldName, raCen, decCen, raise_error=False)
