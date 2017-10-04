@@ -108,7 +108,7 @@ def assignIFUDesigns(targets, centre, targettype='science',
         log.debug('all ifudesigns are correctly assigned')
 
     if plot:
-        plotIFUs(targets, centre, filename=plotFilename, **kwargs)
+        plotIFUs(targets, centre, filename=plotFilename)
 
     return targets
 
@@ -260,7 +260,7 @@ def getRADecAnchorBlocks(ra, dec):
         (ra - raAngToAnchor, dec - decAngToAnchor)]
 
 
-def plotIFUs(structures, centre=None, filename='ifuPlot.pdf', **kwargs):
+def plotIFUs(structures, centre=None, filename='ifuPlot.pdf'):
     """Plots the position of the IFUs on the plate.
 
     This method plots the position of the IFUs (and, thus,
@@ -374,7 +374,6 @@ def plotIFUs(structures, centre=None, filename='ifuPlot.pdf', **kwargs):
 
     ax.set_xlabel(r'$\alpha_{2000}$')
     ax.set_ylabel(r'$\delta_{2000}$')
-
     plt.savefig(filename)
 
     plt.close('all')
@@ -387,8 +386,8 @@ def _isClosestAnchor(ra, dec, raCen, decCen, anchorName):
 
     blockPositions = getRADecAnchorBlocks(raCen, decCen)
     blockPositionsCoo = coo.SkyCoord(
-        ra=list(zip(*blockPositions)[0]),
-        dec=list(zip(*blockPositions)[1]),
+        ra=list(list(zip(*blockPositions))[0]),
+        dec=list(list(zip(*blockPositions))[1]),
         unit='deg')
 
     targetCoo = coo.SkyCoord(

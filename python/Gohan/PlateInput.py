@@ -213,7 +213,7 @@ class PlateInput(object):
             targets = assignIFUDesigns(targets, (self.raCen, self.decCen),
                                        targettype=self.targettype,
                                        plot=plotIFUs,
-                                       filename='ifuPlot_{0}.pdf'.format(
+                                       plotFilename='ifuPlot_{0}.pdf'.format(
                                            self.designid))
 
         self.mangaInput = targets
