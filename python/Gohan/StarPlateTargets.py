@@ -59,7 +59,7 @@ class StarPlateTargets(PlateTargets):
             if os.path.exists(starPlateTargetsPath):
                 self.path = starPlateTargetsPath
             else:
-                self.path = readPath('+plateTargets/starPlateTargets.template')
+                self.path = readPath('+templates/starPlateTargets.template')
                 if self.path is None:
                     raise GohanPlateTargetsError(
                         'neither the plateTargets nor the template '

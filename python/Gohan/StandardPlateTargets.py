@@ -60,7 +60,7 @@ class StandardPlateTargets(PlateTargets):
                 self.path = starPlateTargetsPath
             else:
                 self.path = readPath(
-                    '+plateTargets/standardPlateTargets.template')
+                    '+templates/standardPlateTargets.template')
                 if self.path is None:
                     raise GohanPlateTargetsError(
                         'neither the plateTargets nor the template '
