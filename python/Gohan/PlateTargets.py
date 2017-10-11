@@ -502,15 +502,26 @@ class PlateTargets(object):
                        plateHolesSortedRow):
         """Returns the appropriate coordinate for a column and target."""
 
-        baseCoord = column.split('_')[1]
+        coord_type, coord_name = column.split('_')
 
-        if 'ifu_' in column:
-            return plateHolesSortedRow['target_' + baseCoord][0]
+        if coord_type == 'ifu':
+            return plateHolesSortedRow['target_' + coord_name][0]
+
+        # Handles MaStar a bit differently
+        if self.catalogid == 'MaSTAR':
+            if coord_type == 'object':
+                if column in mangaScienceRow.colnames:
+                    return mangaScienceRow[column]
+                else:
+                    mastar_obj = ('obj' + coord_name)
+                    if mastar_obj in mangaScienceRow.colnames:
+                        log.debug('using {} to populate {}'.format(mastar_obj, column))
+                        return mangaScienceRow[mastar_obj]
 
         if targetRow is not None:
             return targetRow[column]
         else:
-            return mangaScienceRow[baseCoord]
+            return mangaScienceRow[coord_name]
 
     def _getMainSampleData(self, mangaids, fields):
         """Returns the specific columns for the MaNGA main sample.
