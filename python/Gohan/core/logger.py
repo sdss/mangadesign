@@ -139,17 +139,17 @@ class GohanLogger(Logger):
     def _stream_formatter(self, record, wrap=False):
         """The formatter for standard output."""
         if record.levelno < logging.DEBUG:
-            print(record.levelname, end='')
+            print('[{}]'.format(record.levelname), end='')
         elif(record.levelno < logging.INFO):
-            colourPrint(record.levelname, 'green', end='')
+            colourPrint('[{}]'.format(record.levelname), 'green', end='')
         elif(record.levelno < IMPORTANT):
-            colourPrint(record.levelname, 'magenta', end='')
+            colourPrint('[{}]'.format(record.levelname), 'magenta', end='')
         elif(record.levelno < logging.WARNING):
-            colourPrint(record.levelname, 'lightblue', end='')
+            colourPrint('[{}]'.format(record.levelname), 'lightblue', end='')
         elif(record.levelno < logging.ERROR):
-            colourPrint(record.levelname, 'brown', end='')
+            colourPrint('[{}]'.format(record.levelname), 'brown', end='')
         else:
-            colourPrint(record.levelname, 'red', end='')
+            colourPrint('[{}]'.format(record.levelname), 'red', end='')
 
         record.msg = ansi_escape.sub('', record.msg)
 
@@ -207,7 +207,7 @@ class GohanLogger(Logger):
         except (IOError, OSError) as e:
             warnings.warn(
                 'log file {0!r} could not be opened for writing: '
-                '{1}'.format(logFilePath, unicode(e)), RuntimeWarning)
+                '{1}'.format(logFilePath, e), RuntimeWarning)
         else:
             fh.setFormatter(fmt)
             fh.setLevel(logFileLevel)
