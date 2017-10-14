@@ -13,11 +13,16 @@ from __future__ import absolute_import
 import click
 import warnings
 
+import Gohan.scripts.ic342
+
 
 @click.group()
-def gohan():
-    """Performs task related to MaNGa plate design."""
-    pass
+@click.option('-v', '--verbose', is_flag=True, help='Increases verbosity.')
+@click.pass_obj
+def gohan(obj, verbose=False):
+    """Performs task related to MaNGA plate design."""
+
+    obj['verbose'] = verbose
 
 
 @gohan.command()
@@ -119,5 +124,9 @@ def load(path, remote):
     update_cmm(path, remote=remote)
 
 
+# Adds IC342 subgroup
+gohan.add_command(Gohan.scripts.ic342.ic342)
+
+
 if __name__ == '__main__':
-    gohan()
+    gohan(obj={})

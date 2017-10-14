@@ -906,3 +906,31 @@ def platerun_is_mastar(platerun):
             return True
         else:
             raise ValueError('cannot determine type for platerun {0}'.format(platerun))
+
+
+def get_fibre_offsets(coords=None):
+        """Returns the fibre positions for each fibre in an IFU.
+
+        If ``coords=None`` returns an array of RA/Dec offsets from the centre,
+        in arcsec. Otherwise it returns the positions of each fibre on the sky
+        assuming the IFU is centred on ``coords``.
+
+        """
+
+        simbmap = table.Table(yanny.yanny(readPath(config['plateMags']['simbmap']),
+                                          np=True)['SIMBMAP'])
+
+        if coords is None:
+            return np.array([simbmap['raoff'], simbmap['decoff']]).T
+
+        ra_cen, dec_cen = coords
+
+        fibre_world = np.zeros((len(simbmap), 2), float)
+
+        ra_off_deg = simbmap['raoff'] / 3600. / np.cos(dec_cen * np.pi / 180.)
+        dec_off_deg = simbmap['decoff'] / 3600.
+
+        fibre_world[:, 0] = ra_cen + ra_off_deg
+        fibre_world[:, 1] = dec_cen + dec_off_deg
+
+        return fibre_world
