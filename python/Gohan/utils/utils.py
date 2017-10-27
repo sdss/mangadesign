@@ -639,7 +639,7 @@ def getStellarLibraryRuns():
     apogeeMangaRuns = [plateRun for plateRun in plateRuns
                        if 'apogee2-manga' in plateRun.strip().lower() and
                        plateRun.strip().lower() != '2014.04.f.apogee2-manga']
-    apogeeMangaRuns + ['2016.10.c.manga', '2016.12.a.manga']  # MaStar runs
+    apogeeMangaRuns += ['2016.10.c.manga', '2016.12.a.manga']  # MaStar runs
 
     return apogeeMangaRuns
 
@@ -882,7 +882,7 @@ def print_special_summary(plate_data_path):
             special_table.add_row((designID, fieldName, special[1], special[0]))
 
     print()
-    special_table.pprint()
+    special_table.pprint(max_lines=-1)
     print()
 
     return special_table
@@ -891,21 +891,12 @@ def print_special_summary(plate_data_path):
 def platerun_is_mastar(platerun):
     """Returns True if the platerun is a MaStar one."""
 
-    manga_runs = getAllMaNGAPlateRuns()
+    mastar_runs = getStellarLibraryRuns()
 
-    if platerun in manga_runs:
+    if platerun not in mastar_runs:
         return False
 
-    surveys = platerun.split('.')[3].split('-')
-
-    if len(surveys) == 1:
-        raise ValueError('platerun {0} is not a MaNGA run '
-                         'but is not co-observed.'.format(platerun))
-    else:
-        if 'manga' in surveys and 'apogee' in platerun:
-            return True
-        else:
-            raise ValueError('cannot determine type for platerun {0}'.format(platerun))
+    return True
 
 
 def get_fibre_offsets(coords=None):
