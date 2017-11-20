@@ -255,10 +255,10 @@ def design_manga_apogee2(platerun, platerun_dir, plate_data,
         decCen = float(field['dec'])
 
         # Checks whether the default MaNGA_targets_extNSA file exists, or the replacement file.
-        sci_cat = target_dir / ('MaNGA_targets_extNSA_tiled_ancillary_{0:d}.fits'
+        sci_cat = target_dir / ('MaNGA_targets_extNSA_tiled_ancillary_{0:d}_ra.fits'
                                 .format(mangaTileID))
         if not sci_cat.exists():
-            sci_cat = target_dir / ('MaNGA_targets_extNSA_tiled_ancillary_{0:d}_ra.fits'
+            sci_cat = target_dir / ('MaNGA_targets_extNSA_tiled_ancillary_{0:d}.fits'
                                     .format(mangaTileID))
             assert sci_cat.exists(), \
                 'designID: {0}: neither the MaNGA_targets_extNSA file or the _ra version exist.'
