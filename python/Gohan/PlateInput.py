@@ -720,14 +720,9 @@ class PlateInput(object):
         in `decollidePlateInputs`."""
 
         nTargets = len(targets)
-        targets = self.internalDecollision(targets, **kwargs)
-        log.debug('{0} targets rejected because internal collisions.'
-                  .format(nTargets - len(targets)))
-        nTargets = len(targets)
 
-        if coords is None and len(decollidePlateInputs) == 0:
-            return targets
-        else:
+        if coords is not None or len(decollidePlateInputs) == 0:
+
             log.debug('Decolliding against other catalogues.')
 
             if self.targettype == 'sky':
@@ -750,6 +745,11 @@ class PlateInput(object):
                 targets = self.decollideCoords(targets, coords, **kwargs)
             log.debug('{0} targets rejected from collision with other '
                       'catalogues.'.format(nTargets - len(targets)))
+
+        nTargets = len(targets)
+        targets = self.internalDecollision(targets, **kwargs)
+        log.debug('{0} targets rejected because internal collisions.'
+                  .format(nTargets - len(targets)))
 
         return targets
 
