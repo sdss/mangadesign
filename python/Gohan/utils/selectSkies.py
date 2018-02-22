@@ -100,8 +100,7 @@ def getInfoFromAPOGEE(designID):
     # skyCoords = skyData['APOGEEINPUT3'][['ra', 'dec']]
 
     apogeeCoords = np.concatenate((sciCoords, stdCoords))  # , skyCoords))
-    apogeeCoords = apogeeCoords.view(np.float).reshape(apogeeCoords.shape +
-                                                       (-1,))
+    apogeeCoords = np.array(apogeeCoords.tolist())
 
     return apogeeCoords
 
