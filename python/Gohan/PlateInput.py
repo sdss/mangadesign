@@ -464,8 +464,7 @@ class PlateInput(object):
         stdCoords = stdData['APOGEEINPUT2'][['ra', 'dec']]
 
         apogeeCoords = np.concatenate((sciCoords, stdCoords))
-        apogeeCoords = apogeeCoords.view(np.float).reshape(
-            apogeeCoords.shape + (-1,))
+        apogeeCoords = np.array(apogeeCoords.tolist())
 
         fieldParts = []
         fieldSplits = scienceInput.split('/')[-1].split('_')
