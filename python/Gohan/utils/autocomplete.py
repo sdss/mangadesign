@@ -19,7 +19,7 @@ from astropy import table
 from astropy import coordinates as coo
 from Gohan.exceptions import GohanUserWarning
 from Gohan.utils.sortTargets import sortTargets
-from Gohan.utils import getMaskBitFromLabel
+from Gohan.utils import getMaskBitFromLabel, get_manga_targets_path
 import warnings
 import numpy as np
 import os
@@ -55,7 +55,7 @@ def autocomplete(targets, centre, **kwargs):
     NSA catalogue."""
 
     bundles = config['IFUs'].copy()
-    nBundles = np.sum(bundles.values())
+    nBundles = np.sum(list(bundles.values()))
 
     if len(targets) >= nBundles:
         log.info('the are at least as many targets as bundles. No need '
@@ -252,7 +252,7 @@ def _getValidNSATargets(targets, NSATargets):
 def getMaNGATargets(targets, centre):
     """Gets non-selected targets from the general MaNGA sample catalogue."""
 
-    MaNGAPath = readPath(config['catalogues']['science'])
+    MaNGAPath = get_manga_targets_path()
 
     if not os.path.exists(MaNGAPath):
         warnings.warn('MaNGA catalogue {0} not found'.format(MaNGAPath),
@@ -339,7 +339,7 @@ def getBadPhotometry():
 
     global qaWarningIssued
 
-    scienceCat = readPath(config['catalogues']['science'])
+    scienceCat = get_manga_targets_path()
 
     qaAdjusted = os.path.join(
         os.path.dirname(scienceCat), 'nsa_v1_0_0_QA_adjusted.dat')
