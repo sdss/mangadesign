@@ -15,11 +15,6 @@ import pathlib
 import re
 import warnings
 
-try:
-    import pathlib
-except ImportError:
-    import pathlib2 as pathlib
-
 import astropy.table as table
 
 from Gohan import log, config, readPath
