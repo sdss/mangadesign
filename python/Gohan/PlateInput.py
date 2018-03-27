@@ -150,16 +150,19 @@ class PlateInput(object):
         If True (default) and some of the targets contain fields with -999
         values, tries to replace them with values from the parent catalogue
         for that target.
+    exclude_ifudesigns: list
+        A list of ifudesigns that will not be allocated.
+
     """
 
     def __init__(self, designid, targettype, plateRun=None, catalogues=None,
                  surveyMode='mangaLead', raCen=None, decCen=None,
                  locationid=None, manga_tileid=None, fieldName=None,
                  rejectTargets=[], plotIFUs=False,
-                 fillFromCatalogue=True, **kwargs):
+                 fillFromCatalogue=True, exclude_ifudesigns=[], **kwargs):
 
         assert isinstance(rejectTargets, (list, tuple, np.ndarray))
-        assert surveyMode in ['mangaLead', 'apogeeLead', 'mangaOnly']
+        assert surveyMode in [None, 'mangaLead', 'apogeeLead', 'mangaOnly']
 
         self.designid = designid
         self.targettype = targettype
@@ -184,7 +187,8 @@ class PlateInput(object):
 
             targets = self._getAPOGEELeadTargets(
                 catalogues, raCen=raCen, decCen=decCen,
-                rejectTargets=rejectTargets, **kwargs)
+                rejectTargets=rejectTargets,
+                exclude_ifudesigns=exclude_ifudesigns, **kwargs)
 
         else:
             if raCen is None or decCen is None:
@@ -192,8 +196,19 @@ class PlateInput(object):
                     'if surveyMode=mangaLed or mangaOnly, raCen and decCen '
                     'need to be defined.')
 
-            assert self.manga_tileid is not None
-            assert self.locationid is not None
+            autocomplete = kwargs.pop('autocomplete', False)
+
+            if surveyMode is None:
+                # Right now this survey mode is used for
+                self.manga_tileid = self.manga_tileid or -999
+                self.locationid = self.locationid or -999
+                check_min_targets = False
+                autocomplete = False
+
+            else:
+                assert self.manga_tileid is not None
+                assert self.locationid is not None
+                check_min_targets = True
 
             self.raCen, self.decCen = raCen, decCen
 
@@ -203,18 +218,23 @@ class PlateInput(object):
 
             targets = self._getMaNGALeadTargets(
                 catalogues, raCen, decCen,
-                rejectTargets=rejectTargets, **kwargs)
+                rejectTargets=rejectTargets,
+                check_min_targets=check_min_targets,
+                autocomplete=autocomplete,
+                **kwargs)
 
         targets = self._tidyUpTargets(targets,
                                       fillFromCatalogue=fillFromCatalogue)
 
         if self.targettype != 'sky':
             log.debug('reassigning IFUs ... ')
+            check_min_targets = True if surveyMode is not None else False
             targets = assignIFUDesigns(targets, (self.raCen, self.decCen),
                                        targettype=self.targettype,
                                        plot=plotIFUs,
-                                       plotFilename='ifuPlot_{0}.pdf'.format(
-                                           self.designid))
+                                       plotFilename='ifuPlot_{0}.pdf'.format(self.designid),
+                                       check_min_targets=check_min_targets,
+                                       exclude_ifudesigns=exclude_ifudesigns)
 
         self.mangaInput = targets
 
@@ -477,7 +497,7 @@ class PlateInput(object):
 
     def _getAPOGEELeadTargets(self, catalogues, raCen=None, decCen=None,
                               rejectTargets=[], decollide=True, sort=False,
-                              **kwargs):
+                              exclude_ifudesigns=[], **kwargs):
         """Creates an APOGEE led plateInput file."""
 
         self.catalogues = self._parseCatalogues(catalogues,
@@ -490,12 +510,14 @@ class PlateInput(object):
                   self.raCen, self.decCen))
         log.debug('locationid={0}'.format(self.locationid))
 
+        n_exclude = len(exclude_ifudesigns)
+
         if self.targettype == 'science':
-            nBundlesToAllocate = sum(config['IFUs'].values())
+            nBundlesToAllocate = sum(config['IFUs'].values()) - n_exclude
         elif self.targettype == 'standard':
-            nBundlesToAllocate = sum(config['miniBundles'].values())
+            nBundlesToAllocate = sum(config['miniBundles'].values()) - n_exclude
         elif self.targettype == 'sky':
-            nBundlesToAllocate = sum(config['skies'].values())
+            nBundlesToAllocate = sum(config['skies'].values()) - n_exclude
 
         targetCats = []
 
@@ -553,8 +575,7 @@ class PlateInput(object):
                     coords = np.concatenate((coords, catCoords), axis=0)
 
         if nAllocated < nBundlesToAllocate:
-            raise exceptions.GohanPlateInputError(
-                'not enough targets.')
+            raise exceptions.GohanPlateInputError('not enough targets.')
 
         targets = self._combineTargetCatalogues(targetCats)
 
@@ -587,7 +608,7 @@ class PlateInput(object):
 
     def _getMaNGALeadTargets(self, catalogues, raCen=None, decCen=None,
                              rejectTargets=[], decollide=True, sort=False,
-                             autocomplete=True, **kwargs):
+                             autocomplete=True, check_min_targets=True, **kwargs):
         """Creates a MaNGA led plateInput file."""
 
         self.catalogues = self._parseCatalogues(catalogues, leadSurvey='manga')
@@ -653,7 +674,7 @@ class PlateInput(object):
                 # Autocompletes targets
                 targets = autocomplete(targets, (self.raCen, self.decCen),
                                        **kwargs)
-            if len(targets) < nBundlesToAllocate:
+            if check_min_targets and len(targets) < nBundlesToAllocate:
                 raise exceptions.GohanPlateInputError(
                     'not enough targets.')
 
@@ -1101,6 +1122,14 @@ class PlateInput(object):
             self._toRepo(filename)
 
         return filename
+
+    def merge(self, plateInput):
+        """Merges the targets from a different plateInput."""
+
+        assert plateInput.designid == self.designid, 'inconsistent designids'
+        assert plateInput.targettype == self.targettype, 'inconsistent targettype'
+
+        self.mangaInput = table.vstack((self.mangaInput, plateInput.mangaInput))
 
     def getDefaultFilename(self):
 

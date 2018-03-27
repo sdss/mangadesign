@@ -43,7 +43,8 @@ def ifuDesign2Size(ifudesign):
 
 def assignIFUDesigns(targets, centre, targettype='science',
                      failOnIFUDesignSize=False, reassignAll=False,
-                     plot=False, plotFilename=None, **kwargs):
+                     plot=False, plotFilename=None, check_min_targets=True,
+                     exclude_ifudesigns=[], **kwargs):
     """Checks a list of targets and assigns, if needed, ifudesignsizes and
     ifudesigns in an efficient way."""
 
@@ -61,13 +62,17 @@ def assignIFUDesigns(targets, centre, targettype='science',
         if size > 0:
             bundleSizes[size] -= 1
 
+    for ifu in exclude_ifudesigns:
+        size = int(str(ifu)[:-2])
+        bundleSizes[size] -= 1
+
     ifuDesignSizeAssigned = False
     for target in targets:
         if target['ifudesignsize'] < 0:
             if failOnIFUDesignSize:
                 raise GohanError('at least one target found with '
                                  'ifudesignsize < 0')
-            for size in sorted(bundleSizes):
+            for size in sorted(bundleSizes, reverse=True):
                 if bundleSizes[size] > 0:
                     target['ifudesignsize'] = size
                     target['ifudesign'] = -999
@@ -79,7 +84,7 @@ def assignIFUDesigns(targets, centre, targettype='science',
                             target['mangaid'], target['ifudesignsize']))
                     break
 
-    if sum(bundleSizes.values()) > 0:
+    if sum(bundleSizes.values()) > 0 and check_min_targets:
         raise GohanError('some bundles have not been assigned.')
     elif sum(bundleSizes.values()) < 0:
         raise GohanError('more bundles assigned than available.')
@@ -100,10 +105,12 @@ def assignIFUDesigns(targets, centre, targettype='science',
     if missingDesign:
         log.debug('one or all ifudesigns are missing. Reassigning IFUs.')
         targets = assignFerrulesAnchorBlock(targets, centre,
-                                            reassignAll=reassignAll)
+                                            reassignAll=reassignAll,
+                                            exclude_ifudesigns=exclude_ifudesigns)
     elif reassignAll:
         log.info('reassigning all IFUs.')
-        targets = assignFerrulesAnchorBlock(targets, centre, reassignAll=True)
+        targets = assignFerrulesAnchorBlock(targets, centre, reassignAll=True,
+                                            exclude_ifudesigns=exclude_ifudesigns)
     else:
         log.debug('all ifudesigns are correctly assigned')
 
@@ -113,7 +120,7 @@ def assignIFUDesigns(targets, centre, targettype='science',
     return targets
 
 
-def assignFerrulesAnchorBlock(targets, centre, reassignAll=False):
+def assignFerrulesAnchorBlock(targets, centre, reassignAll=False, exclude_ifudesigns=[]):
 
     struct1 = targets.copy()
     raCen, decCen = centre
@@ -131,7 +138,7 @@ def assignFerrulesAnchorBlock(targets, centre, reassignAll=False):
                                                      raCen, decCen)
 
     # Gets already assigned ifudesigns
-    usedIFUDesigns = []
+    usedIFUDesigns = list(map(int, exclude_ifudesigns))
     if struct1ToKeep is not None:
         for row in struct1ToKeep:
             usedIFUDesigns.append(int(row['ifudesign']))
