@@ -15,6 +15,8 @@ Revision history:
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+from .core.logger import log
+
 
 class GohanError(Exception):
     """Base exception for Gohan. Other exceptions should inherit this."""
@@ -43,6 +45,8 @@ class GohanPlateTargetsError(Exception):
 
 class GohanWarning(Warning):
     """Base warning for Gohan."""
+
+    logger = log  # The logger to use to log warning messages
 
 
 class GohanUserWarning(UserWarning, GohanWarning):
