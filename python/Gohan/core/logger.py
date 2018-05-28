@@ -1,33 +1,48 @@
-# Licensed under a 3-clause BSD style license - see LICENSE.rst
-"""
-This module defines a logging class based on the built-in logging module.
-The module is heavily based on the astropy logging system.
-"""
+#!/usr/bin/env python
+# encoding: utf-8
+#
+# logger.py
+#
+# Created by José Sánchez-Gallego on 17 Sep 2017.
 
-from __future__ import print_function
 
+from __future__ import absolute_import, division, print_function
+
+import datetime
 import logging
-from logging import FileHandler
-
 import os
+import pathlib
 import re
 import shutil
 import sys
+import traceback
 import warnings
+from logging import PercentStyle
+from logging.handlers import TimedRotatingFileHandler
 
-from textwrap import TextWrapper
+import click
+from pygments import highlight
+from pygments.formatters import TerminalFormatter
+from pygments.lexers import get_lexer_by_name
 
-from . import colourPrint
+# from textwrap import TextWrapper
 
 
-# Initialize by calling initLog()
-log = None
+# Adds custom log level for print and twisted messages
+PRINT = 15
+logging.addLevelName(PRINT, 'PRINT')
+
+
+def print_log_level(self, message, *args, **kws):
+    self._log(PRINT, message, args, **kws)
+
+
+logging.Logger._print = print_log_level
+
 
 # Adds custom log level for important messages
 IMPORTANT = 25
 logging.addLevelName(IMPORTANT, 'IMPORTANT')
-
-ansi_escape = re.compile(r'\x1b[^m]*m')
 
 
 def important(self, message, *args, **kws):
@@ -37,64 +52,101 @@ def important(self, message, *args, **kws):
 logging.Logger.important = important
 
 
-def initLog():
+def print_exception_formatted(type, value, tb):
+    """A custom hook for printing tracebacks with colours."""
 
-    from .. import config
+    tbtext = ''.join(traceback.format_exception(type, value, tb))
+    lexer = get_lexer_by_name('pytb', stripall=True)
+    formatter = TerminalFormatter()
+    sys.stderr.write(highlight(tbtext, lexer, formatter))
 
-    logging.setLoggerClass(GohanLogger)
 
-    log = logging.getLogger('Gohan')
-    log._set_defaults(
-        logLevel=config['logging']['logLevel'].upper(),
-        logFileLevel=config['logging']['logFileLevel'].upper(),
-        logFilePath=config['logging']['logFilePath'],
-        logFileMode=config['logging']['logFileMode'])
+def colored_formatter(record):
+    """Prints log messages with colours."""
 
-    return log
+    colours = {'info': ('blue', 'normal'),
+               'debug': ('magenta', 'normal'),
+               'warning': ('yellow', 'normal'),
+               'print': ('green', 'normal'),
+               'error': ('red', 'bold'),
+               'important': ('green', 'bold')}
+
+    levelname = record.levelname.lower()
+
+    if levelname == 'error':
+        return
+
+    if levelname.lower() in colours:
+        levelname_color = colours[levelname][0]
+        bold = True if colours[levelname][1] == 'bold' else False
+        header = click.style('[{}]: '.format(levelname.upper()), levelname_color, bold=bold)
+
+    message = record.getMessage()
+
+    warning_category = re.match(r'^(\w+Warning:)(.*)', message)
+    if warning_category is not None:
+        warning_category_colour = click.style(warning_category.groups()[0], 'cyan')
+        message = warning_category_colour + warning_category.groups()[1]
+
+    # sub_level = re.match('(\[.+\]:)(.*)', message)
+    # if sub_level is not None:
+    #     sub_level_name = click.style(sub_level.groups()[0], 'red')
+    #     message = '{}{}'.format(sub_level_name, ''.join(sub_level.groups()[1:]))
+
+    # if len(message) > 79:
+    #     tw = TextWrapper()
+    #     tw.width = 79
+    #     tw.subsequent_indent = ' ' * (len(record.levelname) + 2)
+    #     tw.break_on_hyphens = False
+    #     message = '\n'.join(tw.wrap(message))
+
+    sys.__stdout__.write('{}{}\n'.format(header, message))
+    sys.__stdout__.flush()
+
+    return
 
 
 class MyFormatter(logging.Formatter):
 
-    warning_fmp = '%(asctime)s - %(levelname)s: %(message)s [%(origin)s]'
-    info_fmt = '%(asctime)s - %(levelname)s: %(message)s'
+    warning_fmt = '%(asctime)s - %(levelname)s: %(message)s [%(origin)s]'
+    info_fmt = '%(asctime)s - %(levelname)s - %(message)s [%(funcName)s @ ' + \
+        '%(filename)s]'
 
-    def __init__(self, fmt='%(levelno)s: %(msg)s'):
-        logging.Formatter.__init__(self, fmt)
+    ansi_escape = re.compile(r'\x1b[^m]*m')
 
     def format(self, record):
 
         # Save the original format configured by the user
         # when the logger formatter was instantiated
-        format_orig = self._fmt
+        # format_orig = self._fmt
 
         # Replace the original format with one customized by logging level
+
         if record.levelno == logging.DEBUG:
-            replace_fmt = MyFormatter.info_fmt
+            self._style = PercentStyle(MyFormatter.info_fmt)
+
+        elif record.levelno == logging.getLevelName('PRINT'):
+            self._style = PercentStyle(MyFormatter.info_fmt)
+
+        elif record.levelno == logging.getLevelName('IMPORTANT'):
+            self._style = PercentStyle(MyFormatter.info_fmt)
 
         elif record.levelno == logging.INFO:
-            replace_fmt = MyFormatter.info_fmt
+            self._style = PercentStyle(MyFormatter.info_fmt)
 
         elif record.levelno == logging.ERROR:
-            replace_fmt = MyFormatter.info_fmt
+            self._style = PercentStyle(MyFormatter.info_fmt)
 
         elif record.levelno == logging.WARNING:
-            replace_fmt = MyFormatter.warning_fmp
+            self._style = PercentStyle(MyFormatter.warning_fmt)
 
-        elif record.levelno == IMPORTANT:
-            replace_fmt = MyFormatter.info_fmt
-
-        # Determines what hidden attribute to override depending on PY2/3.
-
-        if hasattr(self, '_style'):
-            self._style._fmt = replace_fmt
-        else:
-            self._fmt = replace_fmt
+        record.msg = self.ansi_escape.sub('', record.msg)
 
         # Call the original formatter class to do the grunt work
         result = logging.Formatter.format(self, record)
 
         # Restore the original format configured by the user
-        self._fmt = format_orig
+        # self._fmt = format_orig
 
         return result
 
@@ -103,7 +155,22 @@ Logger = logging.getLoggerClass()
 fmt = MyFormatter()
 
 
-class GohanLogger(Logger):
+class LoggerStdout(object):
+    """A pipe for stdout to a logger."""
+
+    def __init__(self, level):
+        self.level = level
+
+    def write(self, message):
+
+        if message != '\n':
+            self.level(message)
+
+    def flush(self):
+        pass
+
+
+class MyLogger(Logger):
     """This class is used to set up the logging system.
 
     The main functionality added by this class over the built-in
@@ -114,12 +181,34 @@ class GohanLogger(Logger):
 
     """
 
-    def saveLog(self, path):
-        shutil.copyfile(self.logFilename, os.path.expanduser(path))
+    INFO = 15
+    IMPORTANT = 25
 
-    def _showwarning(self, *args, **kwargs):
+    # The default actor to log to. It is set by the set_actor() method.
+    _actor = None
+
+    def save_log(self, path):
+        shutil.copyfile(self.log_filename, os.path.expanduser(path))
+
+    def _warn(self, message, category=None, stacklevel=1):
+        """Overrides `warnings.warn`
+
+        Before calling the original `warnings.warn` function it makes sure
+        the warning is redirected to the correct ``showwarning`` function.
+
+        """
+
+        if category is None or not hasattr(category, 'logger'):
+            warnings.showwarning = self._show_warning
+        else:
+            warnings.showwarning = category.logger._show_warning
+
+        warnings._original_warn(message, category=category, stacklevel=stacklevel)
+
+    def _show_warning(self, *args, **kwargs):
 
         warning = args[0]
+
         message = '{0}: {1}'.format(warning.__class__.__name__, args[0])
         mod_path = args[2]
 
@@ -132,52 +221,20 @@ class GohanLogger(Logger):
                 break
 
         if mod_name is not None:
-            self.warning(message, extra={'origin': mod_name})
+            warning.logger.warning(message, extra={'origin': mod_name})
         else:
-            self.warning(message)
+            warning.logger.warning(message, extra={'origin': 'no_module'})
 
-    def _stream_formatter(self, record, wrap=False):
-        """The formatter for standard output."""
-        if record.levelno < logging.DEBUG:
-            print('[{}]'.format(record.levelname), end='')
-        elif(record.levelno < logging.INFO):
-            colourPrint('[{}]'.format(record.levelname), 'green', end='')
-        elif(record.levelno < IMPORTANT):
-            colourPrint('[{}]'.format(record.levelname), 'magenta', end='')
-        elif(record.levelno < logging.WARNING):
-            colourPrint('[{}]'.format(record.levelname), 'lightblue', end='')
-        elif(record.levelno < logging.ERROR):
-            colourPrint('[{}]'.format(record.levelname), 'brown', end='')
-        else:
-            colourPrint('[{}]'.format(record.levelname), 'red', end='')
+    def _catch_exceptions(self, exctype, value, tb):
+        """Catches all exceptions and logs them."""
 
-        record.msg = ansi_escape.sub('', record.msg)
+        # Now we log it.
+        self.error('Uncaught exception', exc_info=(exctype, value, tb))
 
-        record.message = '{0}'.format(record.msg)
-        if record.levelno == logging.WARN:
-            record.message = '{0}'.format(record.msg[record.msg.find(':') + 2:])
+        # First, we print to stdout with some colouring.
+        print_exception_formatted(exctype, value, tb)
 
-        # if not hasattr(record, 'origin') or record.origin == '':
-        #     record.message = '{0}'.format(record.msg)
-        # else:
-        #     record.message = '{0} [{1:s}]'.format(record.msg, record.origin)
-
-        if self.wrap is True and len(record.message) > 80:
-            tw = TextWrapper()
-            tw.width = 80
-            tw.subsequent_indent = ' ' * (len(record.levelname) + 2)
-            tw.break_on_hyphens = False
-            msg = '\n'.join(tw.wrap(record.message))
-            print(': ' + msg)
-        else:
-            print(': ' + record.message)
-
-    def _set_defaults(self,
-                      logLevel='WARNING',
-                      logFileLevel='INFO',
-                      logFilePath='~/.gohan/gohan.log',
-                      logFileMode='w',
-                      wrap=False):
+    def _set_defaults(self, log_level=logging.INFO, redirect_stdout=False):
         """Reset logger to its initial state."""
 
         # Remove all previous handlers
@@ -185,61 +242,69 @@ class GohanLogger(Logger):
             self.removeHandler(handler)
 
         # Set levels
-        self.setLevel('DEBUG')
+        self.setLevel(logging.DEBUG)
 
         # Set up the stdout handler
-        sh = logging.StreamHandler()
-        sh.emit = self._stream_formatter
-        self.wrap = wrap
-        self.addHandler(sh)
-        sh.setLevel(logLevel)
+        self.fh = None
+        self.sh = logging.StreamHandler()
+        self.sh.emit = colored_formatter
+        self.addHandler(self.sh)
 
-        # Set up the main log file handler if requested (but this might fail if
-        # configuration directory or log file is not writeable).
+        self.sh.setLevel(log_level)
 
-        logFilePath = os.path.expanduser(logFilePath)
-        logDir = os.path.dirname(logFilePath)
-        if not os.path.exists(logDir):
-            os.mkdir(logDir)
+        self.enable_warnings()
+
+        # Redirects all stdout to the logger
+        if redirect_stdout:
+            sys.stdout = LoggerStdout(self._print)
+
+        # Catches exceptions
+        sys.excepthook = self._catch_exceptions
+
+    def enable_warnings(self):
+        """Redirects warnings to the log."""
+
+        warnings.showwarning = self._show_warning
+
+        warnings._original_warn = warnings.warn
+        warnings.warn = self._warn
+
+    def disable_warnings(self):
+        """Restores normal warning system."""
+
+        warnings.showwarning = warnings._show_warning
+        warnings.warn = warnings._original_warn
+
+    def start_file_logger(self, name, log_file_level=logging.DEBUG, log_file_path='~/'):
+        """Start file logging."""
+
+        log_file_path = pathlib.Path(log_file_path).expanduser() / '{}.log'.format(name)
+        logdir = log_file_path.parent
 
         try:
-            fh = FileHandler(logFilePath, mode=logFileMode)
-        except (IOError, OSError) as e:
-            warnings.warn(
-                'log file {0!r} could not be opened for writing: '
-                '{1}'.format(logFilePath, e), RuntimeWarning)
+            logdir.mkdir(parents=True, exist_ok=True)
+
+            # If the log file exists, backs it up before creating a new file handler
+            if log_file_path.exists():
+                strtime = datetime.datetime.utcnow().strftime('%Y-%m-%d_%H:%M:%S')
+                shutil.move(str(log_file_path), str(log_file_path) + '.' + strtime)
+
+            self.fh = TimedRotatingFileHandler(str(log_file_path), when='midnight', utc=True)
+            self.fh.suffix = '%Y-%m-%d_%H:%M:%S'
+        except (IOError, OSError) as ee:
+            warnings.warn('log file {0!r} could not be opened for writing: '
+                          '{1}'.format(log_file_path, ee), RuntimeWarning)
         else:
-            fh.setFormatter(fmt)
-            fh.setLevel(logFileLevel)
-            self.addHandler(fh)
+            self.fh.setFormatter(fmt)
+            self.addHandler(self.fh)
+            self.fh.setLevel(log_file_level)
 
-        self.logFilename = logFilePath
-        warnings.showwarning = self._showwarning
+        self.log_filename = log_file_path
 
-    def setVerbose(self, verbose):
+    def saveLog(self, path):
+        shutil.copyfile(self.log_filename, os.path.expanduser(path))
 
-        from .. import config
 
-        # If verbose is set to None or False, changes the logging level of the
-        # stdout handler.
-        if verbose is False:
-            self.handlers[0].setLevel('WARNING')
-        elif verbose is None:
-            self.handlers[0].setLevel('ERROR')
-        else:
-            self.handlers[0].setLevel(config['logging']['logLevel'])
-
-    def logToRepo(self, plateRun):
-
-        from .. import config
-
-        inputPath = os.path.join(
-            os.path.expandvars(config['platelist']), 'inputs/manga',
-            plateRun)
-
-        if not os.path.exists(inputPath):
-            os.makedirs(inputPath)
-
-        shutil.copy(self.logFilename, os.path.join(inputPath, plateRun + '.log'))
-
-        self.info(self.logFilename + ' copied $PLATELIST/inputs.')
+logging.setLoggerClass(MyLogger)
+log = logging.getLogger(__name__)
+log._set_defaults()  # Inits sh handler

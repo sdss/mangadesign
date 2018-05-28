@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 """
-colourPrint.py
+colour_print.py
 
 Created by José Sánchez-Gallego on 19 Nov 2013.
 Copyright (c) 2013. All rights reserved.
@@ -13,8 +13,6 @@ This module includes astropy-based functions for colour printing.
 
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
-
-__ALL__ = ['colourPrint']
 
 import sys
 import multiprocessing
@@ -87,12 +85,11 @@ def isatty(file):
     ttys.
     """
     if (multiprocessing.current_process().name != 'MainProcess' or
-        threading.current_thread().getName() != 'MainThread'):
+            threading.current_thread().getName() != 'MainThread'):
         return False
 
     if (OutStream is not None and
-        isinstance(file, OutStream) and
-        file.name == 'stdout'):
+            isinstance(file, OutStream) and file.name == 'stdout'):
         return True
     elif hasattr(file, 'isatty'):
         return file.isatty()
@@ -164,7 +161,7 @@ def _decode_preferred_encoding(s):
         return s.decode('latin-1')
 
 
-def colourPrint(*args, **kwargs):
+def colour_print(*args, **kwargs):
     """
     Prints colors and styles to the terminal uses ANSI escape
     sequences.
