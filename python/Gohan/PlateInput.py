@@ -127,6 +127,8 @@ class PlateInput(object):
     decollide : bool, optional
         If True (the default), decollides the input targets against themselves
         and, if `surveyMode='apogeeLead'`, against APOGEE targets.
+    decollideExternal : bool, optional
+        If False, skips the decollisions with other targets.
     decollidePlateInputs : list, optional
         A list of `PlateInput` instances that have higher priority than then
         current PlateInput. Their targets will be used for decollision.
@@ -222,6 +224,9 @@ class PlateInput(object):
                 check_min_targets=check_min_targets,
                 autocomplete=autocomplete,
                 **kwargs)
+
+        if targets is None:
+            return
 
         targets = self._tidyUpTargets(targets,
                                       fillFromCatalogue=fillFromCatalogue)
@@ -496,7 +501,8 @@ class PlateInput(object):
         return raCen, decCen, locationid, apogeeCoords
 
     def _getAPOGEELeadTargets(self, catalogues, raCen=None, decCen=None,
-                              rejectTargets=[], decollide=True, sort=False,
+                              rejectTargets=[], decollide=True,
+                              decollideExternal=True, sort=False,
                               exclude_ifudesigns=[], **kwargs):
         """Creates an APOGEE led plateInput file."""
 
@@ -557,7 +563,9 @@ class PlateInput(object):
                 continue
 
             if decollide:
-                targetsInCat = self._decollide(targetsInField, coords=coords,
+                print(decollideExternal)
+                targetsInCat = self._decollide(targetsInField,
+                                               coords=coords if decollideExternal else None,
                                                **kwargs)
                 log.debug('{0} targets remaining after decollision.'
                           .format(len(targetsInCat)))
@@ -578,6 +586,8 @@ class PlateInput(object):
             raise exceptions.GohanPlateInputError('not enough targets.')
 
         targets = self._combineTargetCatalogues(targetCats)
+        if targets is None:
+            return None
 
         if self.targettype == 'sky':
             limitTargets = 1e4  # Maximum number of skies per field
@@ -665,6 +675,8 @@ class PlateInput(object):
                         coords = np.concatenate((coords, catCoords), axis=0)
 
         targets = self._combineTargetCatalogues(targetCats)
+        if targets is None:
+            return None
 
         if nAllocated < nBundlesToAllocate:
             if self.targettype == 'science' and autocomplete:
@@ -722,6 +734,9 @@ class PlateInput(object):
     def _combineTargetCatalogues(self, targetCats):
         """Creates a single table from different catalogues with potentially
         different fields."""
+
+        if len(targetCats) == 0:
+            return None
 
         if len(targetCats) == 1:
             return targetCats[0]
