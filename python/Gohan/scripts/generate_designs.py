@@ -18,7 +18,7 @@ import warnings
 import astropy.table as table
 
 from Gohan import log, config, readPath
-from Gohan.core.colourPrint import _color_text
+from Gohan.core.color_print import _color_text
 from Gohan.exceptions import GohanUserWarning
 from Gohan.utils import utils
 from Gohan.utils.selectSkies import selectSkies
@@ -38,8 +38,8 @@ def read_catalogue(fn):
     return sciCat
 
 
-def do_one_apogee2_manga(plateRun, platerun_dir, field, reject_science=[], reject_standard=[],
-                         niter=1, exclude=[]):
+def do_one_apogee2_manga(plateRun, platerun_dir, field, reject_science=[],
+                         reject_standard=[], reject_high=[], niter=1, exclude=[]):
     """Does one apogee2-manga design and returns the list of allocated mangaids."""
 
     reject_science = list(reject_science) + exclude
@@ -74,15 +74,28 @@ def do_one_apogee2_manga(plateRun, platerun_dir, field, reject_science=[], rejec
 
         science_cat_high = read_catalogue(science_target_high)
 
+        # Runs high priority targets. We allocate all high priority targets so no
+        # rejects list is passed. But if a high priority target gets rejected
+        # because there are not enough skies around it, we carry that reject.
+
+        if len(reject_high) > 0:
+            warnings.warn('high priority targets rejected (probably because of skies): {}'
+                          .format(reject_high), GohanUserWarning)
+
         mangaScience_high = PlateInput(designID, 'science', catalogues=science_cat_high,
                                        surveyMode=None, plateRun=plateRun,
+                                       decollideExternal=False,
                                        silentOnCollision=True, sort=False,
                                        fieldName=fieldName,
                                        raCen=raCen, decCen=decCen,
-                                       rejectTargets=reject_science)
+                                       rejectTargets=reject_high)
 
-        science_target = science_target_low
-        exclude_science_ifudesigns = mangaScience_high.mangaInput['ifudesign']
+        if hasattr(mangaScience_high, 'mangaInput') and len(mangaScience_high.getMangaIDs()) > 0:
+            science_target = science_target_low
+            exclude_science_ifudesigns = mangaScience_high.mangaInput['ifudesign']
+        else:
+            warnings.warn('no high priority targets survive design!!!', GohanUserWarning)
+            mangaScience_high = None
 
     if not science_target.exists() and science_target_low.exists():
         science_target = science_target_low
@@ -153,17 +166,20 @@ def do_one_apogee2_manga(plateRun, platerun_dir, field, reject_science=[], rejec
             log.debug('added {0} to the reject_standard list.'.format(mangaID))
         else:
             reject_science.append(mangaID)
+            if mangaScience_high is not None and mangaID in mangaScience_high.getMangaIDs():
+                reject_high.append(mangaID)
             log.debug('added {0} to the reject_science list.'.format(mangaID))
 
         return do_one_apogee2_manga(plateRun, platerun_dir, field,
                                     reject_science=reject_science,
                                     reject_standard=reject_standard,
+                                    reject_high=reject_high,
                                     niter=niter + 1)
 
-    return mangaScience
+    return mangaScience, mangaScience_high
 
 
-def update_platedefinition_apogee2manga(field, plateRun, platerun_dir):
+def update_platedefinition_apogee2manga(field, plateRun, platerun_dir, high_priority=False):
     """Creates an updated copy of the plateDefinition file committed by APOGEE."""
 
     designID = int(field['DesignID'])
@@ -187,12 +203,12 @@ def update_platedefinition_apogee2manga(field, plateRun, platerun_dir):
             updatedPlateDefinition.append('plateType APOGEE2-MANGA')
         elif 'priority' in line:
             updatedPlateDefinition.append('priority  1 2 3 4 5 6')
+        elif 'nInputs' in line:
+            updatedPlateDefinition.append('nInputs 6')
         elif 'plateInput3' in line:
             updatedPlateDefinition.append(
                 line.replace('plateInput3', 'plateInput6'))
-        elif 'nInputs' in line:
-            updatedPlateDefinition.append('nInputs 6')
-        elif 'plateInput2' in line:
+        elif 'plateInput2' in line and not high_priority:
             updatedPlateDefinition.append(line)
             updatedPlateDefinition.append(
                 'plateInput3 manga/{0}/mangaScience_{1}_{2}.par'
@@ -203,6 +219,21 @@ def update_platedefinition_apogee2manga(field, plateRun, platerun_dir):
             updatedPlateDefinition.append(
                 'plateInput5 manga/{0}/mangaSky_{1}_{2}.par'
                 .format(plateRun, fieldName, designID))
+        elif 'plateInput2' in line and high_priority:
+            updatedPlateDefinition.append(
+                line.replace('plateInput2', 'plateInput3'))
+            updatedPlateDefinition.append(
+                'plateInput4 manga/{0}/mangaStandard_{1}_{2}.par'
+                .format(plateRun, fieldName, designID))
+            updatedPlateDefinition.append(
+                'plateInput5 manga/{0}/mangaSky_{1}_{2}.par'
+                .format(plateRun, fieldName, designID))
+        elif 'plateInput1' in line and high_priority:
+            updatedPlateDefinition.append(line.replace('plateInput1', 'plateInput2'))
+            updatedPlateDefinition.insert(
+                -1, 'plateInput1 manga/{0}/mangaScience_{1}_{2}.par'.format(plateRun,
+                                                                            fieldName,
+                                                                             designID))
         else:
             updatedPlateDefinition.append(line)
 
@@ -246,11 +277,12 @@ def design_apogee2manga(platerun, platerun_dir, plate_data_path,
 
     for field in fields:
 
-        allocated_one = do_one_apogee2_manga(platerun, platerun_dir, field,
-                                             reject_science=list(reject_science),
-                                             exclude=exclude)
+        allocated_one, high_priority = do_one_apogee2_manga(
+            platerun, platerun_dir, field, reject_science=list(reject_science),
+            exclude=exclude)
 
-        update_platedefinition_apogee2manga(field, platerun, platerun_dir)
+        update_platedefinition_apogee2manga(field, platerun, platerun_dir,
+                                            high_priority=high_priority)
 
         psfmag = allocated_one.mangaInput['psfmag']
         allocated_reject = allocated_one.mangaInput[(psfmag[:, 1] < 14.6) | (psfmag[:, 3] < 14.8)]
