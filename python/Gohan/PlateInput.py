@@ -132,6 +132,9 @@ class PlateInput(object):
     decollidePlateInputs : list, optional
         A list of `PlateInput` instances that have higher priority than then
         current PlateInput. Their targets will be used for decollision.
+    FOV : float, optional
+        The radius around ``(raCen, decCen)``, in degrees, for which we can allocate
+        targets.
     sort : bool, optional
         If True, sorts the targets so that they are evenly distributed on the
         field. Default is False. The number of targets that will be selected to
@@ -563,7 +566,6 @@ class PlateInput(object):
                 continue
 
             if decollide:
-                print(decollideExternal)
                 targetsInCat = self._decollide(targetsInField,
                                                coords=coords if decollideExternal else None,
                                                **kwargs)
@@ -788,14 +790,14 @@ class PlateInput(object):
 
         return targets
 
-    def internalDecollision(self, targets, **kwargs):
+    def internalDecollision(self, targets, FOV=None, **kwargs):
         """Decollides targets against themselves. `targets` must be an
         `astropy.table.Table` with `RA` and `DEC` and `MANGAID` fields."""
 
         silent = kwargs.get('silentOnCollision', False)
 
         centreAvoid = config['decollision']['centreAvoid']
-        FOV = config['decollision']['FOV']
+        FOV = config['decollision']['FOV'] if FOV is None else FOV
         targetAvoid = config['decollision']['targetAvoid']
 
         centralPost = coo.SkyCoord(self.raCen, self.decCen, unit='deg')

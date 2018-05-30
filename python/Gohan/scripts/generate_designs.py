@@ -53,6 +53,8 @@ def do_one_apogee2_manga(plateRun, platerun_dir, field, reject_science=[],
 
     raCen = float(field['RA'])
     decCen = float(field['Dec'])
+    tileRad = float(field['TileRad']) \
+        if 'TileRad' in field.colnames else config['decollision']['FOV']
 
     science_target = pathlib.Path(platerun_dir) / f'inputs/{fieldName}_target.fits'
     science_target_high = pathlib.Path(platerun_dir) / f'inputs/{fieldName}_target_high.fits'
@@ -88,7 +90,8 @@ def do_one_apogee2_manga(plateRun, platerun_dir, field, reject_science=[],
                                        silentOnCollision=True, sort=False,
                                        fieldName=fieldName,
                                        raCen=raCen, decCen=decCen,
-                                       rejectTargets=reject_high)
+                                       rejectTargets=reject_high,
+                                       FOV=tileRad)
 
         if hasattr(mangaScience_high, 'mangaInput') and len(mangaScience_high.getMangaIDs()) > 0:
             science_target = science_target_low
@@ -104,8 +107,8 @@ def do_one_apogee2_manga(plateRun, platerun_dir, field, reject_science=[],
 
     science_cat = read_catalogue(science_target)
 
-    stdCat = table.Table.read(os.path.join(platerun_dir,
-                                           'inputs/{0}_standards.fits'.format(fieldName)))
+    stdCat = read_catalogue(os.path.join(platerun_dir,
+                                         'inputs/{0}_standards.fits'.format(fieldName)))
 
     skyRaw = os.path.join(readPath(config['skiesPath']), 'sky_{0}.fits'.format(fieldName))
     assert(os.path.exists(skyRaw))
@@ -115,7 +118,8 @@ def do_one_apogee2_manga(plateRun, platerun_dir, field, reject_science=[],
                               silentOnCollision=True, sort=False,
                               raCen=raCen, decCen=decCen,
                               rejectTargets=reject_science,
-                              exclude_ifudesigns=exclude_science_ifudesigns)
+                              exclude_ifudesigns=exclude_science_ifudesigns,
+                              FOV=tileRad)
 
     if mangaScience_high is not None:
         log.info('merging high priority targets')
@@ -145,10 +149,12 @@ def do_one_apogee2_manga(plateRun, platerun_dir, field, reject_science=[],
                                decollidePlateInputs=[mangaScience],
                                raCen=raCen, decCen=decCen,
                                rejectTargets=reject_standard,
-                               plotIFUs=True)
+                               plotIFUs=True,
+                               FOV=tileRad)
     mangaStandard.write(toRepo=False)
 
-    result = selectSkies(skyRaw, designID, fieldName, raCen, decCen, raise_error=False)
+    result = selectSkies(skyRaw, designID, fieldName, raCen, decCen, raise_error=False,
+                         FOV=tileRad)
 
     if isinstance(result, table.Table):
         mangaSky = PlateInput(designID, 'sky', catalogues=result,
@@ -233,7 +239,7 @@ def update_platedefinition_apogee2manga(field, plateRun, platerun_dir, high_prio
             updatedPlateDefinition.insert(
                 -1, 'plateInput1 manga/{0}/mangaScience_{1}_{2}.par'.format(plateRun,
                                                                             fieldName,
-                                                                             designID))
+                                                                            designID))
         else:
             updatedPlateDefinition.append(line)
 
@@ -377,7 +383,7 @@ def design_manga_apogee2(platerun, platerun_dir, plate_data,
 
 
 def generate_designs(platerun, plate_data, **kwargs):
-    """Generates plate inputs, plate definitons, and platePlans lines for a list of plates.
+    """Generates plate inputs, plate definitions, and platePlans lines for a list of plates.
 
     Parameters:
         platerun (str):

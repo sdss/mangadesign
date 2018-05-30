@@ -129,7 +129,7 @@ def decollide(aa, bb, distance=config['decollision']['targetAvoid']):
 
 
 def selectSkies(skyCat, designID, fieldName, raCen, decCen,
-                use_apogee=True, raise_error=True, limitTo=40):
+                use_apogee=True, raise_error=True, limitTo=40, FOV=None):
     """Writes a list of skies for each one of the IFUs in a design."""
 
     allSkies = table.Table.read(skyCat)
@@ -142,8 +142,10 @@ def selectSkies(skyCat, designID, fieldName, raCen, decCen,
     plateCentre = SkyCoord(ra=raCen, dec=decCen, unit='deg')
     separationCentre = skyCoords.separation(plateCentre).deg
 
+    FOV = config['decollision']['FOV'] if FOV is None else FOV
+
     validSkies = allSkies[
-        np.where((separationCentre < config['decollision']['FOV']) &
+        np.where((separationCentre < FOV) &
                  (separationCentre > config['decollision']['centreAvoid']))]
     validSkies = validSkies[validSkies['neighbor_dist'] <= 60]
     validSkies.sort('neighbor_dist')
