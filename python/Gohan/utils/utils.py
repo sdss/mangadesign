@@ -1,35 +1,25 @@
 #!/usr/bin/env python
-# encoding: utf-8
-"""
-utils.py
+# -*- coding:utf-8 -*-
 
-Created by José Sánchez-Gallego on 11 Jul 2014.
-Licensed under a 3-clause BSD license.
+# @Author: José Sánchez-Gallego (gallegoj@uw.edu)
+# @Date: 2014-07-11
+# @Filename: utils.py
+# @License: BSD 3-clause (http://www.opensource.org/licenses/BSD-3-Clause)
+# @Copyright: José Sánchez-Gallego
 
-Revision history:
-    11 Jul 2014 J. Sánchez-Gallego
-      Initial version
-
-"""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
 import glob
 import os
 import warnings
-
 from collections import OrderedDict
 from numbers import Number
 
 import numpy as np
-
-from astropy import table
-from astropy import time
+from astropy import table, time, coordinates
 from astropy.io import fits
 
-from Gohan import readPath, config, log
+from Gohan import config, log, readPath
 from Gohan.exceptions import GohanError, GohanUserWarning
 from Gohan.utils import yanny
 
@@ -925,3 +915,38 @@ def get_fibre_offsets(coords=None):
         fibre_world[:, 1] = dec_cen + dec_off_deg
 
         return fibre_world
+
+
+def catalogue_radial_cut(catalogue, racen, deccen, radius, ra_col='RA', dec_col='dec'):
+    """Returns the rows in a catalogue that are within a certain separation.
+
+    Parameters
+    ----------
+    catalogue : astropy.table.Table
+        The `astropy.table.Table` that contains the catalogue.
+    racen : float
+        The RA of the point from which we measure separations.
+    deccen : float
+        The Dec of the point from which we measure separations.
+    radius : float
+        The maximum allowed distance from ``(racen, deccec)``, in degrees.
+    ra_col : str, optional
+        The name of the Right Ascension column in ``catalogue``. Assumes the
+        coordinates.
+    dec_col : str, optional
+        The name of the Declination column in ``catalogue``.
+
+    Return
+    ------
+    astropy.table.Table
+        A copy of ``catalogue`` in which only the rows whose distance from
+        ``(racen, deccen)`` is less than ``radius`` are included.
+
+    """
+
+    coords = coordinates.SkyCoords(ra=catalogue[ra_col], dec=catalogue[dec_col], unit='deg')
+    centre = coordinates.SkyCoord(ra=racen, dec=deccen, unit='deg')
+
+    valid = centre.separation(coords).deg <= radius
+
+    return catalogue[valid]
