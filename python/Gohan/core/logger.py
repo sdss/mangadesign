@@ -25,6 +25,9 @@ from pygments import highlight
 from pygments.formatters import TerminalFormatter
 from pygments.lexers import get_lexer_by_name
 
+from ..exceptions import GohanWarning
+
+
 # from textwrap import TextWrapper
 
 
@@ -198,10 +201,10 @@ class MyLogger(Logger):
 
         """
 
-        if category is None or not hasattr(category, 'logger'):
+        if issubclass(category, GohanWarning):
             warnings.showwarning = self._show_warning
         else:
-            warnings.showwarning = category.logger._show_warning
+            warnings.showwarning = warnings._showwarning_orig
 
         warnings._original_warn(message, category=category, stacklevel=stacklevel)
 
@@ -215,10 +218,12 @@ class MyLogger(Logger):
         mod_name = None
         mod_path, ext = os.path.splitext(mod_path)
         for name, mod in sys.modules.items():
-            path = os.path.splitext(getattr(mod, '__file__', ''))[0]
-            if path == mod_path:
-                mod_name = mod.__name__
-                break
+            mod_file = getattr(mod, '__file__', '')
+            if mod_file is not None:
+                path = os.path.splitext(mod_file)[0]
+                if path == mod_path:
+                    mod_name = mod.__name__
+                    break
 
         if mod_name is not None:
             warning.logger.warning(message, extra={'origin': mod_name})
