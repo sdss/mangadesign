@@ -237,7 +237,7 @@ def getPlateInputData(mangaid, plateHolesSorted):
         elif 'STRUCT1' in plateInput.keys():
             structName = 'STRUCT1'
         else:
-            # warnings.warn('cannot identify structure name for plateInput '
+            # log.warning('cannot identify structure name for plateInput '
             #               '{0}'.format(plateInputPath), GohanUserWarning)
             continue
 
@@ -431,14 +431,14 @@ def getCatalogueRow(mangaid, catalogue=None):
         return catalogue[int(targetID)]
     else:
         if 'mangaid' not in catalogue.colnames:
-            warnings.warn('mangaid column not be found', GohanUserWarning)
+            log.warning('mangaid column not be found', GohanUserWarning)
             return None
 
         row = catalogue[catalogue['mangaid'] == mangaid]
         if len(row) == 1:
             return row
         else:
-            warnings.warn('no row found in catalogue for mangaid={0}'
+            log.warning('no row found in catalogue for mangaid={0}'
                           .format(mangaid), GohanUserWarning)
             return None
 
@@ -450,7 +450,7 @@ def getCataloguePath(catalogid):
 
     catalogidsPath = os.path.join(readPath(config['mangacore']), 'platedesign/catalog_ids.dat')
     if not os.path.exists(catalogidsPath):
-        warnings.warn('catalog_ids.dat could not be found', GohanUserWarning)
+        log.warning('catalog_ids.dat could not be found', GohanUserWarning)
         return None
 
     catalogids = open(catalogidsPath, 'r').read().splitlines()
@@ -462,7 +462,7 @@ def getCataloguePath(catalogid):
             break
 
     if cataloguePath is None:
-        warnings.warn('no entry in catalog_ids.dat for catalogid={0}'.format(catalogid),
+        log.warning('no entry in catalog_ids.dat for catalogid={0}'.format(catalogid),
                       GohanUserWarning)
         return None
 
@@ -470,7 +470,7 @@ def getCataloguePath(catalogid):
         readPath(config['catalogues']['path']), '-'.join(cataloguePath.strip().split()))
 
     if not os.path.exists(cataloguePath):
-        warnings.warn('no catalogue found in {0}'.format(cataloguePath), GohanUserWarning)
+        log.warning('no catalogue found in {0}'.format(cataloguePath), GohanUserWarning)
         return None
 
     return cataloguePath
@@ -488,7 +488,7 @@ def getPlateTargetsTemplate(catalogid):
     elif catalogid >= 30 or catalogid == 18:
         return readPath('+templates/plateTargets-Ancillary.template')
     else:
-        warnings.warn('no template found for catalogid={0}'.format(catalogid),
+        log.warning('no template found for catalogid={0}'.format(catalogid),
                       GohanUserWarning)
         return None
 

@@ -23,7 +23,6 @@ Major revision history:
 import numpy as np
 import os
 import shutil as sh
-import warnings
 import fnmatch
 from collections import OrderedDict
 
@@ -35,8 +34,7 @@ from astropy import table
 from Gohan import config, log, readPath
 from Gohan import exceptions
 from Gohan.utils import yanny, sortTargets, assignIFUDesigns
-from Gohan.utils import (getPlateDefinition, getMaskBitFromLabel,
-                         getCatalogueRow)
+from Gohan.utils import getPlateDefinition, getMaskBitFromLabel, getCatalogueRow
 
 
 def reformatAstropyColumn(inputTable, columnName, newFormat):
@@ -283,10 +281,9 @@ class PlateInput(object):
         data = data[np.where(separation <= config['decollision']['FOV'])]
 
         if len(data) < nData:
-            warnings.warn('{0} targets rejected because '
-                          'they are out of the FOV of the design.'
-                          .format(nData - len(data)),
-                          exceptions.GohanUserWarning)
+            log.warning('{0} targets rejected because '
+                        'they are out of the FOV of the design.'.format(nData - len(data)),
+                        exceptions.GohanUserWarning)
 
         return data
 
@@ -385,10 +382,9 @@ class PlateInput(object):
                 validSkies.append(valid[0:maxSkies])
 
                 if maxSkies < 10:
-                    warnings.warn('only {0} skies around target {1}. '
-                                  'Try reducing minNeightborDist.'
-                                  .format(maxSkies, mangaIDs[ii]),
-                                  exceptions.GohanUserWarning)
+                    log.warning('only {0} skies around target {1}. '
+                                'Try reducing minNeightborDist.'.format(maxSkies, mangaIDs[ii]),
+                                exceptions.GohanUserWarning)
 
                 data.remove_rows(indices[0:maxSkies])
 
@@ -409,7 +405,7 @@ class PlateInput(object):
                     catalogues = [readPath(config['catalogues']['stelLib'])]
                 else:
                     catalogues = [readPath(config['catalogues']['science'])]
-                    warnings.warn('using parent science catalogue', exceptions.GohanUserWarning)
+                    log.warning('using parent science catalogue', exceptions.GohanUserWarning)
 
             elif self.targettype == 'standard':
                 if leadSurvey == 'apogee':
@@ -417,7 +413,7 @@ class PlateInput(object):
                                   readPath(config['catalogues']['APASS'])]
                 else:
                     catalogues = readPath(config['catalogues']['standard'])
-                    warnings.warn('using parent standard catalogue', exceptions.GohanUserWarning)
+                    log.warning('using parent standard catalogue', exceptions.GohanUserWarning)
 
             else:
                 raise exceptions.GohanPlateInputError(
@@ -559,8 +555,8 @@ class PlateInput(object):
 
             # We don't decollide for skies
             if self.targettype == 'sky':
-                warnings.warn('Skipping decollision because this is a sky '
-                              'catalogue.', exceptions.GohanUserWarning)
+                log.warning('Skipping decollision because this is a sky '
+                            'catalogue.', exceptions.GohanUserWarning)
                 targetCats.append(targetsInField)
                 nAllocated += len(targetsInField)
                 continue
@@ -881,7 +877,7 @@ class PlateInput(object):
     def logCollision(self, message, silent=False):
         """Raises a warning due to collision."""
         if not silent:
-            warnings.warn(message, exceptions.GohanCollisionWarning)
+            log.warning(message, exceptions.GohanCollisionWarning)
         else:
             log.debug(message)
 

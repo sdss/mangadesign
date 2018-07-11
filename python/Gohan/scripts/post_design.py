@@ -12,7 +12,6 @@ from __future__ import absolute_import
 
 import shutil
 import os
-import warnings
 
 from collections import OrderedDict
 
@@ -117,9 +116,8 @@ def post_design_manga_led(plateids, overwrite=False, skipPlateHolesSorted=False)
         mangaids = utils.getMaNGAIDs(plate)
 
         if len(mangaids) != nBundles:
-            warnings.warn(
-                'number of science targets is not {0} for plate {1}'.format(nBundles, plate),
-                GohanPostDesignWarning)
+            log.warning('number of science targets is not {0} for plate {1}'
+                        .format(nBundles, plate), GohanPostDesignWarning)
 
         # Sorts mangaids by catalogid.
         for mangaid in mangaids:
@@ -179,7 +177,7 @@ def post_design_manga_led(plateids, overwrite=False, skipPlateHolesSorted=False)
                      os.path.basename(plateTargets.path)))
 
     if skipPlateHolesSorted:
-        warnings.warn('skipping copying plateHolesSorted files to mangacore',
+        log.warning('skipping copying plateHolesSorted files to mangacore',
                       GohanPostDesignWarning)
         return returnDict
 
@@ -203,13 +201,13 @@ def post_design_manga_led(plateids, overwrite=False, skipPlateHolesSorted=False)
             plateHolesPlatePath, os.path.basename(plateHolesSortedPath))
 
         if os.path.exists(destinationPath) and not overwrite:
-            warnings.warn('{0} already exists in magacore. Not overwritting.'
+            log.warning('{0} already exists in magacore. Not overwritting.'
                           .format(os.path.basename(plateHolesSortedPath)),
                           GohanPostDesignWarning)
             continue
 
         if os.path.exists(destinationPath):
-            warnings.warn('Overwritting {0} in mangacore.'
+            log.warning('Overwritting {0} in mangacore.'
                           .format(os.path.basename(plateHolesSortedPath)), GohanPostDesignWarning)
 
         shutil.copy(plateHolesSortedPath, destinationPath)

@@ -29,7 +29,7 @@ try:
     NSAPath = readPath(config['catalogues']['NSA'])
 
     if not os.path.exists(NSAPath):
-        warnings.warn('NSA catalogue {0} not found'.format(NSAPath),
+        log.warning('NSA catalogue {0} not found'.format(NSAPath),
                       GohanUserWarning)
         NSACat = None
     else:
@@ -96,7 +96,7 @@ def autocomplete(targets, centre, **kwargs):
         if target is not None:
             targets = addTarget(targets, target, bundleSize, centre)
         else:
-            warnings.warn('no valid replacement found for '
+            log.warning('no valid replacement found for '
                           'ifudesignsize={0}'.format(int(bundleSize)),
                           GohanUserWarning)
 
@@ -255,7 +255,7 @@ def getMaNGATargets(targets, centre):
     MaNGAPath = get_manga_targets_path()
 
     if not os.path.exists(MaNGAPath):
-        warnings.warn('MaNGA catalogue {0} not found'.format(MaNGAPath),
+        log.warning('MaNGA catalogue {0} not found'.format(MaNGAPath),
                       GohanUserWarning)
         return None
 
@@ -347,7 +347,7 @@ def getBadPhotometry():
     if not os.path.exists(qaAdjusted):
         if not qaWarningIssued:
             # Issues this warning only once
-            warnings.warn('nsa_v1_0_0_QA_adjusted.dat not found',
+            log.warning('nsa_v1_0_0_QA_adjusted.dat not found',
                           GohanUserWarning)
             qaWarningIssued = True
         return []

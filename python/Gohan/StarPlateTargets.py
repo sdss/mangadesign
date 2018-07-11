@@ -12,20 +12,17 @@ Revision history:
 
 """
 
-from __future__ import division
-from __future__ import print_function
+from __future__ import division, print_function
 
-from astropy import table
+import os
+
 import numpy as np
+from astropy import table
 
+from Gohan import log, readPath
 from Gohan.exceptions import GohanPlateTargetsError, GohanPlateTargetsWarning
 from Gohan.PlateTargets import PlateTargets, _toLowerCase
-from Gohan.utils import utils
-from Gohan.utils import yanny
-from Gohan import readPath, log
-
-import warnings
-import os
+from Gohan.utils import utils, yanny
 
 
 class StarPlateTargets(PlateTargets):
@@ -65,8 +62,8 @@ class StarPlateTargets(PlateTargets):
                         'neither the plateTargets nor the template '
                         'for catalogid={0} can be found'
                         .format(self.catalogid))
-                warnings.warn('using template for starPlateTargets',
-                              GohanPlateTargetsWarning)
+                log.warning('using template for starPlateTargets',
+                            GohanPlateTargetsWarning)
                 self.template = True
 
         data = yanny.yanny(self.path, np=True)
@@ -135,10 +132,8 @@ class StarPlateTargets(PlateTargets):
                     # If it exists, checks if overwrite is True
                     if overwrite:
                         existing = True
-                        warnings.warn('replacing target mangaid={0} '
-                                      'in plateid={1}'
-                                      .format(mangaid, plateid),
-                                      GohanPlateTargetsWarning)
+                        log.warning('replacing target mangaid={0} in plateid={1}'
+                                    .format(mangaid, plateid), GohanPlateTargetsWarning)
                     else:
                         # If overwrite is False, skips this target.
                         log.debug('skipping mangaid={0} because it is already '

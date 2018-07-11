@@ -70,7 +70,7 @@ try:
     MANGA_SAMPLE = table.Table.read(get_manga_targets_path())
 except:
     MANGA_SAMPLE = None
-    warnings.warn('no MaNGA sample file loaded', GohanUserWarning)
+    log.warning('no MaNGA sample file loaded', GohanUserWarning)
 
 SIMBMAP = table.Table(yanny(readPath(config['plateMags']['simbmap']),
                             np=True)['SIMBMAP'])
@@ -287,9 +287,9 @@ class PlateMags(list):
                                structname='PLATEMAGS')
 
         if self._missingIFUs > 0:
-            warnings.warn('no data for {0} IFUs. '.format(
-                self._missingIFUs) + 'The remaining data has been saved.',
-                GohanUserWarning)
+            log.warning('no data for {0} IFUs. '
+                        'The remaining data has been saved.'.format(self._missingIFUs),
+                        GohanUserWarning)
 
         log.info('plateMags saved as {0}'.format(shortenPath(plateMagsPath)))
 
@@ -491,18 +491,16 @@ class PlateMagsIFU(object):
 
         plateTargetsRow = getPlateTargetsRow(self.mangaid)
         if plateTargetsRow is None:
-            warnings.warn('target not found in plateTargets', GohanUserWarning)
+            log.warning('target not found in plateTargets', GohanUserWarning)
             return None
 
         if 'nsa_nsaid' not in plateTargetsRow.colnames:
-            warnings.warn('nsa_nsaid column not found in plateTargets',
-                          GohanUserWarning)
+            log.warning('nsa_nsaid column not found in plateTargets', GohanUserWarning)
             return None
 
         nsaid = plateTargetsRow['nsa_nsaid'][0]
         if nsaid == 0:
-            warnings.warn('nsa_nsaid not set in plateTargets',
-                          GohanUserWarning)
+            log.warning('nsa_nsaid not set in plateTargets', GohanUserWarning)
             return None
 
         nsaRow = getNSArow(nsaid)
@@ -533,8 +531,8 @@ class PlateMagsIFU(object):
 
             log.debug('...... {0} not found in NSA.'.format(
                       self.mangaid.strip()))
-            warnings.warn('MANGAID: {0} not found in NSA'.format(
-                          self.mangaid.strip()), GohanUserWarning)
+            log.warning('MANGAID: {0} not found in NSA'.format(self.mangaid.strip()),
+                        GohanUserWarning)
             return False
 
         imageName = os.path.join(preImageDir,
@@ -546,9 +544,8 @@ class PlateMagsIFU(object):
                 imageName, self.IAUName, self.subDir, self.pID)
 
             if output is False:
-                warnings.warn(
-                    '{0} has no NSA data.'.format(self.mangaid),
-                    GohanUserWarning)
+                log.warning('{0} has no NSA data.'.format(self.mangaid),
+                            GohanUserWarning)
                 return False
 
         else:
@@ -717,7 +714,7 @@ class PlateMagsIFU(object):
         if self.SDSSField is not None:
             run, rerun, camcol, field = self.SDSSField
         else:
-            warnings.warn('galaxy not in SDSS footprint.', GohanUserWarning)
+            log.warning('galaxy not in SDSS footprint.', GohanUserWarning)
             return False
 
         imageName = os.path.join(preImageDir,

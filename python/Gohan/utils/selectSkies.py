@@ -12,19 +12,16 @@ Revision history:
 
 """
 
-from __future__ import division
-from __future__ import print_function
+from __future__ import division, print_function
 
 import fnmatch
 import os
-import warnings
 
 import numpy as np
-
 from astropy import table
 from astropy.coordinates import SkyCoord
 
-from Gohan import config, readPath
+from Gohan import config, log, readPath
 from Gohan.exceptions import GohanError, GohanWarning
 
 from .sortTargets import sortTargets
@@ -56,7 +53,7 @@ def getIFUSkies(data, coords, ra, dec, skyPatrolRadius=14 / 60.,
                                              limitTo=limitTo,
                                              radius=skyPatrolRadius, plot=False)
     except Exception as ee:
-        warnings.warn('Error: {0}'.format(ee), GohanWarning)
+        log.warning('Error: {0}'.format(ee), GohanWarning)
         return False
 
     return validTargets

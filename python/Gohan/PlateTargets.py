@@ -24,7 +24,6 @@ from astropy import table
 import numpy as np
 
 import six
-import warnings
 import os
 
 
@@ -94,9 +93,8 @@ class PlateTargets(object):
                     raise GohanPlateTargetsError(
                         'neither the plateTargets nor the template '
                         'for catalogid={0} can be found'.format(catalogid))
-                warnings.warn(
-                    'using template for catalogid={0}'.format(catalogid),
-                    GohanPlateTargetsWarning)
+                log.warning('using template for catalogid={0}'.format(catalogid),
+                            GohanPlateTargetsWarning)
                 self.template = True
 
         data = yanny.yanny(self.path, np=True)
@@ -248,9 +246,9 @@ class PlateTargets(object):
 
         # If plateid is not defined, issues a warning.
         if plateid is None:
-            warnings.warn('no plateid information provided. The plate '
-                          'information will be filled out with nulls.',
-                          GohanPlateTargetsWarning)
+            log.warning('no plateid information provided. The plate '
+                        'information will be filled out with nulls.',
+                        GohanPlateTargetsWarning)
 
             plateHolesSortedData = plateHolesSortedPairs = None
 
@@ -335,10 +333,8 @@ class PlateTargets(object):
                     # If it exists, checks if overwrite is True
                     if overwrite:
                         existing = True
-                        warnings.warn('replacing target mangaid={0} '
-                                      'in plateid={1}'
-                                      .format(mangaid, plateid),
-                                      GohanPlateTargetsWarning)
+                        log.warning('replacing target mangaid={0} in plateid={1}'
+                                    .format(mangaid, plateid), GohanPlateTargetsWarning)
                     else:
                         # If overwrite is False, skips this target.
                         log.debug('skipping mangaid={0} because it is already '
@@ -425,9 +421,8 @@ class PlateTargets(object):
                 targetRow = mangaTargetsExtNSA[
                     mangaTargetsExtNSA['mangaid'] == mangaid.strip()]
                 if len(targetRow) == 0:
-                    warnings.warn('mangaid={0} not found in targeting '
-                                  'catalogue'.format(mangaid),
-                                  GohanPlateTargetsWarning)
+                    log.warning('mangaid={0} not found in targeting catalogue'.format(mangaid),
+                                GohanPlateTargetsWarning)
                     targetRow = None
             else:
                 targetRow = None
@@ -489,11 +484,9 @@ class PlateTargets(object):
                         if (self.catalogid not in ['MaSTAR', 'standard'] or
                             column not in ['iauname', 'ifutargetsize',
                                            'ifudesignwrongsize']):
-                            warnings.warn('mangaid={0}: no value found for '
-                                          'mandatory field {1}. '
-                                          'Setting it to -999'
-                                          .format(mangaid, column),
-                                          GohanPlateTargetsWarning)
+                            log.warning('mangaid={0}: no value found for mandatory field {1}. '
+                                        'Setting it to -999'.format(mangaid, column),
+                                        GohanPlateTargetsWarning)
                             result[mangaid][column] = -999
 
         return result

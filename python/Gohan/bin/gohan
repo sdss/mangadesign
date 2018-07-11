@@ -6,14 +6,12 @@
 # Created by José Sánchez-Gallego on 22 Apr 2017.
 
 
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
+from __future__ import absolute_import, division, print_function
 
 import click
-import warnings
 
 import Gohan.scripts.ic342
+from Gohan import log
 
 
 @click.group()
@@ -118,8 +116,8 @@ def load(path, remote):
     from Gohan.scripts.update_cmm import update_cmm
 
     if remote:
-        warnings.warn('using tunnel connection to apodb. Did you create the tunnel?',
-                      GohanUserWarning)
+        log.warning('using tunnel connection to apodb. Did you create the tunnel?',
+                    GohanUserWarning)
 
     update_cmm(path, remote=remote)
 
