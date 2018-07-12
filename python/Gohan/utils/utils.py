@@ -11,12 +11,12 @@ from __future__ import absolute_import, division, print_function
 
 import glob
 import os
-import warnings
 from collections import OrderedDict
 from numbers import Number
 
 import numpy as np
-from astropy import table, time, coordinates
+import sdss_access
+from astropy import coordinates, table, time
 from astropy.io import fits
 
 from Gohan import config, log, readPath
@@ -438,8 +438,8 @@ def getCatalogueRow(mangaid, catalogue=None):
         if len(row) == 1:
             return row
         else:
-            log.warning('no row found in catalogue for mangaid={0}'
-                          .format(mangaid), GohanUserWarning)
+            log.warning('no row found in catalogue for mangaid={0}'.format(mangaid),
+                        GohanUserWarning)
             return None
 
 
@@ -463,7 +463,7 @@ def getCataloguePath(catalogid):
 
     if cataloguePath is None:
         log.warning('no entry in catalog_ids.dat for catalogid={0}'.format(catalogid),
-                      GohanUserWarning)
+                    GohanUserWarning)
         return None
 
     cataloguePath = os.path.join(
@@ -489,7 +489,7 @@ def getPlateTargetsTemplate(catalogid):
         return readPath('+templates/plateTargets-Ancillary.template')
     else:
         log.warning('no template found for catalogid={0}'.format(catalogid),
-                      GohanUserWarning)
+                    GohanUserWarning)
         return None
 
 
@@ -950,3 +950,9 @@ def catalogue_radial_cut(catalogue, racen, deccen, radius, ra_col='RA', dec_col=
     valid = centre.separation(coords).deg <= radius
 
     return catalogue[valid]
+
+
+def get_path(name, **params):
+    """A simple wrapper around `sdss_access.path.Path.full`."""
+
+    return sdss_access.SDSSPath().full(name, **params)

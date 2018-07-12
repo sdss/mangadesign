@@ -300,9 +300,26 @@ def design_apogee2manga(platerun, platerun_dir, plate_data_path,
         update_platedefinition_apogee2manga(field, platerun, platerun_dir,
                                             high_priority=high_priority)
 
+        # Default psfmag limit
+        psfmag_lim = 14.7
+
+        # Determine if this is a short exposure plate
+        plate_add_path = utils.get_path('plateDefinitionAddenda', designid=field['DesignID'])
+        if os.path.exists(plate_add_path):
+            plate_add = yanny.yanny(plate_add_path)
+            if 'MANGA_exposure_time' in plate_add:
+                if int(plate_add['MANGA_exposure_time']) == 30:
+                    psfmag_lim = 13.
+
         psfmag = allocated_one.mangaInput['psfmag']
-        allocated_reject = allocated_one.mangaInput[(psfmag[:, 1] < 14.6) | (psfmag[:, 3] < 14.8)]
+        brightest_psfmag = numpy.min(psfmag[:, [1, 3]], axis=1)
+        allocated_reject = allocated_one.mangaInput[brightest_psfmag < psfmag_lim]
         mangaids_reject = [mangaid.strip() for mangaid in allocated_reject['mangaid']]
+
+        log.info('removing {} out of {} targets from future allocation '
+                 'because their PSFMAG < {:.1f}'.format(len(mangaids_reject),
+                                                        len(allocated_one.mangaInput),
+                                                        psfmag_lim))
 
         reject_science = reject_science.union(set(mangaids_reject))
 
