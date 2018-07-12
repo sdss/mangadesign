@@ -6,25 +6,23 @@
 # Created by José Sánchez-Gallego on 22 Apr 2017.
 
 
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
+from __future__ import absolute_import, division, print_function
 
 import os
 import pathlib
 import re
-import warnings
 
 import astropy.table as table
+import numpy
+from pydl.pydlutils import yanny
 
-from Gohan import log, config, readPath
+from Gohan import config, log, readPath
 from Gohan.core.color_print import _color_text
 from Gohan.exceptions import GohanUserWarning
-from Gohan.utils import utils
-from Gohan.utils.selectSkies import selectSkies
-
 from Gohan.PlateDefinition import PlateDefinition
 from Gohan.PlateInput import PlateInput
+from Gohan.utils import utils
+from Gohan.utils.selectSkies import selectSkies
 
 
 def read_catalogue(fn):
@@ -64,15 +62,15 @@ def do_one_apogee2_manga(plateRun, platerun_dir, field, reject_science=[],
     exclude_science_ifudesigns = []
     if science_target_high.exists():
 
-        assert science_target_low.exists(), \
-            'found {!r} file without a _low version.'.format(str(science_target_high.name))
+        # assert science_target_low.exists(), \
+        #     'found {!r} file without a _low version.'.format(str(science_target_high.name))
 
         assert not science_target.exists(), \
             'found incompatible {!r} and {!r}'.format(str(science_target),
                                                       str(science_target_low))
 
-        warnings.warn(f'found high priority target catalogue {str(science_target_high.name)!r}',
-                      GohanUserWarning)
+        log.warning(f'found high priority target catalogue {str(science_target_high.name)!r}',
+                    GohanUserWarning)
 
         science_cat_high = read_catalogue(science_target_high)
 
@@ -81,8 +79,8 @@ def do_one_apogee2_manga(plateRun, platerun_dir, field, reject_science=[],
         # because there are not enough skies around it, we carry that reject.
 
         if len(reject_high) > 0:
-            warnings.warn('high priority targets rejected (probably because of skies): {}'
-                          .format(reject_high), GohanUserWarning)
+            log.warning('high priority targets rejected (probably because of skies): {}'
+                        .format(reject_high), GohanUserWarning)
 
         mangaScience_high = PlateInput(designID, 'science', catalogues=science_cat_high,
                                        surveyMode=None, plateRun=plateRun,
@@ -97,34 +95,40 @@ def do_one_apogee2_manga(plateRun, platerun_dir, field, reject_science=[],
             science_target = science_target_low
             exclude_science_ifudesigns = mangaScience_high.mangaInput['ifudesign']
         else:
-            warnings.warn('no high priority targets survive design!!!', GohanUserWarning)
+            log.warning('no high priority targets survive design!!!', GohanUserWarning)
             mangaScience_high = None
 
-    if not science_target.exists() and science_target_low.exists():
-        science_target = science_target_low
+    if science_target.exists() or science_target_low.exists():
 
-    assert science_target.exists(), f'target file {str(science_target.name)!r} does not exist'
+        if not science_target.exists():
+            science_target = science_target_low
 
-    science_cat = read_catalogue(science_target)
+        science_cat = read_catalogue(science_target)
 
-    stdCat = read_catalogue(os.path.join(platerun_dir,
-                                         'inputs/{0}_standards.fits'.format(fieldName)))
+        mangaScience = PlateInput(designID, 'science', catalogues=science_cat,
+                                  surveyMode='apogeeLead', plateRun=plateRun,
+                                  silentOnCollision=True, sort=False,
+                                  raCen=raCen, decCen=decCen,
+                                  rejectTargets=reject_science,
+                                  exclude_ifudesigns=exclude_science_ifudesigns,
+                                  FOV=tileRad)
 
-    skyRaw = os.path.join(readPath(config['skiesPath']), 'sky_{0}.fits'.format(fieldName))
-    assert(os.path.exists(skyRaw))
+        if mangaScience_high is not None:
+            log.info('merging high priority targets')
+            mangaScience.merge(mangaScience_high)
+            assert len(mangaScience.mangaInput) == 17
 
-    mangaScience = PlateInput(designID, 'science', catalogues=science_cat,
-                              surveyMode='apogeeLead', plateRun=plateRun,
-                              silentOnCollision=True, sort=False,
-                              raCen=raCen, decCen=decCen,
-                              rejectTargets=reject_science,
-                              exclude_ifudesigns=exclude_science_ifudesigns,
-                              FOV=tileRad)
+    elif not science_target.exists() and not science_target_low.exists():
 
-    if mangaScience_high is not None:
-        log.info('merging high priority targets')
-        mangaScience.merge(mangaScience_high)
-        assert len(mangaScience.mangaInput) == 17
+        # If no low priority targets exists we just check that the high
+        # priority catalogue allocated all 17 IFUs.
+
+        assert mangaScience_high is not None, 'no low priority target files found'
+        assert len(mangaScience_high.mangaInput) == 17,\
+            'no low priority target files found and not enough high priority targets allocated'
+
+        log.info('no low priority targets found. Using only high priority targets.')
+        mangaScience = mangaScience_high
 
     mangaScience.write(toRepo=False)
 
@@ -139,8 +143,11 @@ def do_one_apogee2_manga(plateRun, platerun_dir, field, reject_science=[],
     #         log.important('{0} out of {1} special targets survived '
     #                       'decollision.'.format(survived, total))
     # except Exception as ee:
-    #     warnings.warn('failed determining how many special targets '
+    #     log.warning('failed determining how many special targets '
     #                   'survived for {0}: {1}.'.format(mangaScience_path, ee), GohanUserWarning)
+
+    stdCat = read_catalogue(os.path.join(platerun_dir,
+                                         'inputs/{0}_standards.fits'.format(fieldName)))
 
     mangaStandard = PlateInput(designID, 'standard',
                                catalogues=stdCat,
@@ -153,6 +160,9 @@ def do_one_apogee2_manga(plateRun, platerun_dir, field, reject_science=[],
                                FOV=tileRad)
     mangaStandard.write(toRepo=False)
 
+    skyRaw = os.path.join(readPath(config['skiesPath']), 'sky_{0}.fits'.format(fieldName))
+    assert(os.path.exists(skyRaw))
+
     result = selectSkies(skyRaw, designID, fieldName, raCen, decCen, raise_error=False,
                          FOV=tileRad)
 
@@ -164,7 +174,7 @@ def do_one_apogee2_manga(plateRun, platerun_dir, field, reject_science=[],
         mangaSky.write(toRepo=False)
     else:
         assert result[0] is False, 'cannot parse the result of selectSkies'
-        warnings.warn(result[1], GohanUserWarning)
+        log.warning(result[1], GohanUserWarning)
         mangaID, ifuDesign = result[2:]
 
         if ifuDesign < 1000:
@@ -421,6 +431,6 @@ def generate_designs(platerun, plate_data, **kwargs):
     if keep_log:
         log_path = os.path.join(platerun_dir, platerun + '.log')
         log.info('copying log to {0}'.format(log_path))
-        log.saveLog(log_path)
+        log.save_log(log_path)
 
     return
