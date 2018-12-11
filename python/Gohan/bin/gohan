@@ -32,17 +32,22 @@ def gohan(obj, verbose=False):
               help='the version of the targetting catalogue to use. '
                    'Only for MaNGA lead plateruns. '
                    'If ommitted, the current version will be used.')
+@click.option('-p', '--platetype', type=str,
+              help='the plate type. If not defined it is deduced from the platerun.')
 @click.option('-d', '--stdpath', type=str,
               help='the path to the standard targets directory.'
                    'Only for MaNGA lead plateruns.')
+@click.option('-r', '--no-repeats', is_flag=True,
+              help='do not use the REPEATS column to determine repeated targets.')
 @click.argument('platerun', type=str)
 @click.argument('platedata', type=str)
 @click.argument('obs_date', type=str, required=False)
 def design(platerun, platedata, special=False, exclude=None,
-           targetversion=None, obs_date=None, stdpath=None):
+           targetversion=None, obs_date=None, stdpath=None, no_repeats=False,
+           platetype=None):
     """Designs a platerun.
 
-    Requieres specifying a PLATERUN and the location of the PLATEDATA file
+    Requires specifying a PLATERUN and the location of the PLATEDATA file
     that contains the list of plates to run.
 
     """
@@ -52,7 +57,8 @@ def design(platerun, platedata, special=False, exclude=None,
     generate_designs(platerun, platedata, special=special,
                      exclude=[exclude] if exclude is not None else [],
                      target_version=targetversion, obs_date=obs_date,
-                     std_path=stdpath)
+                     std_path=stdpath, repeats=not no_repeats,
+                     plate_type=platetype)
 
 
 @gohan.command()

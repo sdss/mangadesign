@@ -12,20 +12,21 @@ Revision history:
 
 """
 
-from __future__ import division
-from __future__ import print_function
+from __future__ import division, print_function
 
-import numpy as np
-from collections import OrderedDict
 import os
 import shutil as sh
+from collections import OrderedDict
 from numbers import Real
 
+import numpy as np
 from astropy import time
 from astropy.coordinates import SkyCoord
 
-from Gohan import log, config, readPath
+from Gohan import config, log, readPath
 from Gohan.exceptions import GohanError
+
+
 # from Gohan.utils import getPlateTemperature
 
 
@@ -111,7 +112,7 @@ class PlateDefinition(object):
         if self.surveyMode == 'mangaOnly':
             plateDefinitionTemplate = readPath(
                 '+etc/mangaDefinition_Default.par')
-        elif self.surveyMode == 'mangaLead':
+        elif self.surveyMode in ['mangaLead', 'MaStar']:
             plateDefinitionTemplate = readPath(
                 '+etc/mangaDefinition_coDesigned_Default.par')
         else:

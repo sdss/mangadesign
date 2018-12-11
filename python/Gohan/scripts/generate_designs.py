@@ -37,7 +37,7 @@ def read_catalogue(fn):
 
 
 def do_one_apogee2_manga(plateRun, platerun_dir, field, reject_science=[],
-                         reject_standard=[], reject_high=[], niter=1, exclude=[]):
+                         reject_standard=[], niter=1, exclude=[]):
     """Does one apogee2-manga design and returns the list of allocated mangaids."""
 
     reject_science = list(reject_science) + exclude
@@ -60,6 +60,7 @@ def do_one_apogee2_manga(plateRun, platerun_dir, field, reject_science=[],
 
     mangaScience_high = None
     exclude_science_ifudesigns = []
+    n_targets_high = 0
     if science_target_high.exists():
 
         # assert science_target_low.exists(), \
@@ -78,27 +79,29 @@ def do_one_apogee2_manga(plateRun, platerun_dir, field, reject_science=[],
         # rejects list is passed. But if a high priority target gets rejected
         # because there are not enough skies around it, we carry that reject.
 
-        if len(reject_high) > 0:
-            log.warning('high priority targets rejected (probably because of skies): {}'
-                        .format(reject_high), GohanUserWarning)
-
         mangaScience_high = PlateInput(designID, 'science', catalogues=science_cat_high,
                                        surveyMode=None, plateRun=plateRun,
                                        decollideExternal=False,
                                        silentOnCollision=True, sort=False,
                                        fieldName=fieldName,
                                        raCen=raCen, decCen=decCen,
-                                       rejectTargets=reject_high,
+                                       rejectTargets=reject_science,
                                        FOV=tileRad)
+        n_targets_high = len(mangaScience_high.getMangaIDs())
 
-        if hasattr(mangaScience_high, 'mangaInput') and len(mangaScience_high.getMangaIDs()) > 0:
+        if hasattr(mangaScience_high, 'mangaInput') and n_targets_high > 0:
             science_target = science_target_low
             exclude_science_ifudesigns = mangaScience_high.mangaInput['ifudesign']
         else:
             log.warning('no high priority targets survive design!!!', GohanUserWarning)
             mangaScience_high = None
 
-    if science_target.exists() or science_target_low.exists():
+    if n_targets_high == 17:
+
+        mangaScience = mangaScience_high
+        mangaScience_low = None
+
+    elif science_target.exists() or science_target_low.exists():
 
         if not science_target.exists():
             science_target = science_target_low
@@ -112,6 +115,8 @@ def do_one_apogee2_manga(plateRun, platerun_dir, field, reject_science=[],
                                   rejectTargets=reject_science,
                                   exclude_ifudesigns=exclude_science_ifudesigns,
                                   FOV=tileRad)
+
+        mangaScience_low = mangaScience.copy()
 
         if mangaScience_high is not None:
             log.info('merging high priority targets')
@@ -129,6 +134,7 @@ def do_one_apogee2_manga(plateRun, platerun_dir, field, reject_science=[],
 
         log.info('no low priority targets found. Using only high priority targets.')
         mangaScience = mangaScience_high
+        mangaScience_low = None
 
     mangaScience.write(toRepo=False)
 
@@ -156,7 +162,7 @@ def do_one_apogee2_manga(plateRun, platerun_dir, field, reject_science=[],
                                decollidePlateInputs=[mangaScience],
                                raCen=raCen, decCen=decCen,
                                rejectTargets=reject_standard,
-                               plotIFUs=True,
+                               plotIFUs=False,
                                FOV=tileRad)
     mangaStandard.write(toRepo=False)
 
@@ -182,17 +188,17 @@ def do_one_apogee2_manga(plateRun, platerun_dir, field, reject_science=[],
             log.debug('added {0} to the reject_standard list.'.format(mangaID))
         else:
             reject_science.append(mangaID)
-            if mangaScience_high is not None and mangaID in mangaScience_high.getMangaIDs():
-                reject_high.append(mangaID)
+            # if mangaScience_high is not None and mangaID in mangaScience_high.getMangaIDs():
+            #     reject_high.append(mangaID)
             log.debug('added {0} to the reject_science list.'.format(mangaID))
 
         return do_one_apogee2_manga(plateRun, platerun_dir, field,
                                     reject_science=reject_science,
                                     reject_standard=reject_standard,
-                                    reject_high=reject_high,
+                                    # reject_high=reject_high,
                                     niter=niter + 1)
 
-    return mangaScience, mangaScience_high
+    return mangaScience_low, mangaScience_high
 
 
 def update_platedefinition_apogee2manga(field, plateRun, platerun_dir, high_priority=False):
@@ -274,7 +280,7 @@ def update_platedefinition_apogee2manga(field, plateRun, platerun_dir, high_prio
 
 
 def design_apogee2manga(platerun, platerun_dir, plate_data_path,
-                        special=False, exclude=[], **kwargs):
+                        special=False, exclude=[], repeats=False, **kwargs):
     """Designs an APOGEE2-MaNGA platerun."""
 
     fields = table.Table.read(plate_data_path, format='ascii.commented_header')
@@ -293,33 +299,51 @@ def design_apogee2manga(platerun, platerun_dir, plate_data_path,
 
     for field in fields:
 
-        allocated_one, high_priority = do_one_apogee2_manga(
+        mangaScience_low, mangaScience_high = do_one_apogee2_manga(
             platerun, platerun_dir, field, reject_science=list(reject_science),
             exclude=exclude)
 
         update_platedefinition_apogee2manga(field, platerun, platerun_dir,
-                                            high_priority=high_priority)
+                                            high_priority=mangaScience_high)
 
-        # Default psfmag limit
-        psfmag_lim = 14.7
+        if mangaScience_low is None:
+            mangaScience = mangaScience_high
+        elif mangaScience_high is None:
+            mangaScience = mangaScience_low
+        else:
+            mangaScience = mangaScience_low.merge(mangaScience_high)
 
-        # Determine if this is a short exposure plate
-        plate_add_path = utils.get_path('plateDefinitionAddenda', designid=field['DesignID'])
-        if os.path.exists(plate_add_path):
-            plate_add = yanny.yanny(plate_add_path)
-            if 'MANGA_exposure_time' in plate_add:
-                if int(plate_add['MANGA_exposure_time']) == 30:
-                    psfmag_lim = 13.
+        if repeats is False:
 
-        psfmag = allocated_one.mangaInput['psfmag']
-        brightest_psfmag = numpy.min(psfmag[:, [1, 3]], axis=1)
-        allocated_reject = allocated_one.mangaInput[brightest_psfmag < psfmag_lim]
-        mangaids_reject = [mangaid.strip() for mangaid in allocated_reject['mangaid']]
+            # Default psfmag limit
+            psfmag_lim = 14.7
 
-        log.info('removing {} out of {} targets from future allocation '
-                 'because their PSFMAG < {:.1f}'.format(len(mangaids_reject),
-                                                        len(allocated_one.mangaInput),
-                                                        psfmag_lim))
+            # Determine if this is a short exposure plate
+            plate_add_path = utils.get_path('plateDefinitionAddenda', designid=field['DesignID'])
+            if os.path.exists(plate_add_path):
+                plate_add = yanny.yanny(plate_add_path)
+                if 'MANGA_exposure_time' in plate_add:
+                    if int(plate_add['MANGA_exposure_time']) == 30:
+                        psfmag_lim = 13.
+
+            psfmag = mangaScience.mangaInput['psfmag']
+            brightest_psfmag = numpy.min(psfmag[:, [1, 3]], axis=1)
+            allocated_reject = mangaScience.mangaInput[brightest_psfmag < psfmag_lim]
+            mangaids_reject = [mangaid.strip() for mangaid in allocated_reject['mangaid']]
+
+            log.info('removing {} out of {} targets from future allocation '
+                     'because their PSFMAG < {:.1f}'.format(len(mangaids_reject),
+                                                            len(mangaScience.mangaInput),
+                                                            psfmag_lim))
+
+        else:
+
+            mangaids_reject = [row['mangaid'].strip() for row in mangaScience.mangaInput
+                               if row['repeats'] == 0]
+
+            log.info('removing {} out of {} targets from future allocation '
+                     'because REPEATS=0'.format(len(mangaids_reject),
+                                                len(mangaScience.mangaInput)))
 
         reject_science = reject_science.union(set(mangaids_reject))
 
@@ -409,7 +433,108 @@ def design_manga_apogee2(platerun, platerun_dir, plate_data,
     return True
 
 
-def generate_designs(platerun, plate_data, **kwargs):
+def design_mastar(platerun, platerun_dir, plate_data, obs_date=None, exclude=[], **kwargs):
+    """Designs a platerun with MaStar plates."""
+
+    reject_science = exclude
+    reject_standard = exclude
+
+    platerun_dir = pathlib.Path(platerun_dir)
+    assert platerun_dir.exists(), 'platerun directory {!s} does not exist'.format(platerun_dir)
+
+    assert obs_date is not None, 'obs_date must be specified for MaNGA-led plateruns.'
+    assert re.match('^[0-9]{4}\-[0-9]{2}\-[0-9]{2}$', obs_date), 'invalid obs_date format.'
+
+    field_list = table.Table.read(plate_data, format='ascii.commented_header')
+
+    platePlans_path = pathlib.Path(platerun_dir) / '{0}-platePlans.dat'.format(platerun)
+    platePlansBlob = open(str(platePlans_path), 'w')
+
+    nn = 0
+    niter = 1
+
+    while nn < len(field_list):
+
+        field = field_list[nn]
+
+        designID = int(field['design_id'])
+        fieldName = field['field_name']
+
+        log.important(_color_text('designID: {0}, fieldName: {1} (iteration {2})'
+                                  .format(designID, fieldName, niter), 'lightred'))
+
+        raCen = float(field['RA'])
+        decCen = float(field['Dec'])
+
+        science_target = pathlib.Path(platerun_dir) / f'inputs/{fieldName}_target.fits'
+
+        mangaScience = PlateInput(designID, 'science',
+                                  catalogues=read_catalogue(science_target),
+                                  surveyMode='MaStar', plateRun=platerun,
+                                  silentOnCollision=True, sort=False,
+                                  raCen=raCen, decCen=decCen,
+                                  rejectTargets=reject_science,
+                                  fieldName=fieldName,
+                                  manga_tileid=-999, locationid=-999)
+
+        mangaScience.write(toRepo=False)
+
+        standards_target = pathlib.Path(platerun_dir) / f'inputs/{fieldName}_standards.fits'
+
+        mangaStandard = PlateInput(designID, 'standard',
+                                   catalogues=read_catalogue(standards_target),
+                                   surveyMode='MaStar', plateRun=platerun,
+                                   silentOnCollision=False, sort=True,
+                                   decollidePlateInputs=[mangaScience],
+                                   raCen=raCen, decCen=decCen,
+                                   rejectTargets=reject_standard,
+                                   plotIFUs=False, manga_tileid=-999,
+                                   fieldName=fieldName,
+                                   locationid=-999)
+        mangaStandard.write(toRepo=False)
+
+        skyRaw = os.path.join(readPath(config['skiesPath']), 'sky_{0}.fits'.format(fieldName))
+        assert(os.path.exists(skyRaw))
+
+        result = selectSkies(skyRaw, designID, fieldName, raCen, decCen,
+                             raise_error=False, use_apogee=False, limitTo=40)
+
+        if isinstance(result, table.Table):
+            mangaSky = PlateInput(designID, 'sky', catalogues=result,
+                                  surveyMode='MaStar', plateRun=platerun,
+                                  silentOnCollision=True, sort=False,
+                                  raCen=raCen, decCen=decCen, manga_tileid=-999,
+                                  fieldName=fieldName, locationid=-999)
+            mangaSky.write(toRepo=False)
+        else:
+            assert result[0] is False, 'cannot parse the result of selectSkies'
+            log.warning(result[1], GohanUserWarning)
+            mangaID, ifuDesign = result[2:]
+
+            if ifuDesign < 1000:
+                reject_standard.append(mangaID)
+                log.debug('added {0} to the reject_standard list.'.format(mangaID))
+            else:
+                reject_science.append(mangaID)
+                # if mangaScience_high is not None and mangaID in mangaScience_high.getMangaIDs():
+                #     reject_high.append(mangaID)
+                log.debug('added {0} to the reject_science list.'.format(mangaID))
+
+            continue
+
+        plateDefinition = PlateDefinition([mangaScience, mangaStandard, mangaSky])
+        plateDefinition.write()
+
+        platePlans = plateDefinition.getPlatePlans(obs_date)
+        platePlansBlob.write(platePlans + '\n')
+
+        nn += 1
+        niter = 0
+
+    return True
+
+
+def generate_designs(platerun, plate_data, plate_type=None, **kwargs):
     """Generates plate inputs, plate definitions, and platePlans lines for a list of plates.
 
     Parameters:
@@ -426,11 +551,13 @@ def generate_designs(platerun, plate_data, **kwargs):
     """
 
     platerun = platerun.strip().lower()
-    plate_type = platerun.split('.')[-1]
-    assert plate_type in ['manga-apogee2', 'apogee2-manga', 'manga'], 'invalid plateType'
 
-    platerun_dir = os.path.join(os.environ['MANGAWORK_DIR'], 'manga/platedesign/plateruns',
-                                platerun)
+    if plate_type is None:
+        plate_type = platerun.split('.')[-1]
+
+    assert plate_type in ['manga-apogee2', 'apogee2-manga', 'manga', 'mastar'], 'invalid plateType'
+
+    platerun_dir = os.path.join(os.environ['MANGA_SANDBOX'], 'platedesign/plateruns', platerun)
     assert os.path.exists(platerun_dir), 'cannot find platerun dir {0}'.format(platerun_dir)
 
     assert os.path.exists(plate_data), 'cannot find path {0}'.format(plate_data)
@@ -444,6 +571,8 @@ def generate_designs(platerun, plate_data, **kwargs):
         keep_log = design_apogee2manga(platerun, platerun_dir, plate_data, **kwargs)
     elif plate_type == 'manga-apogee2':
         keep_log = design_manga_apogee2(platerun, platerun_dir, plate_data, **kwargs)
+    elif plate_type == 'mastar':
+        keep_log = design_mastar(platerun, platerun_dir, plate_data, **kwargs)
 
     if keep_log:
         log_path = os.path.join(platerun_dir, platerun + '.log')
