@@ -33,7 +33,7 @@ nSkies = {127: 8, 91: 6, 61: 4, 37: 2, 19: 2, 7: 1}
 
 
 def getIFUSkies(data, coords, ra, dec, skyPatrolRadius=14 / 60.,
-                minNeightborDist=4, limitTo=40):
+                minNeightborDist=4, limitTo=40, plot=False):
     """Selects skies near the targets defined in the list of `mangaInputs`
     PlateInput objects."""
 
@@ -48,10 +48,12 @@ def getIFUSkies(data, coords, ra, dec, skyPatrolRadius=14 / 60.,
     ifuSkyCoords[:, 0] = ifuSkies['ra']
     ifuSkyCoords[:, 1] = ifuSkies['dec']
 
+    ra_com, dec_com = ifuSkyCoords.mean(axis=0)
+
     try:
-        validTargets, assigned = sortTargets(ifuSkyCoords, centre=(ra, dec),
+        validTargets, assigned = sortTargets(ifuSkyCoords, centre=(ra_com, dec_com),
                                              limitTo=limitTo,
-                                             radius=skyPatrolRadius, plot=False)
+                                             radius=skyPatrolRadius, plot=plot)
     except Exception as ee:
         log.warning('Error: {0}'.format(ee), GohanWarning)
         return False
@@ -182,7 +184,7 @@ def selectSkies(skyCat, designID, fieldName, raCen, decCen,
 
         candidateSkies = getIFUSkies(validSkies, skyCoords,
                                      target['ra'], target['dec'],
-                                     limitTo=limitTo)
+                                     limitTo=limitTo, plot=False)
 
         if candidateSkies is False:
             err_msg = 'target {0} ({1}) has not enough sky candidates'.format(target['mangaid'],

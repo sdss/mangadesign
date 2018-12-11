@@ -20,21 +20,20 @@ Major revision history:
 
 """
 
-import numpy as np
+import copy
+import fnmatch
 import os
 import shutil as sh
-import fnmatch
 from collections import OrderedDict
 
+import numpy as np
 import six
-
 from astropy import coordinates as coo
 from astropy import table
 
-from Gohan import config, log, readPath
-from Gohan import exceptions
-from Gohan.utils import yanny, sortTargets, assignIFUDesigns
-from Gohan.utils import getPlateDefinition, getMaskBitFromLabel, getCatalogueRow
+from Gohan import config, exceptions, log, readPath
+from Gohan.utils import (assignIFUDesigns, getCatalogueRow, getMaskBitFromLabel,
+                         getPlateDefinition, sortTargets, yanny)
 
 
 def reformatAstropyColumn(inputTable, columnName, newFormat):
@@ -165,7 +164,7 @@ class PlateInput(object):
                  fillFromCatalogue=True, exclude_ifudesigns=[], **kwargs):
 
         assert isinstance(rejectTargets, (list, tuple, np.ndarray))
-        assert surveyMode in [None, 'mangaLead', 'apogeeLead', 'mangaOnly']
+        assert surveyMode in [None, 'mangaLead', 'apogeeLead', 'mangaOnly', 'MaStar']
 
         self.designid = designid
         self.targettype = targettype
@@ -174,6 +173,8 @@ class PlateInput(object):
         self.locationid = locationid
         self.fieldName = fieldName
         self.manga_tileid = manga_tileid
+
+        self.mangaInput = None
 
         log.info('creating {0} plateInput for design {1}'.format(
                  targettype, designid))
@@ -265,9 +266,17 @@ class PlateInput(object):
     def getMangaIDs(self):
         """Returns the mangaids of the targets in this plateInput file."""
 
+        if self.mangaInput is None:
+            return []
+
         mangaids = self.mangaInput['mangaid']
 
         return [mangaid.strip() for mangaid in mangaids]
+
+    def copy(self):
+        """Returns a copy of self."""
+
+        return copy.copy(self)
 
     def _selectTargets(self, data):
         """Selects targets from a catalogue that are within the FOV."""
@@ -562,9 +571,9 @@ class PlateInput(object):
                 continue
 
             if decollide:
-                targetsInCat = self._decollide(targetsInField,
-                                               coords=coords if decollideExternal else None,
-                                               **kwargs)
+                targetsInCat = self._decollide(
+                    targetsInField, coords=coords if decollideExternal else None,
+                    targetAvoid=config['decollision']['targetAvoidAPOGEE'], **kwargs)
                 log.debug('{0} targets remaining after decollision.'
                           .format(len(targetsInCat)))
                 targetCats.append(targetsInCat)
@@ -694,7 +703,7 @@ class PlateInput(object):
             targetCoords[:, 1] = targets['DEC']
             log.debug('sorting targets')
             newCoords, order = sortTargets(
-                targetCoords, (self.raCen, self.decCen), plot=True,
+                targetCoords, (self.raCen, self.decCen), plot=False,
                 limitTo=nBundlesToAllocate,
                 filename=('sortedTargets_{0:d}_{1}.pdf'
                           .format(self.designid, self.targettype[0:3].upper()))
@@ -747,8 +756,8 @@ class PlateInput(object):
 
         return targets
 
-    def _decollide(self, targets, coords=None, decollidePlateInputs=[],
-                   **kwargs):
+    def _decollide(self, targets, coords=None, targetAvoid=None,
+                   decollidePlateInputs=[], **kwargs):
         """Rejects targets that collided either with coords or with targets
         in `decollidePlateInputs`."""
 
@@ -775,7 +784,8 @@ class PlateInput(object):
                 targets = self.decollideCoords(targets, plateInputCoords,
                                                **kwargs)
             if coords is not None:
-                targets = self.decollideCoords(targets, coords, **kwargs)
+                targets = self.decollideCoords(targets, coords,
+                                               targetAvoid=targetAvoid, **kwargs)
             log.debug('{0} targets rejected from collision with other '
                       'catalogues.'.format(nTargets - len(targets)))
 
@@ -842,14 +852,14 @@ class PlateInput(object):
 
         return targets
 
-    def decollideCoords(self, targets, coords, **kwargs):
+    def decollideCoords(self, targets, coords, targetAvoid=None, **kwargs):
         """Decollides a list of targets against a list of coordinates.
         `coords` must be a np.ndarray of Nx2 dimensions. `targets` must be an
         `astropy.table.Table` with `RA` and `DEC` and `MANGAID` fields."""
 
         silent = kwargs.get('silentOnCollision', False)
 
-        targetAvoid = config['decollision']['targetAvoid']
+        targetAvoid = config['decollision']['targetAvoid'] if targetAvoid is None else targetAvoid
 
         skyCoords = coo.SkyCoord(coords, unit='deg')
         targetCoords = coo.SkyCoord(targets['RA'], targets['DEC'], unit='deg')
@@ -1143,6 +1153,8 @@ class PlateInput(object):
         assert plateInput.targettype == self.targettype, 'inconsistent targettype'
 
         self.mangaInput = table.vstack((self.mangaInput, plateInput.mangaInput))
+
+        return self
 
     def getDefaultFilename(self):
 

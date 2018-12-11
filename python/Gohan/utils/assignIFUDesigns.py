@@ -12,15 +12,13 @@ Revision history:
 
 """
 
-from __future__ import division
-from __future__ import print_function
+from __future__ import division, print_function
 
 import numpy as np
-from matplotlib import pyplot as plt
-from matplotlib.patches import Ellipse
-
 from astropy import coordinates as coo
 from astropy import table
+from matplotlib import pyplot as plt
+from matplotlib.patches import Ellipse
 
 from Gohan import config, log, readPath
 from Gohan.exceptions import GohanError
@@ -72,7 +70,7 @@ def assignIFUDesigns(targets, centre, targettype='science',
             if failOnIFUDesignSize:
                 raise GohanError('at least one target found with '
                                  'ifudesignsize < 0')
-            for size in sorted(bundleSizes, reverse=True):
+            for size in sorted(bundleSizes, reverse=False):
                 if bundleSizes[size] > 0:
                     target['ifudesignsize'] = size
                     target['ifudesign'] = -999
