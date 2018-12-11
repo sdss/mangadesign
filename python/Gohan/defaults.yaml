@@ -8,26 +8,27 @@ logging:
 platelist: $PLATELIST_DIR
 mangacore: $MANGACORE_DIR
 preimaging: $MANGAPREIM_DIR
-mangawork: $MANGAWORK_DIR
+mangawork: $SAS_BASE_DIR/mangawork
 sdssMaskBits: $IDLUTILS_DIR/data/sdss/sdssMaskbits.par
 
 targets:
-    path: $MANGAWORK_DIR/manga/target
+    path: $SAS_BASE_DIR/mangawork/manga/target
     version: trunk
     mangaTargets: MaNGA_targets_extNSA_tiled_ancillary.fits
 
-skiesPath: $MANGAWORK_DIR/manga/platedesign/skies
+skiesPath: $MANGA_SANDBOX/platedesign/skies
 
 catalogues:
-    path: $MANGAWORK_DIR/manga/target/catalogues
-    NSA: $MANGAWORK_DIR/manga/target/catalogues/1-nsa_v1_0_1.fits
-    standard: $MANGAWORK_DIR/manga/target/catalogues/5-manga_stds_v1_01.fits
-    APASS: $MANGAWORK_DIR/manga/target/catalogues/6-APASS_DR7.fits
+    path: $MANGA_TARGET_CATALOGUES
+    NSA: $MANGA_TARGET_CATALOGUES/1-nsa_v1_0_1.fits
+    standard: $MANGA_TARGET_CATALOGUES/5-manga_stds_v1_01.fits
+    APASS: $MANGA_TARGET_CATALOGUES/6-APASS_DR7.fits
 
 decollision:
     FOV: 1.49
     centreAvoid: .032149054
     targetAvoid: .032149054
+    targetAvoidAPOGEE: 0.026
 
 plateInputs:
     mangaInputStructure: 'MANGAINPUT'
@@ -36,7 +37,7 @@ plateInputs:
 
 plateMags:
     filters : [g, r, i, z]
-    BOSS_SN: $MANGAWORK_DIR/manga/platedesign/etc/BOSS_SNvsFibMag2.dat
+    BOSS_SN: $PLATEDESIGN_SANDBOX/etc/BOSS_SNvsFibMag2.dat
     simbmap: $MANGACORE_DIR/metrology/fiducial/manga_simbmap_127.par
     targetSeeing: 2
     reffField: PETROTH50
@@ -44,12 +45,12 @@ plateMags:
     nPix: 50
 
 plateTargets:
-    NSA_v1b_v1: $MANGAWORK_DIR/manga/platedesign/etc/NSA_v1b_to_v1.dat
-    neverobserve: $MANGAWORK_DIR/manga/platedesign/etc/neverobserve.dat
+    NSA_v1b_v1: $PLATEDESIGN_SANDBOX/etc/NSA_v1b_to_v1.dat
+    neverobserve: $PLATEDESIGN_SANDBOX/etc/neverobserve.dat
     mangaTargetFields: [zmin, zmax, szmin, szmax, ezmin, ezmax, probs, pweight, sweight,
                         srweight, eweight, psrweight, esrweight, psweight,
                         esweight]
-    targets12: $MANGAWORK_DIR/manga/platedesign/etc/targets-12.fits
+    targets12: $PLATEDESIGN_SANDBOX/etc/targets-12.fits
 
 plateTypes:
     mangaLead:
@@ -77,6 +78,15 @@ plateTypes:
         defaultSurveyMode: apogeeLead
         survey: apogee2-manga
         programname: disk2
+        drillstyle: manga
+
+    MaStar:
+        platedesignversion: v1
+        plateLead: MANGA
+        plateType: MANGA-APOGEE2
+        defaultSurveyMode: MaStar
+        survey: manga-apogee2
+        programname: manga
         drillstyle: manga
 
 sdssImaging:

@@ -629,7 +629,10 @@ def getStellarLibraryRuns():
     apogeeMangaRuns = [plateRun for plateRun in plateRuns
                        if 'apogee2-manga' in plateRun.strip().lower() and
                        plateRun.strip().lower() != '2014.04.f.apogee2-manga']
-    apogeeMangaRuns += ['2016.10.c.manga', '2016.12.a.manga']  # MaStar runs
+
+    # MaStar runs
+    apogeeMangaRuns += ['2016.10.c.manga', '2016.12.a.manga', '2018.10.d.manga-apogee2',
+                        '2018.11.b.manga-apogee2']
 
     return apogeeMangaRuns
 
@@ -653,7 +656,7 @@ def getLastLocationID():
 
     """
 
-    file = readPath(config['mangawork'] + '/manga/platedesign/etc/lastLocationID.dat')
+    file = readPath(config['mangawork'] + '/manga/sandbox/platedesign/etc/lastLocationID.dat')
 
     assert os.path.exists(file), 'lastLocationID.dat not found'
 
