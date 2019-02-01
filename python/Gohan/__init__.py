@@ -51,5 +51,5 @@ warnings.filterwarnings('always', category=GohanWarning)
 config = get_config('~/.gohan/gohan.yaml')
 
 # Creates the custom logging system
-log.start_file_logger('.gohan/gohan')
+log.start_file_logger(config['logging']['logFilePath'])
 log.sh.setLevel(10)
