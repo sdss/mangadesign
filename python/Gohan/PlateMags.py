@@ -398,7 +398,8 @@ class PlateMagsIFU(object):
             if designid is None:
                 raise GohanError('useRepo=True but designid=None.')
             preImageDir = os.path.join(
-                readPath(repoPath), 'data',
+                repoPath,
+                'data',
                 'D{0:s}XX'.format('{0:06d}'.format(designid)[0:4]),
                 '{0:04d}'.format(designid))
         else:
