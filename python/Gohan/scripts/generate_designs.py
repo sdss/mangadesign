@@ -388,6 +388,9 @@ def design_manga_apogee2(platerun, platerun_dir, plate_data,
         locationID = int(field['location_id'])
         designID = int(field['design_id'])
 
+        print(_color_text('\ndesignID: {0}, mangaTileID: {1}'.format(designID, mangaTileID),
+                          'lightred'))
+
         raCen = float(field['ra'])
         decCen = float(field['dec'])
 
@@ -397,14 +400,11 @@ def design_manga_apogee2(platerun, platerun_dir, plate_data,
         if not sci_cat.exists():
             sci_cat = target_dir / ('MaNGA_targets_extNSA_tiled_ancillary_{0:d}.fits'
                                     .format(mangaTileID))
-            assert sci_cat.exists(), \
-                'designID: {0}: neither the MaNGA_targets_extNSA file or the _ra version exist.'
+            assert sci_cat.exists(), ('designID: {0}: neither the MaNGA_targets_extNSA file '
+                                      'or the _ra version exist.'.format(designID))
 
         std_cat = std_path / 'manga_stds_{0}.fit'.format(mangaTileID)
         assert std_cat.exists(), 'cannot find standard file {!s}'.format(std_cat)
-
-        print(_color_text('\ndesignID: {0}, mangaTileID: {1}'.format(designID, mangaTileID),
-                          'lightred'))
 
         mangaScience = PlateInput(designID, 'science', catalogues=str(sci_cat),
                                   surveyMode='mangaLead', plateRun=platerun,
