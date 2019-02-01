@@ -24,7 +24,6 @@ import tempfile
 import os
 import io
 import bz2
-import warnings
 
 from Gohan.exceptions import GohanUserWarning, GohanError
 from Gohan import log, config, readPath
@@ -381,7 +380,10 @@ class PlateMagsIFU(object):
     """
 
     def __init__(self, struct1Row, useRepo=True, designid=None,
-                 repoPath=config['preimaging'], **kwargs):
+                 repoPath=None, **kwargs):
+
+        if not repoPath:
+            repoPath = readPath(config['preimaging'])
 
         self._plateInputRow = struct1Row
         colnames = [cc.lower() for cc in self._plateInputRow.colnames]
@@ -397,7 +399,8 @@ class PlateMagsIFU(object):
                 raise GohanError('useRepo=True but designid=None.')
             preImageDir = os.path.join(
                 readPath(repoPath), 'data',
-                'D00{0:s}XX/{1:04d}').format(str(designid)[0:2], designid)
+                'D{0:s}XX'.format('{0:06d}'.format(designid)[0:4]),
+                '{0:04d}'.format(designid))
         else:
             preImageDir = './'
 

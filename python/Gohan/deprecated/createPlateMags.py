@@ -25,7 +25,7 @@ import shutil as sh
 def copyPreImaging(designID, preImage):
 
     path = os.path.join(
-        readPath(config['preImaging']),
+        readPath(config['preimaging']),
         'D{0:s}XX'.format('{0:06d}'.format(designID)[0:4]),
         '{0:04d}'.format(designID))
 

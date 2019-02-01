@@ -178,7 +178,7 @@ def post_design_manga_led(plateids, overwrite=False, skipPlateHolesSorted=False)
 
     if skipPlateHolesSorted:
         log.warning('skipping copying plateHolesSorted files to mangacore',
-                      GohanPostDesignWarning)
+                    GohanPostDesignWarning)
         return returnDict
 
     # Copies plateHolesSorted to mangacore
@@ -202,13 +202,12 @@ def post_design_manga_led(plateids, overwrite=False, skipPlateHolesSorted=False)
 
         if os.path.exists(destinationPath) and not overwrite:
             log.warning('{0} already exists in magacore. Not overwritting.'
-                          .format(os.path.basename(plateHolesSortedPath)),
-                          GohanPostDesignWarning)
+                        .format(os.path.basename(plateHolesSortedPath)), GohanPostDesignWarning)
             continue
 
         if os.path.exists(destinationPath):
             log.warning('Overwritting {0} in mangacore.'
-                          .format(os.path.basename(plateHolesSortedPath)), GohanPostDesignWarning)
+                        .format(os.path.basename(plateHolesSortedPath)), GohanPostDesignWarning)
 
         shutil.copy(plateHolesSortedPath, destinationPath)
         log.info('{0} copied to mangacore'.format(os.path.basename(plateHolesSortedPath)))
