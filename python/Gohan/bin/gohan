@@ -69,9 +69,11 @@ def design(platerun, platedata, special=False, exclude=None,
               help='does not copy plateHolesSorted to mangacore.')
 @click.option('--no-platemags', is_flag=True, help='if sets, does not create plateMags.')
 @click.option('--plot', is_flag=True, help='if sets, creates plots along with plateMags.')
+@click.option('-p', '--platetype', type=str,
+              help='the plate type. If not defined it is deduced from the platerun.')
 @click.argument('plateruns', nargs=-1, metavar='PLATERUN(s)', required=False)
 def postdesign(plateruns, all=None, overwrite=False, skip_plateholessorted=False,
-               no_platemags=False, plot=False):
+               no_platemags=False, plot=False, platetype=None):
     """Runs MaNGA postdesign for a series of plateruns. For now it assumes APOGEE-lead."""
 
     from Gohan import log
@@ -91,7 +93,7 @@ def postdesign(plateruns, all=None, overwrite=False, skip_plateholessorted=False
         log.important('Running postdesign for platerun {0}'.format(platerun))
         plates = list(map(int, utils.getFromPlatePlans(platerun, column='plateid')))
 
-        if utils.platerun_is_mastar(platerun):
+        if utils.platerun_is_mastar(platerun) or platetype.lower() == 'mastar':
             post_design.post_design_apogee_led(plates, overwrite=overwrite)
         else:
             post_design.post_design_manga_led(plates, overwrite=overwrite,
