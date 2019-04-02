@@ -93,7 +93,8 @@ def postdesign(plateruns, all=None, overwrite=False, skip_plateholessorted=False
         log.important('Running postdesign for platerun {0}'.format(platerun))
         plates = list(map(int, utils.getFromPlatePlans(platerun, column='plateid')))
 
-        if utils.platerun_is_mastar(platerun) or platetype.lower() == 'mastar':
+        if (utils.platerun_is_mastar(platerun) or
+                (platetype is not None and platetype.lower() == 'mastar')):
             post_design.post_design_apogee_led(plates, overwrite=overwrite)
         else:
             post_design.post_design_manga_led(plates, overwrite=overwrite,
