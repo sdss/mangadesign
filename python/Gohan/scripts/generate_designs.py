@@ -411,7 +411,7 @@ def design_manga_apogee2(platerun, platerun_dir, plate_data,
                                   silentOnCollision=True, sort=False,
                                   raCen=raCen, decCen=decCen,
                                   manga_tileid=mangaTileID, locationid=locationID,
-                                  rejectTargets=reject_targets)
+                                  rejectTargets=reject_targets, autocomplete=True)
         mangaScience.write()
         reject_targets += mangaScience.getMangaIDs()
 
