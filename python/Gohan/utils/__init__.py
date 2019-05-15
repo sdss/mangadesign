@@ -3,6 +3,7 @@ from Gohan.utils.sortTargets import sortTargets
 from Gohan.utils.assignIFUDesigns import assignIFUDesigns
 from Gohan.utils.utils import *
 from Gohan.utils.selectSkies import selectSkies
+from .image import *
 
 try:
     from Gohan.utils.Staralt import Staralt

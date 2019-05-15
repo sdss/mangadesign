@@ -19,40 +19,34 @@ Revision history:
 
 """
 
-import numpy as np
-import tempfile
-import os
-import io
 import bz2
-
-from Gohan.exceptions import GohanUserWarning, GohanError
-from Gohan import log, config, readPath
-from Gohan.utils import getSDSSRun
-from Gohan.utils.utils import (getNSArow, getPlateTargetsRow,
-                               get_manga_targets_path)
-from Gohan.utils.yanny import yanny, write_ndarray_to_yanny
-
-from astropy import wcs
-from astropy.io import fits
-from astropy import table
-from astropy.modeling import models, fitting
-
-from scipy.ndimage.filters import gaussian_filter
-from scipy.misc import imsave
-from scipy import interpolate
+import io
+import os
+import tempfile
 
 import matplotlib
-from matplotlib import pyplot as plt
 import mpl_toolkits.axes_grid1.axes_grid as axes_grid
-from matplotlib.patches import Ellipse
-from matplotlib.collections import EllipseCollection
+import numpy as np
+from astropy import table, wcs
+from astropy.io import fits
+from astropy.modeling import fitting, models
+from imageio import imwrite as imsave
+from matplotlib import pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
-
-# urllib2 is just annoyin in Python 2/3
-from six.moves.urllib.parse import urlparse
-from six.moves.urllib.request import urlopen, build_opener, install_opener
-from six.moves.urllib.request import HTTPPasswordMgrWithDefaultRealm, HTTPBasicAuthHandler
+from matplotlib.collections import EllipseCollection
+from matplotlib.patches import Ellipse
+from scipy import interpolate
+from scipy.ndimage.filters import gaussian_filter
 from six.moves.urllib.error import HTTPError
+from six.moves.urllib.parse import urlparse
+from six.moves.urllib.request import (HTTPBasicAuthHandler, HTTPPasswordMgrWithDefaultRealm,
+                                      build_opener, install_opener, urlopen)
+
+from Gohan import config, log, readPath
+from Gohan.exceptions import GohanError, GohanUserWarning
+from Gohan.utils import getSDSSRun
+from Gohan.utils.utils import get_manga_targets_path, getNSArow, getPlateTargetsRow
+from Gohan.utils.yanny import write_ndarray_to_yanny, yanny
 
 
 __ALL__ = ['PlateMags']
