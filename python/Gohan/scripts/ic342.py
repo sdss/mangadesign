@@ -31,7 +31,7 @@ from Gohan import log, config
 from Gohan import utils
 from Gohan.utils import yanny
 
-import albireolib.image
+import Gohan.utils.image
 
 
 class PS1Imaging(object):
@@ -124,7 +124,7 @@ class PS1Imaging(object):
             preimage.append(ivar_preimage)
 
             # We assume the PSF is 1 arcsec.
-            gaussian_2D_kernel = albireolib.image.gaussian_kernel_from_fwhm(1., pixel_scale=0.25)
+            gaussian_2D_kernel = Gohan.utils.image.gaussian_kernel_from_fwhm(1., pixel_scale=0.25)
 
             psf_preimage = astropy.io.fits.ImageHDU(data=gaussian_2D_kernel.array)
             psf_preimage.header['EXTNAME'] = f'{band} psf'
@@ -190,12 +190,12 @@ class PS1Imaging(object):
         xmin = int(center_pix[0] - width / 2.)
         ymin = int(center_pix[1] - width / 2.)
 
-        new_hdu, new_wcs = albireolib.image.crop_hdu(hdulist[1], xmin, xmin + width,
+        new_hdu, new_wcs = Gohan.utils.image.crop_hdu(hdulist[1], xmin, xmin + width,
                                                      ymin, ymin + width)
 
         assert new_wcs is not None
 
-        new_hdu = albireolib.image.replace_wcs(new_hdu, new_wcs)
+        new_hdu = Gohan.utils.image.replace_wcs(new_hdu, new_wcs)
 
         # PS1 images use compressed HDUs. Let's use normal ones.
         image_hdu = astropy.io.fits.ImageHDU(data=new_hdu.data, header=new_hdu.header)
@@ -267,9 +267,9 @@ class PS1Imaging(object):
 
             if target_fwhm:
 
-                gauss = albireolib.image.fit_gaussian(psf)
+                gauss = Gohan.utils.image.fit_gaussian(psf)
                 sigma = np.sqrt(gauss.x_stddev * gauss.y_stddev)
-                fwhm = albireolib.image.sigma_to_fwhm(sigma)
+                fwhm = Gohan.utils.image.sigma_to_fwhm(sigma)
 
                 if self.verbose:
                     log.debug(f'{band}-band: measured FWHM '
@@ -277,9 +277,9 @@ class PS1Imaging(object):
 
                 if fwhm < target_fwhm:
 
-                    target_sigma = albireolib.image.fwhm_to_sigma(target_fwhm) / pixel_scale
+                    target_sigma = Gohan.utils.image.fwhm_to_sigma(target_fwhm) / pixel_scale
                     kernel_sigma = np.sqrt(target_sigma**2 - sigma**2)
-                    data = albireolib.image.gaussian_filter(kernel_sigma, data)
+                    data = Gohan.utils.image.gaussian_filter(kernel_sigma, data)
 
             radius = config['plateMags']['targetSeeing'] / 2. / pixel_scale
 
