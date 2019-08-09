@@ -66,6 +66,11 @@ def assignIFUDesigns(targets, centre, targettype='science',
 
     ifuDesignSizeAssigned = False
     for target in targets:
+        if target['ifudesign'] > 0:
+            if target['ifudesignsize'] < 0:
+                target['ifudesignsize'] = int(str(target['ifudesign'])[0:-2])
+                bundleSizes[target['ifudesignsize']] -= 1
+                continue
         if target['ifudesignsize'] < 0:
             if failOnIFUDesignSize:
                 raise GohanError('at least one target found with '
