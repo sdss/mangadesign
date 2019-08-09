@@ -191,7 +191,7 @@ class PS1Imaging(object):
         ymin = int(center_pix[1] - width / 2.)
 
         new_hdu, new_wcs = Gohan.utils.image.crop_hdu(hdulist[1], xmin, xmin + width,
-                                                     ymin, ymin + width)
+                                                      ymin, ymin + width)
 
         assert new_wcs is not None
 
