@@ -114,7 +114,7 @@ def decollide(aa, bb, distance=config['decollision']['targetAvoid']):
     closest, sep, sep3D = coordsA.match_to_catalog_sky(coordsB, nthneighbor=1)
     coordsA = coordsA[sep.deg > distance]
 
-    if len(coordsA) == 0:
+    if len(coordsA) < 3:
         return False
 
     closest, sep, sep3D = coordsA.match_to_catalog_sky(coordsA, nthneighbor=2)
