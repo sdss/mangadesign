@@ -355,7 +355,7 @@ def preimaging(obj, platerun, ps1_data, platemags=True, design=False):
         if not design:
             designid = utils.getDesignID(plate)
         else:
-            designid = plate
+            designid = int(plate)
 
         if verbose:
             log.important('creating PS1 preimaging for plate {}.'.format(plate))
