@@ -5,10 +5,6 @@
 # @Date: 2017-10-012
 # @Filename: general.py
 # @License: BSD 3-clause (http://www.opensource.org/licenses/BSD-3-Clause)
-#
-# @Last modified by: José Sánchez-Gallego (gallegoj@uw.edu)
-# @Last modified time: 2018-08-17 14:38:20
-
 
 from __future__ import absolute_import, division, print_function
 
