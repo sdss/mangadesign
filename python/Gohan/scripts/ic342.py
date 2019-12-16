@@ -192,6 +192,7 @@ class PS1Imaging(object):
 
         new_hdu, new_wcs = Gohan.utils.image.crop_hdu(hdulist[1], xmin, xmin + width,
                                                       ymin, ymin + width)
+        new_wcs.fix()
 
         assert new_wcs is not None
 
@@ -328,12 +329,12 @@ def ic342(verbose=False):
 
 
 @ic342.command()
-@click.argument('platerun', type=click.STRING, nargs=-1)
-@click.argument('ps1_data', type=click.Path(exists=True), nargs=1)
+@click.argument('platerun', type=click.STRING)
+@click.argument('ps1_data', type=click.Path(exists=True))
 @click.option('-m', '--platemags', is_flag=True, help='Generates plateMags.')
-@click.option('-d', '--design', is_flag=True, help='Considers the input to be a designID.')
+@click.option('-d', '--design', type=int, help='Designs to consider')
 @click.pass_obj
-def preimaging(obj, platerun, ps1_data, platemags=True, design=False):
+def preimaging(obj, platerun, ps1_data, design, platemags=True):
     """Generates preimaging for IC342.
 
     A PLATERUN and the PS1_DATA path to the PS1 imaging directory must
@@ -343,19 +344,15 @@ def preimaging(obj, platerun, ps1_data, platemags=True, design=False):
 
     verbose = obj['verbose']
 
-    if not design:
-        plates = utils.getFromPlatePlans(platerun, column='plateid')
-    else:
-        plates = platerun
+    plates = utils.getFromPlatePlans(platerun, column='plateid')
 
     assert len(plates) > 0, 'no plates found for platerun {!r}'.format(platerun)
 
     for plate in plates:
 
-        if not design:
-            designid = utils.getDesignID(plate)
-        else:
-            designid = int(plate)
+        designid = utils.getDesignID(plate)
+        if design and designid != design:
+            continue
 
         if verbose:
             log.important('creating PS1 preimaging for plate {}.'.format(plate))

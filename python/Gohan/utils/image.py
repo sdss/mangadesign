@@ -8,7 +8,6 @@
 
 from __future__ import absolute_import, division, print_function
 
-import itertools
 import re
 import warnings
 
@@ -77,6 +76,9 @@ def crop_hdu(hdu, xmin, xmax, ymin, ymax, return_wcs=True, ignore_warnings=True)
     new_wcs.wcs.crpix[0] -= xmin
     new_wcs.wcs.crpix[1] -= ymin
 
+    new_hdu.header['NAXIS1'] = new_hdu.data.shape[1]
+    new_hdu.header['NAXIS2'] = new_hdu.data.shape[0]
+
     return new_hdu, new_wcs
 
 
@@ -99,16 +101,28 @@ def replace_wcs(hdu, wcs):
     # Checks for old WCS keys in the form PC001002
     pc_old_pattern = re.compile('PC0*[0-9]{1}0*[0-9]{1}')
     header_keys = hdu.header.keys()
-    pc_old_in_header = filter(pc_old_pattern.match, header_keys)
+    pc_old_in_header = list(filter(pc_old_pattern.match, header_keys))
 
-    wcs_keys = wcs.to_header().keys()
+    wcs_keys = list(wcs.to_header().keys())
 
-    for key in itertools.chain(wcs_keys, pc_old_in_header):
+    for key in wcs_keys + pc_old_in_header:
         if key in hdu.header:
             del hdu.header[key]
 
     # Adds the new WCS header to the hdu
     hdu.header.extend(wcs.to_header().cards)
+
+    # Manually make sure all PCX_Y keywords are present
+    for ii in [0, 1]:
+        for jj in [0, 1]:
+            hdu.header['PC{}_{}'.format(ii + 1, jj + 1)] = wcs.wcs.pc[ii, jj]
+
+    ra, dec = wcs.wcs_pix2world([[hdu.header['NAXIS1'] // 2,
+                                  hdu.header['NAXIS2'] // 2]], 1)[0]
+    hdu.header['CRVAL1'] = ra
+    hdu.header['CRVAL2'] = dec
+    hdu.header['CRPIX1'] = hdu.header['NAXIS1'] // 2
+    hdu.header['CRPIX2'] = hdu.header['NAXIS2'] // 2
 
     return hdu
 
