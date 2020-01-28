@@ -24,6 +24,8 @@ from Gohan.PlateInput import PlateInput
 from Gohan.utils import utils
 from Gohan.utils.selectSkies import selectSkies
 
+from .update_addendas import update_addendas
+
 
 def read_catalogue(fn):
 
@@ -348,6 +350,7 @@ def design_apogee2manga(platerun, platerun_dir, plate_data_path,
         reject_science = reject_science.union(set(mangaids_reject))
 
     # utils.print_special_summary(plate_data_path)
+    update_addendas(platerun)
 
     return True
 
@@ -361,7 +364,7 @@ def design_manga_apogee2(platerun, platerun_dir, plate_data,
     assert platerun_dir.exists(), 'platerun directory {!s} does not exist'.format(platerun_dir)
 
     assert obs_date is not None, 'obs_date must be specified for MaNGA-led plateruns.'
-    assert re.match('^[0-9]{4}\-[0-9]{2}\-[0-9]{2}$', obs_date), 'invalid obs_date format.'
+    assert re.match(r'^[0-9]{4}\-[0-9]{2}\-[0-9]{2}$', obs_date), 'invalid obs_date format.'
 
     target_version = target_version if target_version is not None else config['targets']['version']
     target_dir = pathlib.Path(os.path.expandvars(config['targets']['path'])) / target_version
