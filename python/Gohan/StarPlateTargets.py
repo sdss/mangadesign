@@ -146,6 +146,9 @@ class StarPlateTargets(PlateTargets):
             # Applies target fixes
             targetData = self._applyTargetFix(targetData)
 
+            if targetData['iauname'] == -999.:
+                targetData['iauname'] = '-999'
+
             # Adds the new targets
             if not existing:
                 self.structure.add_row(targetData)
@@ -173,7 +176,8 @@ class StarPlateTargets(PlateTargets):
                                          'specific data')
 
         requiredFields = utils.getRequiredPlateTargetsColumns()
-        specificFields = [field for field in self.structure.colnames if field not in requiredFields]
+        specificFields = [field for field in self.structure.colnames
+                          if field not in requiredFields]
 
         mangaSciencePath = utils.getMangaSciencePath(plateid, format='plateid')
         mangaScience = table.Table(yanny.yanny(mangaSciencePath, np=True)['MANGAINPUT'])

@@ -12,25 +12,25 @@ Revision history:
 
 """
 
-from __future__ import division
-from __future__ import print_function
-from Gohan import log, readPath, config
-from astropy import table
-from astropy import coordinates as coo
-from Gohan.exceptions import GohanUserWarning
-from Gohan.utils.sortTargets import sortTargets
-from Gohan.utils import getMaskBitFromLabel, get_manga_targets_path
-import warnings
-import numpy as np
+from __future__ import division, print_function
+
 import os
 
+import numpy as np
+from astropy import coordinates as coo
+from astropy import table
+
+from Gohan import config, log, readPath
+from Gohan.exceptions import GohanUserWarning
+from Gohan.utils import get_manga_targets_path, getMaskBitFromLabel
+from Gohan.utils.sortTargets import sortTargets
 
 try:
     NSAPath = readPath(config['catalogues']['NSA'])
 
     if not os.path.exists(NSAPath):
         log.warning('NSA catalogue {0} not found'.format(NSAPath),
-                      GohanUserWarning)
+                    GohanUserWarning)
         NSACat = None
     else:
         NSACat = table.Table.read(NSAPath)
@@ -97,8 +97,8 @@ def autocomplete(targets, centre, **kwargs):
             targets = addTarget(targets, target, bundleSize, centre)
         else:
             log.warning('no valid replacement found for '
-                          'ifudesignsize={0}'.format(int(bundleSize)),
-                          GohanUserWarning)
+                        'ifudesignsize={0}'.format(int(bundleSize)),
+                        GohanUserWarning)
 
         if len(targets) >= nBundles:
             break
@@ -174,8 +174,8 @@ def _getOptimalTargetSize(targets, candidateTargets, bundleSize,
              'Trying to find a suitable target.')
 
     for target in candidateTargets:
-            if _checkTarget(targets, target, centre, mode=mode):
-                return target
+        if _checkTarget(targets, target, centre, mode=mode):
+            return target
 
     return None
 
@@ -256,7 +256,7 @@ def getMaNGATargets(targets, centre):
 
     if not os.path.exists(MaNGAPath):
         log.warning('MaNGA catalogue {0} not found'.format(MaNGAPath),
-                      GohanUserWarning)
+                    GohanUserWarning)
         return None
 
     MaNGACat = table.Table.read(MaNGAPath)
@@ -347,8 +347,7 @@ def getBadPhotometry():
     if not os.path.exists(qaAdjusted):
         if not qaWarningIssued:
             # Issues this warning only once
-            log.warning('nsa_v1_0_0_QA_adjusted.dat not found',
-                          GohanUserWarning)
+            log.warning('nsa_v1_0_0_QA_adjusted.dat not found', GohanUserWarning)
             qaWarningIssued = True
         return []
 
@@ -378,7 +377,7 @@ def addTarget(targets, target, bundleSize, centre):
         elif column.lower() in defaultValues:
             newRow.append(defaultValues[column.lower()])
         else:
-            newRow.append(-999)
+            newRow.append(str(-999))
 
     targets.add_row(newRow)
     row = targets[targets['MANGAID'] == target['MANGAID']][0]

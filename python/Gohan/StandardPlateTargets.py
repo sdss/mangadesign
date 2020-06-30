@@ -157,6 +157,9 @@ class StandardPlateTargets(PlateTargets):
             # Applies target fixes
             targetData = self._applyTargetFix(targetData)
 
+            if targetData['iauname'] == -999.:
+                targetData['iauname'] = '-999'
+
             # Adds the new targets
             if not existing:
                 self.structure.add_row(targetData)

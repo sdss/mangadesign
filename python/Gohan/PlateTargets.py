@@ -351,6 +351,9 @@ class PlateTargets(object):
             if targetData['z'] == -999. and 'nsa_z' in targetData:
                 targetData['z'] = targetData['nsa_z']
 
+            if targetData['iauname'] == -999:
+                targetData['iauname'] = '-999'
+
             # Adds the new targets
             if not existing:
                 self.structure.add_row(targetData)
@@ -565,9 +568,9 @@ class PlateTargets(object):
                          nsaRow['nsaid'], nsaV1bToV1_row['NSAID_v1_0_1'][0]))
 
             if nsaRow is None:
-                    raise GohanPlateTargetsError(
-                        'mangaid={0} cannot be found in catalogue {1}'
-                        .format(mangaid, nsaCatPath))
+                raise GohanPlateTargetsError(
+                    'mangaid={0} cannot be found in catalogue {1}'
+                    .format(mangaid, nsaCatPath))
 
             for field in fields:
 
