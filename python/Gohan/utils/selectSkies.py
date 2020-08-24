@@ -107,7 +107,7 @@ def getInfoFromAPOGEE(designID):
 def decollide(aa, bb, distance=config['decollision']['targetAvoid']):
     """Decollides targets."""
 
-    distance = 120 / 3600.
+    distance = 117 / 3600.
     coordsA = SkyCoord(aa[:, 0], aa[:, 1], unit='deg')
     coordsB = SkyCoord(bb[:, 0], bb[:, 1], unit='deg')
 
@@ -163,6 +163,8 @@ def selectSkies(skyCat, designID, fieldName, raCen, decCen,
                                                'ifudesign']],
                                  mangaStandard[['ra', 'dec', 'mangaid',
                                                 'ifudesign']]])
+
+    mangaTargets.sort('ifudesign', reverse=True)
 
     mangaCoords = np.zeros((len(mangaTargets), 2))
     mangaCoords[:, 0] = mangaTargets['ra']
